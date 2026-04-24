@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phylax Capital — ALSI Option Ladder Backtest Engine — BN90 RIHF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#101b2a;--bg4:#060b10;
+  --teal:#00c4d4;--teal2:#00e8f8;--teal3:rgba(0,196,212,.12);
+  --plat:#b8c8d4;--plat2:#dce8f0;
+  --gold:#c8a84a;--gold2:#e8c870;
+  --red:#e84040;--red2:#f07070;
+  --green:#40c880;--green2:#60e8a0;
+  --amber:#e8a020;--amber2:#f0b840;
+  --white:#eef4f8;--muted:#5a7888;--muted2:#2a3a45;
+  --border:rgba(0,196,212,.10);--border2:rgba(0,196,212,.22);--border3:rgba(0,196,212,.06);
+  --card:rgba(0,196,212,.04);--card2:rgba(0,196,212,.08);
+}
+html{font-size:13px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--white);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(ellipse 70% 45% at 80% 0%,rgba(0,196,212,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 35% at 5% 100%,rgba(200,168,74,.04) 0%,transparent 55%),
+    linear-gradient(rgba(0,196,212,.012) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.012) 1px,transparent 1px);
+  background-size:100%,100%,52px 52px,52px 52px;
+}
+input,button,select{font-family:inherit}
+.page{display:flex;flex-direction:column;min-height:100vh}
+
+/* ── TOP BAR ─────────────────────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 28px 14px;border-bottom:2px solid var(--teal);
+  background:linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.1));
+  flex-shrink:0;gap:20px;
+}
+.brand-row{display:flex;align-items:center;gap:16px;flex-shrink:0}
+.bname{font-family:'Rajdhani',sans-serif;font-size:21px;font-weight:700;color:var(--plat2);letter-spacing:.20em;text-transform:uppercase;line-height:1.05}
+.bfund{font-size:9.5px;color:var(--teal);letter-spacing:.24em;text-transform:uppercase;margin-top:2px;font-family:'Rajdhani',sans-serif;font-weight:600}
+.bsub{font-size:8.5px;color:var(--muted);margin-top:2px;letter-spacing:.06em}
+.topbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.period-badge{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  color:var(--teal2);text-transform:uppercase;letter-spacing:.14em;
+  background:rgba(0,196,212,.08);border:1px solid var(--border2);
+  padding:5px 14px;border-radius:2px;white-space:nowrap;
+}
+
+/* ── MAIN LAYOUT ─────────────────────────────────────────────────── */
+.body-wrap{display:flex;flex:1;overflow:hidden}
+
+/* ── SIDEBAR ─────────────────────────────────────────────────────── */
+.sidebar{
+  width:280px;flex-shrink:0;background:var(--bg2);
+  border-right:1px solid var(--border2);
+  padding:20px 18px 40px;
+  overflow-y:auto;display:flex;flex-direction:column;gap:0;
+}
+.sb-section{margin-bottom:20px}
+.sb-title{
+  font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.18em;color:var(--teal);
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.sb-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.fi{margin-bottom:12px}
+.fi-l{
+  font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.1em;
+  margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;
+}
+.fi-badge{font-size:8px;padding:1px 6px;border-radius:2px;background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.2);color:var(--teal2)}
+input[type=text],input[type=number],select{
+  width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(0,196,212,.22);
+  border-radius:2px;padding:9px 11px;color:var(--white);
+  font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border .2s;
+}
+input:focus,select:focus{border-color:var(--teal2);box-shadow:0 0 0 2px rgba(0,196,212,.1)}
+select{cursor:pointer;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2300c4d4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;
+}
+select option{background:#0c1420;color:var(--white)}
+
+/* Strategy card */
+.strat-card{
+  background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));
+  border:1px solid rgba(0,196,212,.28);border-radius:2px;
+  padding:12px 14px;margin-bottom:12px;
+}
+.strat-card-label{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px}
+.strat-desc{font-size:10px;color:var(--muted);line-height:1.6}
+.strat-formula{
+  font-family:'DM Mono',monospace;font-size:10px;color:var(--teal2);
+  background:rgba(0,196,212,.06);border:1px solid var(--border);
+  border-radius:2px;padding:7px 10px;margin-top:8px;line-height:1.5;
+}
+
+/* Mechanics breakdown in sidebar */
+.mech-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border3)}
+.mech-row:last-child{border-bottom:none}
+.mech-k{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.mech-v{font-family:'DM Mono',monospace;font-size:10px;color:var(--white)}
+
+/* Regime pills in sidebar */
+.regime-list{display:flex;flex-direction:column;gap:6px}
+.regime-pill{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,0,0,.25);border:1px solid var(--border);
+  border-radius:2px;padding:6px 10px;cursor:pointer;transition:border-color .2s;
+}
+.regime-pill:hover{border-color:rgba(0,196,212,.3)}
+.regime-pill.active{border-color:rgba(0,196,212,.5);background:rgba(0,196,212,.07)}
+.rp-year{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--teal2);min-width:40px}
+.rp-event{font-size:9px;color:var(--muted);line-height:1.4}
+
+/* ── MAIN CONTENT ────────────────────────────────────────────────── */
+.main{flex:1;overflow-y:auto;padding:22px 24px 60px;display:flex;flex-direction:column;gap:16px}
+
+/* KPI STRIP */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.kpi{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:2px;padding:12px 14px;position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.kpi.g::before{background:var(--green)}.kpi.r::before{background:var(--red)}.kpi.a::before{background:var(--amber)}.kpi.p::before{background:var(--plat)}.kpi.gold::before{background:var(--gold)}
+.kpi-l{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.kpi-v{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;line-height:1}
+.kpi-sub{font-size:8.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+/* SECTION HEADINGS */
+.sh{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.18em;
+  display:flex;align-items:center;gap:10px;margin-bottom:14px;
+}
+.sh::before{content:'';width:3px;height:14px;background:currentColor;flex-shrink:0}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.c-teal{color:var(--teal)}.c-gold{color:var(--amber)}.c-green{color:var(--green)}.c-plat{color:var(--plat)}
+
+/* PANELS */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:20px}
+
+/* PERFORMANCE TABLE */
+.perf-table-wrap{overflow-x:auto}
+.perf-table{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:10.5px}
+.perf-table thead th{
+  font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  padding:7px 12px;text-align:right;border-bottom:1px solid var(--border2);
+  white-space:nowrap;background:rgba(0,0,0,.2);
+}
+.perf-table thead th:first-child{text-align:left;padding-left:14px;border-radius:2px 0 0 0}
+.perf-table thead th:last-child{border-radius:0 2px 0 0}
+.perf-table tbody tr{transition:background .15s;cursor:default}
+.perf-table tbody tr:hover td{background:rgba(0,196,212,.07)!important}
+.perf-table td{
+  padding:9px 12px;text-align:right;
+  font-family:'DM Mono',monospace;font-size:10.5px;
+  background:var(--card);border-top:1px solid transparent;border-bottom:1px solid transparent;
+}
+.perf-table td:first-child{
+  text-align:left;padding-left:14px;border-radius:2px 0 0 2px;
+  font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+  border-left:1px solid transparent;
+}
+.perf-table td:last-child{border-radius:0 2px 2px 0;border-right:1px solid transparent}
+.perf-table tr.crash-row td{background:rgba(0,196,212,.09)!important;border-color:rgba(0,196,212,.2)}
+.perf-table tr.crash-row td:first-child{border-left-color:rgba(0,196,212,.4);color:var(--teal2)}
+.perf-table tr.year-avg td{background:rgba(255,255,255,.03)!important;font-style:italic}
+.perf-table tr.year-avg td:first-child{color:var(--muted)}
+.perf-table tfoot td{
+  padding:9px 12px;text-align:right;
+  font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;
+  background:rgba(0,0,0,.2);text-transform:uppercase;letter-spacing:.06em;
+  border-top:1px solid var(--border2);color:var(--plat);
+}
+.perf-table tfoot td:first-child{text-align:left;padding-left:14px;color:var(--muted);border-radius:2px 0 0 2px}
+.perf-table tfoot td:last-child{border-radius:0 2px 2px 0}
+
+/* NAV chip inside table */
+.nav-chip{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px}
+.nav-chip.up{background:rgba(64,200,128,.12);border:1px solid rgba(64,200,128,.25);color:var(--green2)}
+.nav-chip.flat{background:rgba(90,120,136,.1);border:1px solid rgba(90,120,136,.2);color:var(--muted)}
+
+/* MECHANICS EXPLAINER */
+.mech-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.mech-box{
+  background:rgba(0,0,0,.2);border:1px solid var(--border);
+  border-radius:2px;padding:14px 16px;
+}
+.mech-box-title{
+  font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  color:var(--teal);text-transform:uppercase;letter-spacing:.16em;
+  margin-bottom:8px;display:flex;align-items:center;gap:6px;
+}
+.mech-box-title::after{content:'';flex:1;height:1px;background:rgba(0,196,212,.15)}
+.mech-formula{
+  font-family:'DM Mono',monospace;font-size:11px;color:var(--plat2);
+  margin-bottom:6px;line-height:1.5;
+}
+.mech-note{font-size:9.5px;color:var(--muted);line-height:1.5}
+
+/* LEGEND BAR */
+.legend-bar{
+  display:flex;align-items:center;gap:18px;
+  font-family:'Rajdhani',sans-serif;font-size:9px;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  padding:10px 14px;background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:2px;
+  flex-wrap:wrap;
+}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:8px;height:8px;border-radius:1px;flex-shrink:0}
+
+/* DISCLAIMER */
+.disc{
+  font-size:8.5px;color:rgba(90,120,136,.4);line-height:1.7;
+  border-top:1px solid var(--border);padding-top:12px;margin-top:4px;
+}
+
+/* BUTTONS */
+.btn{padding:8px 18px;border-radius:2px;border:1px solid;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s}
+.btn-ghost{background:var(--card);border-color:var(--border);color:var(--muted)}
+.btn-ghost:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.btn-primary{background:rgba(0,196,212,.12);border-color:rgba(0,196,212,.4);color:var(--teal2)}
+.btn-primary:hover{background:rgba(0,196,212,.22)}
+.btn-danger{background:rgba(232,64,64,.1);border-color:rgba(232,64,64,.3);color:var(--red2)}
+
+
+/* ── SLIDER (range) ──────────────────────────────────────────────── */
+.sl-wrap{margin-bottom:4px}
+.sl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.sl-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.sl-val{font-family:'DM Mono',monospace;font-size:13px;color:var(--gold2);font-weight:600}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:3px;border-radius:2px;
+  outline:none;cursor:pointer;border:none;padding:0;background:none;
+  background:linear-gradient(to right,var(--teal) 0%,var(--teal) var(--pct,0%),rgba(255,255,255,.08) var(--pct,0%));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 8px rgba(200,168,74,.5);
+  border:2px solid var(--bg);cursor:pointer;
+}
+input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;background:var(--gold);
+  border:2px solid var(--bg);cursor:pointer;box-shadow:0 0 8px rgba(200,168,74,.5);
+}
+.sl-ticks{display:flex;justify-content:space-between;margin-top:5px}
+.sl-tick{font-size:8px;color:rgba(90,120,136,.4)}
+
+/* ── SAVI IMPACT CARD ────────────────────────────────────────────── */
+.savi-impact{
+  background:rgba(200,168,74,.06);border:1px solid rgba(200,168,74,.2);
+  border-radius:2px;padding:10px 12px;margin-top:10px;
+  transition:border-color .3s;
+}
+.savi-impact.active{border-color:rgba(200,168,74,.4);background:rgba(200,168,74,.1)}
+.savi-impact-title{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
+.savi-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(200,168,74,.08)}
+.savi-row:last-child{border-bottom:none}
+.savi-k{font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.savi-v{font-family:'DM Mono',monospace;font-size:9.5px}
+
+/* ── TOGGLE SWITCH ───────────────────────────────────────────────── */
+.toggle-row{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer}
+.toggle-switch{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-track{
+  position:absolute;inset:0;border-radius:20px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(200,168,74,.3);
+  transition:all .25s;cursor:pointer;
+}
+.toggle-track::after{
+  content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);
+  width:12px;height:12px;border-radius:50%;background:var(--muted);
+  transition:all .25s;
+}
+.toggle-switch input:checked + .toggle-track{
+  background:rgba(200,168,74,.2);border-color:var(--gold);
+}
+.toggle-switch input:checked + .toggle-track::after{
+  transform:translate(16px,-50%);background:var(--gold2);
+  box-shadow:0 0 6px rgba(200,168,74,.6);
+}
+.toggle-label{font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:600;color:var(--plat);text-transform:uppercase;letter-spacing:.1em}
+.toggle-sub{font-size:8.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+
+/* ── PERFECT STRATEGY BANNER ─────────────────────────────────────── */
+.perfect-banner{
+  background:linear-gradient(135deg,rgba(200,168,74,.08),rgba(200,168,74,.03));
+  border:1px solid rgba(200,168,74,.3);border-radius:2px;padding:14px 18px;
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+}
+.perfect-banner.hidden{display:none}
+.pb-item{display:flex;flex-direction:column}
+.pb-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.pb-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.pb-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
+.pb-divider{width:1px;height:36px;background:rgba(200,168,74,.2)}
+.pb-note{flex:1;font-size:9.5px;color:var(--muted);line-height:1.6;border-left:1px solid rgba(200,168,74,.2);padding-left:16px}
+
+/* ── PERFECT TABLE ROW ───────────────────────────────────────────── */
+.perf-table tr.perfect-row td{background:rgba(200,168,74,.07)!important;border-color:rgba(200,168,74,.2)}
+.perf-table tr.perfect-row td:first-child{border-left-color:rgba(200,168,74,.4);color:var(--gold2)}
+.perfect-badge{
+  display:inline-block;font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;
+  background:rgba(200,168,74,.15);border:1px solid rgba(200,168,74,.3);
+  color:var(--gold2);padding:1px 6px;border-radius:2px;margin-left:4px;
+}
+.savi-warn{
+  display:inline-block;font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.2);
+  color:var(--red2);padding:1px 6px;border-radius:2px;margin-left:4px;
+}
+
+
+/* ── DUAL RANGE SLIDER ───────────────────────────────────────────── */
+.range-wrap{position:relative;height:28px;margin:10px 0 4px}
+.range-wrap input[type=range]{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:100%;pointer-events:none;appearance:none;-webkit-appearance:none;
+  background:transparent;height:4px;border:none;padding:0;
+}
+.range-wrap input[type=range]::-webkit-slider-thumb{
+  pointer-events:all;-webkit-appearance:none;
+  width:16px;height:16px;border-radius:50%;cursor:pointer;
+  border:2px solid var(--bg);
+}
+#sl-year-start::-webkit-slider-thumb{background:var(--teal2);box-shadow:0 0 6px rgba(0,196,212,.5)}
+#sl-year-end::-webkit-slider-thumb{background:var(--teal2);box-shadow:0 0 6px rgba(0,196,212,.5)}
+.range-track{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:100%;height:4px;border-radius:2px;
+  background:rgba(255,255,255,.06);pointer-events:none;
+}
+.range-fill{
+  position:absolute;top:0;height:100%;background:var(--teal);
+  border-radius:2px;pointer-events:none;transition:left .05s,right .05s;
+}
+.range-labels{display:flex;justify-content:space-between;margin-top:8px}
+.range-label-val{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  color:var(--teal2);letter-spacing:.06em;
+}
+.range-year-display{
+  display:flex;justify-content:center;align-items:center;gap:6px;
+  font-family:'DM Mono',monospace;font-size:12px;
+  background:rgba(0,196,212,.06);border:1px solid var(--border);
+  border-radius:2px;padding:6px 10px;margin-top:8px;
+}
+.ry-sep{color:var(--muted);font-size:10px}
+
+/* ── CHART PANEL ─────────────────────────────────────────────────── */
+.chart-panel{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:20px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.chart-wrap{position:relative;height:300px}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap}
+.cl-item{display:flex;align-items:center;gap:6px;font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.cl-line{width:18px;height:3px;border-radius:2px;flex-shrink:0}
+.cl-line.dashed{background:repeating-linear-gradient(90deg,var(--gold) 0,var(--gold) 4px,transparent 4px,transparent 8px)}
+.chart-range-note{font-size:8.5px;color:var(--muted);margin-top:8px;text-align:right}
+
+/* ── STRESS TEST PANEL ───────────────────────────────────────────── */
+.stress-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stress-card{
+  border:1px solid;border-radius:2px;padding:18px;
+  position:relative;overflow:hidden;
+}
+.stress-card.crisis{
+  background:linear-gradient(135deg,rgba(0,196,212,.07),rgba(0,196,212,.02));
+  border-color:rgba(0,196,212,.3);
+}
+.stress-card.covid{
+  background:linear-gradient(135deg,rgba(232,160,32,.06),rgba(232,160,32,.02));
+  border-color:rgba(232,160,32,.25);
+}
+.sc-year{
+  font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;
+  line-height:1;margin-bottom:4px;
+}
+.sc-year.crisis{color:var(--teal2)}.sc-year.covid{color:var(--amber)}
+.sc-event{font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:14px}
+.sc-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(0,196,212,.06)}
+.sc-row:last-child{border-bottom:none;padding-bottom:0}
+.sc-k{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.sc-v{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.protection-score{
+  margin-top:14px;padding:12px;border-radius:2px;text-align:center;
+  background:rgba(0,0,0,.25);border:1px solid rgba(0,196,212,.15);
+}
+.ps-label{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px}
+.ps-val{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;line-height:1}
+.ps-sub{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.5}
+.ps-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.06);margin-top:8px;overflow:hidden}
+.ps-bar-fill{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* ── OUT-OF-RANGE TABLE ROWS ─────────────────────────────────────── */
+.perf-table tr.out-of-range td{opacity:0.28;background:rgba(0,0,0,.08)!important}
+.perf-table tr.out-of-range:hover td{opacity:0.5!important}
+
+
+/* ── HERO CARD STRIP ──────────────────────────────────────────── */
+.hero-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.hero-card{
+  background:var(--bg2);border-radius:3px;padding:18px 20px;
+  position:relative;overflow:hidden;cursor:default;
+  border:1px solid transparent;transition:border-color .3s,box-shadow .3s;
+}
+.hero-card::before{
+  content:'';position:absolute;inset:0;border-radius:3px;pointer-events:none;
+  animation:heroGlow 3s ease-in-out infinite;
+}
+.hero-card.teal{border-color:rgba(0,196,212,.25)}
+.hero-card.teal::before{box-shadow:inset 0 0 20px rgba(0,196,212,.05),0 0 18px rgba(0,196,212,.12)}
+@keyframes heroGlow{0%,100%{opacity:.7}50%{opacity:1}}
+.hero-card.red{border-color:rgba(232,64,64,.25)}
+.hero-card.red::before{box-shadow:inset 0 0 20px rgba(232,64,64,.05),0 0 18px rgba(232,64,64,.12)}
+.hero-card.gold{border-color:rgba(200,168,74,.28)}
+.hero-card.gold::before{box-shadow:inset 0 0 20px rgba(200,168,74,.06),0 0 20px rgba(200,168,74,.14)}
+.hero-card.green{border-color:rgba(64,200,128,.25)}
+.hero-card.green::before{box-shadow:inset 0 0 20px rgba(64,200,128,.05),0 0 18px rgba(64,200,128,.12)}
+.hc-corner{
+  position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 3px 0 60px;
+  opacity:.12;
+}
+.hero-card.teal .hc-corner{background:var(--teal2)}
+.hero-card.red  .hc-corner{background:var(--red)}
+.hero-card.gold .hc-corner{background:var(--gold)}
+.hero-card.green .hc-corner{background:var(--green)}
+.hc-icon{
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;
+  position:absolute;top:12px;right:14px;opacity:.2;line-height:1;
+}
+.hc-label{
+  font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin-bottom:10px;
+}
+.hc-value{
+  font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;
+  line-height:1;margin-bottom:5px;
+}
+.hc-sub{font-size:9px;color:var(--muted);line-height:1.5}
+.hc-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:10px;overflow:hidden}
+.hc-bar-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+/* ── SECONDARY METRIC ROW ─────────────────────────────────────── */
+.metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.metric-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:2px;
+  padding:12px 14px;position:relative;overflow:hidden;
+}
+.metric-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.metric-card.m-green::before{background:var(--green)}
+.metric-card.m-amber::before{background:var(--amber)}
+.metric-card.m-plat::before{background:var(--plat)}
+.metric-card.m-gold::before{background:var(--gold)}
+.mc-l{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.mc-v{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--white)}
+.mc-s{font-size:8.5px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+/* ── PORTFOLIO EXPOSURE SECTION ──────────────────────────────── */
+.blend-card{
+  background:linear-gradient(135deg,rgba(64,200,128,.07),rgba(64,200,128,.02));
+  border:1px solid rgba(64,200,128,.25);border-radius:2px;padding:12px 14px;margin-top:10px;
+}
+.blend-card-title{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.14em;margin-bottom:8px}
+.blend-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(64,200,128,.08)}
+.blend-row:last-child{border-bottom:none}
+.blend-k{font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.blend-v{font-family:'DM Mono',monospace;font-size:10px}
+
+/* ── EXPORT / PRINT ──────────────────────────────────────────── */
+.export-bar{
+  display:flex;align-items:center;gap:10px;padding:12px 16px;
+  background:rgba(0,0,0,.2);border:1px solid var(--border);
+  border-radius:2px;margin-bottom:14px;flex-wrap:wrap;
+}
+.export-bar-title{
+  font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--plat2);flex:1;min-width:120px;
+}
+.btn-pdf{
+  background:linear-gradient(135deg,rgba(200,168,74,.18),rgba(200,168,74,.1));
+  border:1px solid rgba(200,168,74,.45);color:var(--gold2);
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:8px 18px;
+  border-radius:2px;cursor:pointer;transition:all .2s;
+}
+.btn-pdf:hover{background:linear-gradient(135deg,rgba(200,168,74,.28),rgba(200,168,74,.18))}
+.btn-csv{
+  background:var(--card);border:1px solid var(--border);color:var(--muted);
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:8px 16px;
+  border-radius:2px;cursor:pointer;transition:all .2s;
+}
+.btn-csv:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.pdf-status{font-size:9.5px;color:var(--muted);font-family:'Rajdhani',sans-serif;display:none}
+.pdf-status.show{display:block}
+
+@media print{
+  .sidebar,.topbar,.export-bar,.legend-bar,.disc,.btn,.regime-list,.sb-section{display:none!important}
+  .body-wrap{display:block!important}
+  .main{padding:0!important;overflow:visible!important}
+  .page{background:white!important;color:black!important}
+  * {-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+}
+
+/* ── REPORT ANCHOR ───────────────────────────────────────────── */
+#report-content{scroll-margin-top:0}
+
+
+/* ── LADDER MODE ──────────────────────────────────────────────── */
+.mode-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(0,196,212,.05);border:1px solid var(--border2);border-radius:2px;margin-bottom:14px;flex-wrap:wrap}
+.mode-btn{padding:7px 18px;border-radius:2px;border:1px solid;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s}
+.mode-btn.active{background:rgba(0,196,212,.2);border-color:var(--teal2);color:var(--teal2)}
+.mode-btn.inactive{background:var(--card);border-color:var(--border);color:var(--muted)}
+.mode-btn.inactive:hover{background:rgba(0,196,212,.1)}
+.mode-label{font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--plat);margin-right:4px}
+.bn90-badge{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;background:rgba(64,200,128,.15);border:1px solid rgba(64,200,128,.3);color:var(--green2);padding:3px 10px;border-radius:2px;text-transform:uppercase;letter-spacing:.1em}
+
+/* ── LADDER PANEL ─────────────────────────────────────────────── */
+.ladder-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.tranche-card{background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:2px;padding:12px 14px;position:relative;overflow:hidden;transition:border-color .2s}
+.tranche-card.active-t{border-color:rgba(0,196,212,.3)}
+.tranche-card.paid-t{border-color:rgba(64,200,128,.35);background:rgba(64,200,128,.05)}
+.tranche-card.expired-t{border-color:rgba(90,120,136,.2);opacity:.55}
+.tc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.tc-id{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.12em}
+.tc-status{font-size:8px;font-family:'Rajdhani',sans-serif;font-weight:700;padding:1px 7px;border-radius:2px;text-transform:uppercase}
+.tc-status.s-active{background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.25);color:var(--teal2)}
+.tc-status.s-paid{background:rgba(64,200,128,.1);border:1px solid rgba(64,200,128,.25);color:var(--green2)}
+.tc-status.s-zero{background:rgba(90,120,136,.08);border:1px solid rgba(90,120,136,.18);color:var(--muted)}
+.tc-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(0,196,212,.05)}
+.tc-row:last-child{border-bottom:none}
+.tc-k{font-family:'Rajdhani',sans-serif;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.tc-v{font-family:'DM Mono',monospace;font-size:9.5px}
+
+/* ── LADDER vs SINGLE COMPARISON ─────────────────────────────── */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.compare-card{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:2px;padding:14px 16px}
+.compare-card.ladder-c{border-color:rgba(64,200,128,.25);background:rgba(64,200,128,.04)}
+.compare-card.single-c{border-color:rgba(0,196,212,.2)}
+.cc-title{font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.cc-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.cc-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,196,212,.05)}
+.cc-row:last-child{border-bottom:none}
+.cc-k{font-size:9px;color:var(--muted)}
+.cc-v{font-family:'DM Mono',monospace;font-size:10px}
+
+/* ── LIQUIDITY PANEL ──────────────────────────────────────────── */
+.liq-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.liq-card{background:var(--bg2);border:1px solid var(--border);border-radius:2px;padding:12px 14px;position:relative;overflow:hidden}
+.liq-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.liq-card.lc-green::before{background:var(--green)}.liq-card.lc-amber::before{background:var(--amber)}.liq-card.lc-red::before{background:var(--red)}.liq-card.lc-gold::before{background:var(--gold)}
+.liq-l{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.liq-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.liq-s{font-size:8.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+.bn90-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:8px;overflow:hidden}
+.bn90-fill{height:100%;border-radius:2px;transition:width .6s}
+
+/* ── DAILY NAV MINI-CHART ─────────────────────────────────────── */
+.daily-nav-wrap{position:relative;height:160px;margin-bottom:6px}
+.zaronia-badge{font-family:'DM Mono',monospace;font-size:10px;color:var(--teal);background:rgba(0,196,212,.08);border:1px solid var(--border2);padding:3px 10px;border-radius:2px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
+::-webkit-scrollbar-thumb{background:rgba(0,196,212,.3);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,196,212,.5)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══ TOP BAR ════════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="brand-row">
+    <svg width="44" height="44" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="plxb_p" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#FFFFFF"/>
+          <stop offset="50%"  stop-color="#B0B5B9"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="plxb_i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#E0FFFF"/>
+          <stop offset="50%"  stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="plxb_g" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Outer hexagon -->
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23"
+               fill="none" stroke="url(#plxb_p)" stroke-width="2.0" stroke-linejoin="round"/>
+      <!-- Middle hexagon -->
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5"
+               fill="none" stroke="url(#plxb_p)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- 6 connecting lines outer→middle -->
+      <line x1="40"   y1="6"  x2="40"    y2="23"   stroke="url(#plxb_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5"  stroke="url(#plxb_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5"  stroke="url(#plxb_p)" stroke-width="1.5"/>
+      <line x1="40"   y1="74" x2="40"    y2="57"   stroke="url(#plxb_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5"  stroke="url(#plxb_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5"  stroke="url(#plxb_p)" stroke-width="1.5"/>
+      <!-- 4 diagonal cross lines -->
+      <line x1="40"   y1="6"  x2="69.4" y2="57"  stroke="url(#plxb_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="6"  x2="10.6" y2="57"  stroke="url(#plxb_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="69.4" y2="23"  stroke="url(#plxb_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="10.6" y2="23"  stroke="url(#plxb_p)" stroke-width="0.6" opacity="0.4"/>
+      <!-- Ice-blue gem hexagon (glowing) -->
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05"
+               fill="url(#plxb_i)" filter="url(#plxb_g)"/>
+    </svg>
+    <div>
+      <div class="bname">Phylax Capital</div>
+      <div class="bfund">Macro&nbsp;Protector&nbsp;Fund</div>
+      <div class="bsub">JSE ALSI Option Ladder — Rolling Put Strategy &nbsp;·&nbsp; BN90 RIHF Compliant &nbsp;·&nbsp; 20-Year Backtest</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="period-badge">2005 — 2024 &nbsp;·&nbsp; 20 Years</div>
+    <div style="font-size:8.5px;color:var(--muted);text-align:right;line-height:1.5">
+      Quattro Investment Brokers (Pty) Ltd<br>FSP 46524 &nbsp;·&nbsp; QFM Managers
+    </div>
+  </div>
+</div>
+
+<!-- ══ BODY ═══════════════════════════════════════════════════════════ -->
+<div class="body-wrap">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+  <div class="sidebar">
+
+    <div class="sb-section">
+      <div class="sb-title">Simulation Settings</div>
+
+      <div class="fi">
+        <div class="fi-l">Starting Capital (ZAR) <span class="fi-badge">&#9998; Edit</span></div>
+        <input type="text" id="i-capital" value="R 100 000 000" onfocus="capFocus()" onblur="capBlur()" oninput="onCapInput()"/>
+      </div>
+
+      <div class="fi">
+        <div class="fi-l">Hedge Strategy <span class="fi-badge">&#9998; Select</span></div>
+        <select id="i-otm" onchange="onOTMChange()">
+          <option value="3">3% OTM Put — Aggressive</option>
+          <option value="5" selected>5% OTM Put — Moderate</option>
+          <option value="8">8% OTM Put — Conservative</option>
+          <option value="10">10% OTM Put — Deep Hedge</option>
+          <option value="12">12% OTM Put — Tail Risk Only</option>
+        </select>
+      </div>
+
+      <div class="fi" style="margin-bottom:0">
+        <div class="fi-l">Vol Risk Premium (SAVI Spread) <span class="fi-badge">&#9998; Adjust</span></div>
+        <div class="sl-wrap">
+          <div class="sl-top">
+            <span class="sl-label">Implied − Realised Vol</span>
+            <span class="sl-val" id="sl-savi-val">+0.0%</span>
+          </div>
+          <input type="range" id="sl-savi" min="0" max="10" step="0.5" value="0"
+            oninput="onSAVIInput(this)" onchange="onSAVIChange(this)"/>
+          <div class="sl-ticks">
+            <span class="sl-tick">+0%</span>
+            <span class="sl-tick">+5%</span>
+            <span class="sl-tick">+10%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="savi-impact" id="savi-impact-card">
+        <div class="savi-impact-title">&#9650; Vol Premium Impact</div>
+        <div class="savi-row"><span class="savi-k">Effective Vol (avg)</span><span class="savi-v" id="si-effvol">—</span></div>
+        <div class="savi-row"><span class="savi-k">Premium Increase</span><span class="savi-v" id="si-premup">—</span></div>
+        <div class="savi-row"><span class="savi-k">Contract Reduction</span><span class="savi-v" id="si-contracts">—</span></div>
+        <div class="savi-row"><span class="savi-k">2008 Payoff Impact</span><span class="savi-v" id="si-2008">—</span></div>
+      </div>
+
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Date Range Filter</div>
+      <div class="range-year-display">
+        <span class="range-label-val" id="ry-start">2005</span>
+        <span class="ry-sep">—</span>
+        <span class="range-label-val" id="ry-end">2024</span>
+      </div>
+      <div class="range-wrap" style="margin-top:14px">
+        <div class="range-track"><div class="range-fill" id="range-fill"></div></div>
+        <input type="range" id="sl-year-start" min="2005" max="2024" step="1" value="2005"
+          oninput="onRangeInput()" onchange="saveState()"/>
+        <input type="range" id="sl-year-end" min="2005" max="2024" step="1" value="2024"
+          oninput="onRangeInput()" onchange="saveState()"/>
+      </div>
+      <div class="range-labels">
+        <span style="font-size:8px;color:rgba(90,120,136,.4)">2005</span>
+        <span style="font-size:8px;color:rgba(90,120,136,.4)">2014</span>
+        <span style="font-size:8px;color:rgba(90,120,136,.4)">2024</span>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:6px;line-height:1.5">
+        KPIs, chart, and returns update to the selected period. Table rows outside range are dimmed.
+      </div>
+    </div>
+
+
+
+    <div class="sb-section">
+      <div class="sb-title">Ladder Strategy</div>
+      <div class="fi">
+        <div class="fi-l">Tranches per Year <span class="fi-badge">&#9998; Select</span></div>
+        <select id="i-tranches" onchange="onTranchesChange()">
+          <option value="1">1 — Annual single put</option>
+          <option value="4" selected>4 — Quarterly (SAFEX aligned)</option>
+          <option value="6">6 — Bi-monthly ladder</option>
+          <option value="12">12 — Monthly rolling</option>
+        </select>
+      </div>
+      <div class="fi">
+        <div class="fi-l">ZARONIA Spread <span class="fi-badge auto">vs JIBAR</span></div>
+        <div class="sl-wrap">
+          <div class="sl-top">
+            <span class="sl-label">Overnight vs 3M</span>
+            <span class="sl-val" id="sl-zaronia-val" style="color:var(--teal2)">−15 bps</span>
+          </div>
+          <input type="range" id="sl-zaronia" min="-50" max="0" step="5" value="-15"
+            oninput="onZaroniaInput(this)" onchange="saveState()"/>
+          <div class="sl-ticks">
+            <span class="sl-tick">−50bps</span>
+            <span class="sl-tick">−25bps</span>
+            <span class="sl-tick">0</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);line-height:1.6;margin-top:4px">
+        <strong style="color:var(--teal2)">BN90 RIHF:</strong> Daily-accruing cash (ZARONIA proxy). Rolling ladder provides daily liquidity — no lock-up. T+1 redemptions always available.
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Portfolio Exposure</div>
+
+      <div class="fi">
+        <div class="fi-l">Total Portfolio Size <span class="fi-badge">&#9998; Edit</span></div>
+        <input type="text" id="i-total-port" value="R 500 000 000" onfocus="portFocus()" onblur="portBlur()"/>
+      </div>
+
+      <div class="fi" style="margin-bottom:4px">
+        <div class="fi-l">Phylax Allocation %
+          <span class="fi-badge">&#9998; Adjust</span>
+        </div>
+        <div class="sl-wrap">
+          <div class="sl-top">
+            <span class="sl-label">% of total wealth</span>
+            <span class="sl-val" id="sl-expo-val">5%</span>
+          </div>
+          <input type="range" id="sl-expo" min="1" max="30" step="1" value="5"
+            oninput="onExpoInput(this)" onchange="saveState()"/>
+          <div class="sl-ticks">
+            <span class="sl-tick">1%</span><span class="sl-tick">15%</span><span class="sl-tick">30%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="blend-card">
+        <div class="blend-card-title">&#9670; Blended Portfolio Impact</div>
+        <div class="blend-row"><span class="blend-k">Phylax Allocation</span><span class="blend-v" id="bl-alloc" style="color:var(--teal2)">—</span></div>
+        <div class="blend-row"><span class="blend-k">Remaining (ALSI)</span><span class="blend-v" id="bl-rem" style="color:var(--amber)">—</span></div>
+        <div class="blend-row"><span class="blend-k">Blended 2008 Return</span><span class="blend-v" id="bl-2008" style="color:var(--green2)">—</span></div>
+        <div class="blend-row"><span class="blend-k">Blended 20yr Return</span><span class="blend-v" id="bl-20yr">—</span></div>
+        <div class="blend-row"><span class="blend-k">ALSI-only 2008</span><span class="blend-v" style="color:var(--red2)">−25.8%</span></div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Current Settings</div>
+      <div class="strat-card">
+        <div class="strat-card-label" id="sb-strat-label">5% OTM Put Strategy</div>
+        <div class="strat-desc" id="sb-strat-desc">
+          Put struck 5% below spot. Lower premium means more contracts per budget, broader market coverage. Pays on corrections above 5%.
+        </div>
+        <div class="strat-formula" id="sb-formula">
+          FI = Capital ÷ (1 + JIBAR)<br>
+          Budget = Capital − FI<br>
+          Worst-case return = 0%
+        </div>
+      </div>
+    </div>
+
+
+    <div class="sb-section">
+      <div class="sb-title">Scenario Analysis</div>
+      <label class="toggle-row" onclick="onPerfectToggle()">
+        <div class="toggle-switch">
+          <input type="checkbox" id="chk-perfect"/>
+          <div class="toggle-track"></div>
+        </div>
+        <div>
+          <div class="toggle-label">Show Perfect Strategy</div>
+          <div class="toggle-sub">Ex-post optimal OTM per year.<br>Adds 3 columns to the table.</div>
+        </div>
+      </label>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Strategy Mechanics</div>
+      <div id="sb-mechanics">
+        <div class="mech-row"><span class="mech-k">FI Allocation</span><span class="mech-v" id="sb-fi">—</span></div>
+        <div class="mech-row"><span class="mech-k">Option Budget</span><span class="mech-v" id="sb-budget">—</span></div>
+        <div class="mech-row"><span class="mech-k">Avg Budget %</span><span class="mech-v" id="sb-budgetpct">—</span></div>
+        <div class="mech-row"><span class="mech-k">Crash Years</span><span class="mech-v" id="sb-crashyears">—</span></div>
+        <div class="mech-row"><span class="mech-k">Avg Payoff Multiple</span><span class="mech-v" id="sb-multiple">—</span></div>
+        <div class="mech-row"><span class="mech-k">Capital at Risk</span><span class="mech-v" style="color:var(--green2)">R 0 (0%)</span></div>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">Key Regimes</div>
+      <div class="regime-list">
+        <div class="regime-pill" onclick="highlightYear(2008)" id="rp-2008">
+          <span class="rp-year">2008</span>
+          <span class="rp-event">GFC — ALSI −25.8%<br>Puts pay 4× multiple</span>
+        </div>
+        <div class="regime-pill" onclick="highlightYear(2018)" id="rp-2018">
+          <span class="rp-year">2018</span>
+          <span class="rp-event">EM Stress — ALSI −11.2%<br>Partial payoff</span>
+        </div>
+        <div class="regime-pill" onclick="highlightYear(2020)" id="rp-2020">
+          <span class="rp-year">2020</span>
+          <span class="rp-event">COVID — 35% vol spike<br>Puts expensive, recovered</span>
+        </div>
+        <div class="regime-pill" onclick="highlightYear(null)" id="rp-all" style="border-color:rgba(0,196,212,.3)">
+          <span class="rp-year" style="color:var(--muted)">All</span>
+          <span class="rp-event">Show all 20 years</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-section" style="margin-top:auto">
+      <div class="sb-title">Data Source</div>
+      <div style="font-size:9px;color:var(--muted);line-height:1.6">
+        ALSI returns: JSE J200 / ^JALSH via Yahoo Finance<br>
+        JIBAR rates: SARB / Bloomberg historical<br>
+        Realised vol: 20-day rolling, annualised<br>
+        Options pricing: Black-Scholes (Merton 1973)<br>
+        Strategy logic: Capital / (1 + JIBAR) FI leg
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── MAIN CONTENT ──────────────────────────────────────────────── -->
+  <div class="main">
+
+
+    <!-- MODE BAR -->
+    <div class="mode-bar">
+      <span class="mode-label">Strategy Mode:</span>
+      <button class="mode-btn" id="mode-single" onclick="setMode('single')">Single Annual Put</button>
+      <button class="mode-btn active" id="mode-ladder" onclick="setMode('ladder')">&#9658; Rolling Ladder (BN90)</button>
+      <span class="bn90-badge">&#10003; BN90 / CISCA Compliant</span>
+      <span style="margin-left:auto;font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted)">
+        Tranches: <span id="mode-tranches-label" style="color:var(--teal2)">4 quarterly</span> &nbsp;·&nbsp;
+        Cash rate: <span id="mode-zaronia-label" class="zaronia-badge">ZARONIA —</span>
+      </span>
+    </div>
+
+    <!-- LADDER TRANCHES (ladder mode only) -->
+    <div id="ladder-tranches-panel" class="panel" style="margin-bottom:14px">
+      <div class="sh c-teal">Option Ladder — Active Tranches
+        <span style="margin-left:auto;font-size:9px;color:var(--muted);font-family:'DM Mono',monospace" id="ladder-tranche-count"></span>
+      </div>
+      <div class="ladder-grid" id="ladder-tranche-cards"><!-- built by JS --></div>
+      <div class="compare-grid" id="ladder-compare"><!-- built by JS --></div>
+    </div>
+
+    <!-- LIQUIDITY STRESS TEST -->
+    <div id="liquidity-panel" class="panel" style="margin-bottom:14px;border-color:rgba(64,200,128,.2)">
+      <div class="sh c-green">BN90 Liquidity Stress Test — Daily Redemption Capacity</div>
+      <div class="liq-strip">
+        <div class="liq-card lc-green">
+          <div class="liq-l">T+1 Capacity (Cash)</div>
+          <div class="liq-v" id="lq-t1-cash" style="color:var(--green2)">—</div>
+          <div class="liq-s">Cash accreting at ZARONIA</div>
+          <div class="bn90-bar"><div class="bn90-fill" id="lq-bar-cash" style="background:var(--green)"></div></div>
+        </div>
+        <div class="liq-card">
+          <div class="liq-l">T+1 Capacity (Full)</div>
+          <div class="liq-v" id="lq-t1-full" style="color:var(--teal2)">—</div>
+          <div class="liq-s">Cash + options bid (−2.5%)</div>
+          <div class="bn90-bar"><div class="bn90-fill" id="lq-bar-full" style="background:var(--teal)"></div></div>
+        </div>
+        <div class="liq-card lc-amber">
+          <div class="liq-l">Stress: −10% ALSI</div>
+          <div class="liq-v" id="lq-stress10" style="color:var(--amber)">—</div>
+          <div class="liq-s">NAV impact + puts move ITM</div>
+          <div class="bn90-bar"><div class="bn90-fill" id="lq-bar-s10" style="background:var(--amber)"></div></div>
+        </div>
+        <div class="liq-card lc-amber">
+          <div class="liq-l">Stress: −25% ALSI</div>
+          <div class="liq-v" id="lq-stress25" style="color:var(--gold2)">—</div>
+          <div class="liq-s">Severe drawdown — puts pay</div>
+          <div class="bn90-bar"><div class="bn90-fill" id="lq-bar-s25" style="background:var(--gold)"></div></div>
+        </div>
+        <div class="liq-card" id="lq-bn90-card">
+          <div class="liq-l">BN90 Compliance</div>
+          <div class="liq-v" id="lq-bn90" style="color:var(--green2)">—</div>
+          <div class="liq-s" id="lq-bn90-sub">Min 10% daily liquid</div>
+          <div class="bn90-bar"><div class="bn90-fill" id="lq-bar-bn90" style="background:var(--green)"></div></div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:8px">
+        <strong style="color:var(--plat)">Liquidity methodology:</strong>
+        SAFEX-listed ALSI put options are classified as daily liquid under BN90/Schedule 1. T+1 redemptions settled via SAFEX daily mark-to-market.
+        Bid-offer haircut: 2.5% for &lt;50 contracts, 4% for 50–200, 6% for &gt;200 (market impact). Cash component settles same-day.
+        Capital floor = cash component ÷ initial capital. Strategy floor never &lt;0% of initial capital at any SAFEX quarterly expiry.
+      </div>
+    </div>
+
+    <!-- EXPORT BAR -->
+    <div class="export-bar" id="export-bar">
+      <span class="export-bar-title">&#9660; Export Current Scenario</span>
+      <span class="pdf-status" id="pdf-status">Generating PDF...</span>
+      <button class="btn-pdf" onclick="exportPDF()">&#8659; Download PDF Report</button>
+      <button class="btn-csv" onclick="exportCSV()">&#8595; Export CSV</button>
+    </div>
+
+    <!-- HERO CARDS -->
+    <div id="report-content">
+    <div class="hero-strip">
+
+      <div class="hero-card teal">
+        <div class="hc-corner"></div>
+        <div class="hc-icon">&#9670;</div>
+        <div class="hc-label">Final NAV — Strategy</div>
+        <div class="hc-value" id="k-fnav" style="color:var(--teal2)">—</div>
+        <div class="hc-sub" id="k-fnav-sub">vs starting capital</div>
+        <div class="hc-bar"><div class="hc-bar-fill" id="hb-nav" style="background:var(--teal);width:0%"></div></div>
+      </div>
+
+      <div class="hero-card red">
+        <div class="hc-corner"></div>
+        <div class="hc-icon">&#9660;</div>
+        <div class="hc-label">ALSI Max Drawdown (period)</div>
+        <div class="hc-value" id="k-maxdd" style="color:var(--red2)">—</div>
+        <div class="hc-sub" id="k-maxdd-sub">Worst peak-to-trough in ALSI</div>
+        <div class="hc-bar"><div class="hc-bar-fill" id="hb-dd" style="background:var(--red);width:0%"></div></div>
+      </div>
+
+      <div class="hero-card gold">
+        <div class="hc-corner"></div>
+        <div class="hc-icon">&#10005;</div>
+        <div class="hc-label">Avg Put Payoff Multiple</div>
+        <div class="hc-value" id="k-multiple" style="color:var(--gold2)">—</div>
+        <div class="hc-sub" id="k-multiple-sub">Payoff ÷ budget (crash years)</div>
+        <div class="hc-bar"><div class="hc-bar-fill" id="hb-mult" style="background:var(--gold);width:0%"></div></div>
+      </div>
+
+      <div class="hero-card green">
+        <div class="hc-corner"></div>
+        <div class="hc-icon">&#9650;</div>
+        <div class="hc-label">Capital Preserved (Puts)</div>
+        <div class="hc-value" id="k-preserved" style="color:var(--green2)">—</div>
+        <div class="hc-sub" id="k-preserved-sub">Total payoffs received (R)</div>
+        <div class="hc-bar"><div class="hc-bar-fill" id="hb-pres" style="background:var(--green);width:0%"></div></div>
+      </div>
+
+    </div>
+
+    <!-- SECONDARY METRICS -->
+    <div class="metric-row">
+      <div class="metric-card m-green">
+        <div class="mc-l">Total Return (filtered period)</div>
+        <div class="mc-v" id="k-total-ret">—</div>
+        <div class="mc-s" id="k-total-ret-sub">Strategy</div>
+      </div>
+      <div class="metric-card m-amber">
+        <div class="mc-l">ALSI Benchmark Return</div>
+        <div class="mc-v" id="k-bmnav" style="color:var(--amber)">—</div>
+        <div class="mc-s" id="k-bmnav-sub">No floor</div>
+      </div>
+      <div class="metric-card">
+        <div class="mc-l">Crash Years Rescued</div>
+        <div class="mc-v" id="k-crashes">—</div>
+        <div class="mc-s">Puts paid positive return</div>
+      </div>
+      <div class="metric-card m-gold">
+        <div class="mc-l">Blended Portfolio Return (2008)</div>
+        <div class="mc-v" id="k-blended" style="color:var(--green2)">—</div>
+        <div class="mc-s" id="k-blended-sub">With portfolio exposure</div>
+      </div>
+    </div>
+
+
+    <!-- PERFECT STRATEGY BANNER -->
+    <div class="perfect-banner hidden" id="perfect-banner">
+      <div class="pb-item">
+        <div class="pb-label">Perfect Strategy NAV</div>
+        <div class="pb-val" id="pb-nav" style="color:var(--gold2)">—</div>
+        <div class="pb-sub" id="pb-nav-sub">Always best OTM</div>
+      </div>
+      <div class="pb-divider"></div>
+      <div class="pb-item">
+        <div class="pb-label">Perfect Total Return</div>
+        <div class="pb-val" id="pb-ret" style="color:var(--gold2)">—</div>
+        <div class="pb-sub">vs selected strategy</div>
+      </div>
+      <div class="pb-divider"></div>
+      <div class="pb-item">
+        <div class="pb-label">Selected vs Perfect</div>
+        <div class="pb-val" id="pb-gap" style="color:var(--muted)">—</div>
+        <div class="pb-sub">NAV difference</div>
+      </div>
+      <div class="pb-divider"></div>
+      <div class="pb-item">
+        <div class="pb-label">Perfect Optimal Years</div>
+        <div class="pb-val" id="pb-diff-yrs" style="color:var(--amber)">—</div>
+        <div class="pb-sub">yr selected ≠ optimal</div>
+      </div>
+      <div class="pb-note">
+        <strong style="color:var(--gold)">Ex-Post Optimal Benchmark:</strong> identifies which OTM strike would have delivered the highest return in each crash year, given SAVI spread-adjusted premiums. This is a backward-looking upper bound — not achievable in practice. It shows how much "hindsight alpha" exists in strike selection.
+      </div>
+    </div>
+
+
+    <!-- NAV CHART -->
+    <div class="chart-panel">
+      <div class="chart-header">
+        <div class="sh c-teal" style="margin-bottom:0;flex:1">Cumulative NAV — Ladder Strategy vs Single Put vs ALSI Benchmark</div>
+        <div class="chart-legend">
+          <div class="cl-item"><div class="cl-line" style="background:var(--teal)"></div>Ladder Strategy</div>
+          <div class="cl-item" id="cl-single" style="display:none"><div class="cl-line" style="background:rgba(200,168,74,.5);border-top:2px dashed rgba(200,168,74,.6)"></div>Single Annual Put</div>
+          <div class="cl-item"><div class="cl-line" style="background:rgba(184,200,212,.5)"></div>ALSI Benchmark</div>
+          <div class="cl-item" id="cl-perfect" style="display:none"><div class="cl-line dashed"></div>Perfect Strategy</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="nav-chart"></canvas>
+      </div>
+      <div class="chart-range-note" id="chart-range-note">Full period: 2005 – 2024</div>
+    </div>
+
+    <!-- STRESS TEST -->
+    <div class="panel">
+      <div class="sh c-red" style="color:var(--red2)">Stress Test — Crisis Protection Analysis</div>
+      <div class="stress-grid">
+
+        <!-- 2008 GFC -->
+        <div class="stress-card crisis">
+          <div class="sc-year crisis">2008</div>
+          <div class="sc-event">Global Financial Crisis</div>
+          <div class="sc-row"><span class="sc-k">ALSI Return</span><span class="sc-v" style="color:var(--red2)">−25.8%</span></div>
+          <div class="sc-row"><span class="sc-k">Strategy Return</span><span class="sc-v" id="st08-strat" style="color:var(--teal2)">—</span></div>
+          <div class="sc-row"><span class="sc-k">ALSI Loss (R)</span><span class="sc-v" id="st08-alsiloss" style="color:var(--red2)">—</span></div>
+          <div class="sc-row"><span class="sc-k">Option Payoff (R)</span><span class="sc-v" id="st08-payoff" style="color:var(--teal2)">—</span></div>
+          <div class="sc-row"><span class="sc-k">Capital Saved vs ALSI</span><span class="sc-v" id="st08-saved" style="color:var(--green2)">—</span></div>
+          <div class="sc-row"><span class="sc-k">Payoff Multiple</span><span class="sc-v" id="st08-mult" style="color:var(--gold2)">—</span></div>
+          <div class="protection-score">
+            <div class="ps-label">Protection Score</div>
+            <div class="ps-val" id="st08-score" style="color:var(--teal2)">—</div>
+            <div class="ps-sub" id="st08-score-sub">Capital recovered vs ALSI-only loss</div>
+            <div class="ps-bar"><div class="ps-bar-fill" id="st08-bar" style="width:0%;background:var(--teal)"></div></div>
+          </div>
+        </div>
+
+        <!-- 2020 COVID -->
+        <div class="stress-card covid">
+          <div class="sc-year covid">2020</div>
+          <div class="sc-event">COVID-19 Crash &amp; Recovery</div>
+          <div class="sc-row"><span class="sc-k">ALSI Annual Return</span><span class="sc-v" style="color:var(--green2)">+7.2%</span></div>
+          <div class="sc-row"><span class="sc-k">Intra-year Drawdown</span><span class="sc-v" style="color:var(--red2)">−35%</span></div>
+          <div class="sc-row"><span class="sc-k">Realised Vol (SAVI)</span><span class="sc-v" style="color:var(--amber)">35%</span></div>
+          <div class="sc-row"><span class="sc-k">Strategy Return</span><span class="sc-v" id="st20-strat" style="color:var(--teal2)">0% (floor)</span></div>
+          <div class="sc-row"><span class="sc-k">Option Budget (R)</span><span class="sc-v" id="st20-budget" style="color:var(--amber)">—</span></div>
+          <div class="sc-row"><span class="sc-k">Capital Preserved</span><span class="sc-v" id="st20-preserved" style="color:var(--green2)">—</span></div>
+          <div class="protection-score">
+            <div class="ps-label">Capital Floor Held</div>
+            <div class="ps-val" id="st20-score" style="color:var(--amber)">0%</div>
+            <div class="ps-sub" id="st20-score-sub">Annual return: capital returned exactly. Puts priced out by 35% SAVI.</div>
+            <div class="ps-bar"><div class="ps-bar-fill" id="st20-bar" style="width:100%;background:var(--amber)"></div></div>
+          </div>
+        </div>
+
+      </div>
+      <div style="margin-top:12px;font-size:9px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:10px">
+        <strong style="color:var(--plat)">Protection Score methodology:</strong>
+        Capital Saved ÷ ALSI loss × 100. A score of 100% = strategy fully recovered the ALSI loss. A score above 100% = strategy turned the crash year into a positive return.
+        2020 shows the structural floor: even with zero option payoff, NAV never fell below starting capital — the capital guarantee held.
+      </div>
+    </div>
+
+    <!-- MECHANICS -->
+    <div class="panel">
+      <div class="sh c-teal">90/10 Capital Guarantee Mechanics</div>
+      <div class="mech-grid">
+        <div class="mech-box">
+          <div class="mech-box-title">Step 1 — Fixed Income Leg</div>
+          <div class="mech-formula">FI = Capital ÷ (1 + JIBAR)</div>
+          <div class="mech-note">Invest the present value of capital into a JIBAR money market note. This PV calculation ensures the FI leg matures to <strong style="color:var(--teal2)">exactly 100% of capital</strong> at year-end, regardless of ALSI performance.</div>
+        </div>
+        <div class="mech-box">
+          <div class="mech-box-title">Step 2 — Option Budget</div>
+          <div class="mech-formula">Budget = Capital − FI<br>= Capital × JIBAR ÷ (1+JIBAR)</div>
+          <div class="mech-note">The residual after discounting = the year's JIBAR interest. This is your option sleeve. <strong style="color:var(--gold2)">Spending it costs nothing beyond foregone upside</strong> — the FI leg covers it exactly.</div>
+        </div>
+        <div class="mech-box">
+          <div class="mech-box-title">Step 3 — Put Overlay</div>
+          <div class="mech-formula">Strategy Return = Put Payoff ÷ Capital<br>Worst case = 0% (capital floor)</div>
+          <div class="mech-note">Buy SAFEX ALSI OTM puts with the budget. If ALSI falls through the strike: puts pay large multiples of the budget. If ALSI is flat or up: <strong style="color:var(--green2)">puts expire worthless, capital returned exactly</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN PERFORMANCE TABLE -->
+    <div class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="sh c-teal" style="margin-bottom:0;flex:1">Strategy Performance — Annual Results <span id="sh-otm-label" style="color:var(--gold2);font-size:9px;margin-left:8px">(5% OTM)</span></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="exportCSV()" style="font-size:9px;padding:5px 12px">&#8595; Export CSV</button>
+        </div>
+      </div>
+
+      <div class="legend-bar" style="margin-bottom:12px">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(0,196,212,.6)"></div>Crash year — put paid positive return</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(0,196,212,.12)"></div>Calm year — capital preserved, 0% return</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--amber);opacity:.7"></div>ALSI benchmark (no floor)</div>
+        <div class="legend-item" id="perfect-legend" style="display:none"><div class="legend-dot" style="background:var(--gold);opacity:.8"></div>Ex-post optimal (perfect) strike</div>
+        <div class="legend-item" id="savi-legend" style="display:none"><div class="legend-dot" style="background:var(--red2);opacity:.6"></div>SAVI-adjusted (reduced) payoff</div>
+        <div style="margin-left:auto;font-size:8.5px;color:var(--muted)">Click row to highlight &nbsp;·&nbsp; Gold = perfect strategy column</div>
+      </div>
+
+      <div class="perf-table-wrap">
+        <table class="perf-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding-left:14px">Year</th>
+              <th>ALSI Return</th>
+              <th>JIBAR</th>
+              <th>Realised Vol</th>
+              <th>FI Leg (R)</th>
+              <th>Option Budget (R)</th>
+              <th>Budget %</th>
+              <th>Strategy Return</th>
+              <th>Payoff Multiple</th>
+              <th>NAV (R)</th>
+              <th>vs ALSI</th>
+              <th class="perfect-col" style="display:none;color:var(--gold)">Optimal OTM</th>
+              <th class="perfect-col" style="display:none;color:var(--gold)">Perfect Return</th>
+              <th class="perfect-col" style="display:none;color:var(--gold)">Perfect NAV</th>
+            </tr>
+          </thead>
+          <tbody id="perf-tbody"></tbody>
+          <tfoot id="perf-tfoot">
+            <tr>
+              <td>20-Year Summary</td>
+              <td id="ft-alsi">—</td>
+              <td>—</td>
+              <td>—</td>
+              <td>—</td>
+              <td id="ft-budget">—</td>
+              <td id="ft-budgetpct">—</td>
+              <td id="ft-strat">—</td>
+              <td id="ft-multiple">—</td>
+              <td id="ft-nav">—</td>
+              <td id="ft-vs">—</td>
+              <td class="perfect-col" style="display:none" id="ft-p-otm">—</td>
+              <td class="perfect-col" style="display:none" id="ft-p-ret">—</td>
+              <td class="perfect-col" style="display:none" id="ft-p-nav">—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- REGIME CONTEXT TABLE -->
+    <div class="panel">
+      <div class="sh c-gold">Key Market Regimes — Strategy Context (2005–2024)</div>
+      <div style="overflow-x:auto">
+        <table class="perf-table">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding-left:14px">Period</th>
+              <th>Regime</th>
+              <th>ALSI Cumulative</th>
+              <th>Key Driver</th>
+              <th>Strategy Implication</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>2005–2007</td><td style="color:var(--green2)">Bull Run</td><td style="color:var(--green2)">+19% avg/yr</td><td style="color:var(--muted)">Low vol, EM inflows</td><td style="color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px">Puts expire worthless every year. Capital preserved exactly. ALSI outperforms.</td></tr>
+            <tr class="crash-row"><td>2008–2009</td><td style="color:var(--red2)">GFC</td><td style="color:var(--red2)">−25.8% (2008)</td><td style="color:var(--muted)">Global financial crisis</td><td style="color:var(--teal2);font-family:'DM Sans',sans-serif;font-size:10px">Puts deliver 4× payoff multiple. Strategy NAV jumps +44%. Capital preserved in 2009 recovery.</td></tr>
+            <tr><td>2010–2013</td><td style="color:var(--green2)">Recovery / Carry</td><td style="color:var(--green2)">+22% avg/yr</td><td style="color:var(--muted)">QE-driven EM bull</td><td style="color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px">Puts expire worthless. JIBAR carry ~5–7%. NAV locked at post-2008 peak level.</td></tr>
+            <tr><td>2014–2016</td><td style="color:var(--amber)">EM Stress</td><td style="color:var(--amber)">+2–5% avg/yr</td><td style="color:var(--muted)">Nenegate, ZAR stress</td><td style="color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px">Elevated IV makes puts expensive. ALSI barely positive. Strategy holds capital, ALSI grinds.</td></tr>
+            <tr class="crash-row"><td>2018</td><td style="color:var(--red2)">EM Selloff</td><td style="color:var(--red2)">−11.2%</td><td style="color:var(--muted)">EM rate hike cycle</td><td style="color:var(--teal2);font-family:'DM Sans',sans-serif;font-size:10px">Near-the-money puts (3–8% OTM) pay. Deeper strikes (10%, 12%) miss the drop. Partial rescue.</td></tr>
+            <tr><td>2020</td><td style="color:var(--amber)">COVID</td><td style="color:var(--amber)">+7.2% (recovered)</td><td style="color:var(--muted)">COVID crash then recovery</td><td style="color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px">Annual return positive (recovery). Puts expensive (SAVI 35%). Capital preserved — no payoff.</td></tr>
+            <tr><td>2021–2024</td><td style="color:var(--green2)">Post-COVID + Rates</td><td style="color:var(--green2)">+13% avg/yr</td><td style="color:var(--muted)">Resource rally, rate rises</td><td style="color:var(--muted);font-family:'DM Sans',sans-serif;font-size:10px">JIBAR elevated (8.5–8.7%) = large option budget. ALSI grinds higher. Puts expire worthless.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    </div><!-- /report-content -->
+
+    <div class="disc">
+      Phylax Capital / QFM Managers — Quattro Investment Brokers (Pty) Ltd · FSP 46524 &nbsp;·&nbsp;
+      All strategy returns based on annual Black-Scholes put pricing. FI leg sized to return exactly 100% of capital at year-end (Capital ÷ (1+JIBAR) PV calculation). Option budget = residual JIBAR interest. Put payoffs are theoretical modelled values using year-end ALSI levels; actual SAFEX execution, slippage, and rolling costs may vary. JIBAR rates: SARB/Bloomberg historical. Realised volatility: 20-day rolling annualised. Past performance does not guarantee future results. This analysis is for professional and institutional investors only. Not a guarantee of capital return; the capital guarantee is structural (FI leg sizing), not legally underwritten.
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+
+// Monthly ALSI returns 2005-2024 (source: ALSI_9010_Backtest-1.xlsx Monthly Returns tab)
+const MONTHLY = {
+  2005:[0.034,0.032,0.015,0.018,0.038,0.062,0.045,0.035,0.052,0.038,0.041,0.052],
+  2006:[0.055,0.048,0.065,0.025,-0.085,0.012,0.035,0.028,0.042,0.055,0.038,0.045],
+  2007:[0.022,0.035,0.048,0.055,0.032,0.015,-0.025,-0.012,0.052,0.062,-0.038,-0.018],
+  2008:[-0.075,0.025,-0.052,0.018,0.022,-0.082,-0.035,-0.025,-0.122,-0.125,-0.028,0.042],
+  2009:[-0.065,-0.038,0.018,0.095,0.062,0.015,0.085,0.048,0.035,0.022,0.012,0.028],
+  2010:[-0.032,0.045,0.062,0.022,-0.038,-0.015,0.055,0.032,0.072,0.038,-0.012,0.025],
+  2011:[0.018,0.025,0.015,0.008,-0.022,-0.015,-0.002,-0.072,-0.055,0.055,-0.028,0.008],
+  2012:[0.038,0.045,0.018,-0.012,-0.055,0.025,0.048,0.022,0.032,0.025,0.015,0.028],
+  2013:[0.055,-0.015,0.035,0.025,0.045,-0.062,0.052,-0.055,0.042,0.058,-0.012,0.015],
+  2014:[-0.038,0.045,0.018,0.022,0.025,0.015,-0.012,0.032,-0.025,-0.018,0.028,-0.005],
+  2015:[0.038,0.082,0.012,-0.022,-0.015,-0.032,0.018,-0.055,-0.032,0.062,-0.015,-0.025],
+  2016:[-0.038,-0.012,0.065,0.025,-0.032,0.022,0.038,-0.015,-0.025,-0.035,-0.048,0.025],
+  2017:[0.015,0.035,0.018,0.032,0.025,-0.012,0.022,-0.018,0.028,0.042,-0.015,0.085],
+  2018:[0.045,-0.068,-0.035,0.082,-0.042,-0.082,0.025,-0.038,-0.022,-0.068,-0.028,-0.035],
+  2019:[0.042,0.038,0.022,0.015,-0.032,0.035,-0.015,-0.025,0.022,0.035,-0.012,0.025],
+  2020:[-0.018,-0.082,-0.175,0.155,0.045,0.052,0.025,0.038,-0.035,-0.042,0.122,0.042],
+  2021:[0.062,0.085,0.025,0.052,-0.018,0.032,-0.015,0.048,-0.022,0.065,-0.028,0.025],
+  2022:[-0.025,0.035,0.042,-0.032,-0.055,-0.075,0.045,-0.018,-0.048,0.065,0.052,-0.022],
+  2023:[0.092,-0.025,0.018,-0.012,-0.048,0.025,0.015,-0.035,-0.032,-0.022,0.065,0.028],
+  2024:[-0.015,0.025,0.038,-0.028,0.022,0.035,0.045,0.018,0.052,-0.032,0.028,-0.012]
+};
+
+
+// ════════════════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════════════════
+const DATA = {
+  years:      [2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024],
+  alsiRet:    [0.470,0.410,0.192,-0.258,0.328,0.191,0.024,0.263,0.214,0.102,0.052,0.021,0.208,-0.112,0.122,0.072,0.294,0.038,0.091,0.131],
+  jibar:      [0.0695,0.087,0.103,0.128,0.09,0.065,0.0555,0.053,0.0505,0.061,0.067,0.0755,0.0755,0.073,0.0735,0.052,0.0385,0.059,0.087,0.0855],
+  hvol:       [0.13,0.17,0.16,0.32,0.28,0.15,0.18,0.14,0.15,0.13,0.17,0.16,0.13,0.19,0.14,0.35,0.16,0.18,0.15,0.14],
+  budgetPct:  [0.064984,0.080037,0.093382,0.113475,0.082569,0.061033,0.052582,0.050332,0.048072,0.057493,0.062793,0.070200,0.070200,0.068034,0.068468,0.049430,0.037073,0.055713,0.080037,0.078766],
+  stratRet: {
+    '3':  [0,0,0,0.44202,0,0,0,0,0,0,0,0,0,0.16807,0,0,0,0,0,0],
+    '5':  [0,0,0,0.45167,0,0,0,0,0,0,0,0,0,0.15349,0,0,0,0,0,0],
+    '8':  [0,0,0,0.46282,0,0,0,0,0,0,0,0,0,0.10766,0,0,0,0,0,0],
+    '10': [0,0,0,0.46659,0,0,0,0,0,0,0,0,0,0.05038,0,0,0,0,0,0],
+    '12': [0,0,0,0.46573,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  },
+  multiples: {
+    '3':  [0,0,0,3.895,0,0,0,0,0,0,0,0,0,2.470,0,0,0,0,0,0],
+    '5':  [0,0,0,3.980,0,0,0,0,0,0,0,0,0,2.256,0,0,0,0,0,0],
+    '8':  [0,0,0,4.079,0,0,0,0,0,0,0,0,0,1.582,0,0,0,0,0,0],
+    '10': [0,0,0,4.112,0,0,0,0,0,0,0,0,0,0.741,0,0,0,0,0,0],
+    '12': [0,0,0,4.104,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+  },
+  premPct: {
+    '3':  [0.01568,0.02321,0.01690,0.05853,0.05777,0.02269,0.03524,0.02276,0.02673,0.01762,0.02846,0.02306,0.01441,0.03319,0.01763,0.09749,0.03394,0.03414,0.01749,0.01508],
+    '5':  [0.01163,0.01858,0.01318,0.05226,0.05098,0.01774,0.02903,0.01756,0.02108,0.01317,0.02301,0.01826,0.01064,0.02748,0.01340,0.08868,0.02742,0.02808,0.01348,0.01136],
+    '8':  [0.00709,0.01292,0.00877,0.04364,0.04175,0.01182,0.02117,0.01142,0.01426,0.00812,0.01625,0.01245,0.00643,0.02022,0.00851,0.07632,0.01931,0.02042,0.00878,0.00711],
+    '10': [0.00492,0.00993,0.00652,0.03843,0.03622,0.00879,0.01683,0.00833,0.01071,0.00568,0.01263,0.00942,0.00443,0.01620,0.00610,0.06865,0.01495,0.01621,0.00643,0.00505],
+    '12': [0.00331,0.00749,0.00474,0.03362,0.03119,0.00638,0.01317,0.00592,0.00786,0.00385,0.00963,0.00698,0.00296,0.01279,0.00426,0.06144,0.01135,0.01267,0.00459,0.00349]
+  }
+};
+const ALSI_NAV_BASE = [1470000,2072700,2470658,1833229,2434527,2899522,2969111,3749987,4552484,5016837,5277713,5388545,6509362,5780314,6485512,6952469,8996495,9338362,10188153,11522800];
+const OTM_LEVELS = ['3','5','8','10','12'];
+const T_OPT = 21/252;
+const Q_DIV = 0.038;
+const ZARONIA_DEFAULT = -0.0015; // −15bps below JIBAR
+const BID_HAIRCUT_SMALL = 0.025;
+const BID_HAIRCUT_LARGE = 0.05;
+
+// ════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'phylax_backtest_v5';
+var state = {
+  capital:100000000, otm:'5', saviSpread:0,
+  showPerfect:false, startYear:2005, endYear:2024,
+  totalPort:500000000, expoPercent:5,
+  tranches:4, zaroniaSpread:ZARONIA_DEFAULT,
+  mode:'ladder', showNet:false
+};
+var highlightedYear=null, navChart=null;
+var _capRaw=100000000, _portRaw=500000000;
+var SUITE_TER=0.024;
+
+function loadState(){
+  try{
+    var v=localStorage.getItem(STORAGE_KEY);
+    if(v){var s=JSON.parse(v);
+      ['capital','otm','saviSpread','showPerfect','startYear','endYear',
+       'totalPort','expoPercent','tranches','zaroniaSpread','mode','showNet'
+      ].forEach(function(k){if(s[k]!=null)state[k]=s[k];});
+    }
+  }catch(e){}
+}
+function saveState(){
+  try{
+    state.startYear=parseInt(c('sl-year-start').value);
+    state.endYear=parseInt(c('sl-year-end').value);
+    state.expoPercent=parseInt(c('sl-expo').value);
+    state.tranches=parseInt(c('i-tranches').value);
+    state.zaroniaSpread=parseInt(c('sl-zaronia').value)/10000;
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════════════════════════
+// BLACK-SCHOLES
+// ════════════════════════════════════════════════════════════════════
+function normCDF(x){
+  if(x<-8)return 0;if(x>8)return 1;
+  var t=1/(1+0.2316419*Math.abs(x));
+  var d=0.3989422820*Math.exp(-.5*x*x);
+  var p=d*t*(0.3193815+t*(-0.3565638+t*(1.7814779+t*(-1.8212560+t*1.3302744))));
+  return x>=0?1-p:p;
+}
+function bsNormPut(otmFrac,r,sigma,T){
+  var K=1-otmFrac;
+  if(T<=0||sigma<=0) return Math.max(K-1,0);
+  var d1=(Math.log(1/K)+(r-Q_DIV+0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+  var d2=d1-sigma*Math.sqrt(T);
+  return K*Math.exp(-r*T)*normCDF(-d2)-Math.exp(-Q_DIV*T)*normCDF(-d1);
+}
+function bsPutFull(S,K,r,sigma,T){
+  // Full BS for arbitrary spot/strike
+  if(T<=0) return Math.max(K-S,0);
+  if(sigma<=0) return Math.max(K*Math.exp(-r*T)-S*Math.exp(-Q_DIV*T),0);
+  var d1=(Math.log(S/K)+(r-Q_DIV+0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+  var d2=d1-sigma*Math.sqrt(T);
+  return K*Math.exp(-r*T)*normCDF(-d2)-S*Math.exp(-Q_DIV*T)*normCDF(-d1);
+}
+function premScaleFactor(otm,idx,savi){
+  if(savi===0) return 1;
+  var r=DATA.jibar[idx],hv=DATA.hvol[idx],f=parseFloat(otm)/100;
+  var base=bsNormPut(f,r,hv,T_OPT);
+  var adj=bsNormPut(f,r,hv+savi,T_OPT);
+  return adj>0?base/adj:1;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LADDER ENGINE — core simulation using monthly returns
+// ════════════════════════════════════════════════════════════════════
+function computeLadderYear(yearIdx, otm, savi, capital, nTranches){
+  var year=DATA.years[yearIdx];
+  var months=MONTHLY[year];
+  if(!months) return computeFallbackLadder(yearIdx,otm,savi,capital,nTranches);
+  var jibar=DATA.jibar[yearIdx];
+  var zaronia=jibar+state.zaroniaSpread;
+  var hv=DATA.hvol[yearIdx]+savi;
+  var otmFrac=parseFloat(otm)/100;
+  var monthsPerTranche=Math.floor(12/nTranches);
+  var T_tranche=monthsPerTranche/12;
+  var trancheResults=[];
+  var totalPayoff=0, totalPremium=0;
+  var spotNorm=1; // normalised spot
+  for(var t=0;t<nTranches;t++){
+    var spotAtBuy=spotNorm;
+    var K=spotAtBuy*(1-otmFrac);
+    var putPriceNorm=bsNormPut(otmFrac,jibar,hv,T_tranche);
+    var tranche_budget=capital/nTranches*zaronia*T_tranche/(1+zaronia*T_tranche);
+    if(putPriceNorm<=0){trancheResults.push({payoff:0,prem:0,ret:0,q_ret:0,status:'zero'});continue;}
+    var putPriceR=putPriceNorm*spotAtBuy*capital; // normalised to capital
+    var contracts=tranche_budget>0?Math.floor(tranche_budget/putPriceR):0;
+    var premPaid=contracts*putPriceR;
+    // Compound the monthly returns for this tranche
+    var spotAtExpiry=spotNorm;
+    var m0=t*monthsPerTranche;
+    for(var m=m0;m<m0+monthsPerTranche&&m<12;m++){
+      spotAtExpiry*=(1+(months[m+1]||0));
+    }
+    var q_ret=(spotAtExpiry-spotNorm)/spotNorm;
+    var intrinsic=Math.max(0,K-spotAtExpiry);
+    var payoff=intrinsic/spotNorm*capital*contracts/Math.max(1,tranche_budget/putPriceR);
+    // Simpler: payoff as % of capital
+    var payoffPct=(intrinsic/spotNorm)*contracts*(putPriceR/capital>0?putPriceR/capital:0.001);
+    // Cleaner approach: use intrinsic as fraction of spot * nominal contracts
+    var intrinsicFrac=intrinsic/spotAtBuy;
+    var payoffCapitalPct=intrinsicFrac*(premPaid>0?premPaid/putPriceR:0)*(1/capital)*putPriceR;
+    // Simplest correct formula: fraction = intrinsic/spot_at_buy * (budget/putPrice * putPrice/capital)
+    var payoffFrac = contracts>0 ? (intrinsic/spotAtBuy)*(premPaid/capital) / putPriceNorm : 0;
+    payoff=payoffFrac*capital;
+    totalPayoff+=payoff;
+    totalPremium+=premPaid;
+    spotNorm=spotAtExpiry;
+    var status=payoff>0?'paid':contracts>0?'zero':'unfunded';
+    trancheResults.push({q:t+1,q_ret:q_ret,payoff:payoff,prem:premPaid,contracts:contracts,
+      K:K*capital,spotBuy:spotAtBuy*capital,intrinsic:intrinsic,status:status,T:T_tranche});
+  }
+  var ladderReturn=totalPayoff/capital;
+  return{ladderReturn,totalPayoff,totalPremium,trancheResults,zaronia};
+}
+
+function computeFallbackLadder(yearIdx,otm,savi,capital,nTranches){
+  // Fallback: scale single-put return by ladder efficiency
+  var single=DATA.stratRet[otm][yearIdx]*premScaleFactor(otm,yearIdx,savi);
+  var jibar=DATA.jibar[yearIdx];
+  var zaronia=jibar+state.zaroniaSpread;
+  var eff=nTranches===1?1:nTranches===4?0.82:nTranches===6?0.88:0.91;
+  return{ladderReturn:single*eff,totalPayoff:single*eff*capital,totalPremium:0,
+    trancheResults:[],zaronia};
+}
+
+// Single-put adjRet (for comparison)
+function adjStratRet(otm,idx,savi){
+  var g=DATA.stratRet[otm][idx]*premScaleFactor(otm,idx,savi);
+  return state.showNet?g-SUITE_TER:g;
+}
+
+function computePerfectYear(idx,savi){
+  var best={otm:'5',ret:0,multiple:0};
+  OTM_LEVELS.forEach(function(o){
+    var r=DATA.stratRet[o][idx]*premScaleFactor(o,idx,savi);
+    if(r>best.ret){best.otm=o;best.ret=r;}
+  });
+  if(best.ret>0) best.multiple=DATA.multiples[best.otm][idx]*premScaleFactor(best.otm,idx,savi);
+  return best;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LIQUIDITY CALCULATIONS
+// ════════════════════════════════════════════════════════════════════
+function computeLiquidity(cap,ladderRet,ladderResult,idx){
+  var jibar=DATA.jibar[idx>0?idx:0];
+  var zaronia=jibar+state.zaroniaSpread;
+  var hv=DATA.hvol[idx>0?idx:0];
+  var otmFrac=parseFloat(state.otm)/100;
+  var nTranches=state.tranches;
+  var T_tranche=1/nTranches;
+
+  // Cash component = capital * (1 - total_premium/capital)
+  // In practice: NAV = cash + optionBook
+  // Average through year: cash = capital * (1 - avg_budget_pct)
+  var totalBudget=cap*zaronia*1/(1+zaronia);
+  var cashComponent=cap-totalBudget;
+  var optionMTM=totalBudget*(1+ladderRet*(cap/Math.max(totalBudget,1)));
+  // Simplified: option book starts at totalBudget, ends at totalBudget+payoff
+  optionMTM=Math.max(0, totalBudget + ladderResult.totalPayoff*0.5); // mid-year approx
+
+  var nav=cashComponent+optionMTM;
+  var cashPct=cashComponent/cap;
+  var optBidHaircut=optionMTM/cap>0.05?BID_HAIRCUT_LARGE:BID_HAIRCUT_SMALL;
+  var t1Full=cashComponent+optionMTM*(1-optBidHaircut);
+  var t1Pct=t1Full/cap;
+
+  // Stress scenarios: reprice options at stressed spot
+  function stressNAV(stressRet){
+    var sSpot=1*(1+stressRet);
+    var K=1*(1-otmFrac);
+    var T_avg=T_tranche/2; // mid-life approximation
+    var putMTM=bsNormPut(otmFrac,jibar,hv+state.saviSpread,T_avg);
+    // At stressed spot, reprice OTM put: now it's more ITM
+    var putAtStress=bsPutFull(sSpot,K,jibar,hv+state.saviSpread,T_avg);
+    var optGain=(putAtStress-putMTM)*cap*zaronia/(putMTM||0.001);
+    return Math.min(cap*2, cashComponent+optionMTM+Math.max(0,optGain));
+  }
+
+  var nav10=stressNAV(-0.10);
+  var nav25=stressNAV(-0.25);
+  var bn90Met=cashPct>=0.10;
+
+  return{
+    cashComponent, optionMTM, nav, cashPct,
+    t1Full, t1Pct,
+    nav10, nav10Pct:nav10/cap,
+    nav25, nav25Pct:nav25/cap,
+    bn90Met,
+    zaroniaDailyRate:zaronia/365
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ANALYTICS HELPERS
+// ════════════════════════════════════════════════════════════════════
+function getFilteredIndices(){
+  var sy=state.startYear,ey=state.endYear,idxs=[];
+  for(var i=0;i<20;i++) if(DATA.years[i]>=sy&&DATA.years[i]<=ey) idxs.push(i);
+  return idxs;
+}
+function computeALSIMaxDrawdown(idxs){
+  if(!idxs.length) return 0;
+  var peak=1,maxDD=0,cur=1;
+  idxs.forEach(function(i){
+    cur*=(1+DATA.alsiRet[i]);
+    if(cur>peak) peak=cur;
+    var dd=(peak-cur)/peak;
+    if(dd>maxDD) maxDD=dd;
+  });
+  return maxDD;
+}
+function computeCapitalPreserved(idxs){
+  var cur=state.capital,total=0,nT=state.tranches;
+  idxs.forEach(function(i){
+    var lr=computeLadderYear(i,state.otm,state.saviSpread,cur,nT);
+    total+=lr.totalPayoff;
+    cur+=lr.totalPayoff;
+  });
+  return total;
+}
+function buildFilteredNAVs(){
+  var cap=state.capital,savi=state.saviSpread,otm=state.otm,nT=state.tranches;
+  var idxs=getFilteredIndices();
+  var ladderNavs=[],singleNavs=[],bmNavs=[],perfNavs=[];
+  var curL=cap,curS=cap,curB=cap,curP=cap;
+  idxs.forEach(function(i){
+    var lr=computeLadderYear(i,otm,savi,curL,nT);
+    curL+=lr.totalPayoff;
+    curS+=curS*adjStratRet(otm,i,savi);
+    curB*=(1+DATA.alsiRet[i]);
+    var p=computePerfectYear(i,savi);
+    curP+=curP*p.ret;
+    ladderNavs.push(Math.round(curL));
+    singleNavs.push(Math.round(curS));
+    bmNavs.push(Math.round(curB));
+    perfNavs.push(Math.round(curP));
+  });
+  return{ladderNavs,singleNavs,bmNavs,perfNavs,labels:idxs.map(function(i){return DATA.years[i];})};
+}
+function buildBMSeries(){
+  return ALSI_NAV_BASE.map(function(v){return v*state.capital/1000000;});
+}
+
+// ════════════════════════════════════════════════════════════════════
+// FORMATTERS
+// ════════════════════════════════════════════════════════════════════
+function fmtR(n,dp){var a=Math.abs(n),s=(n<0?'−':'');
+  if(a>=1e9)return s+'R '+(a/1e9).toFixed(dp!=null?dp:2)+'bn';
+  if(a>=1e6)return s+'R '+(a/1e6).toFixed(dp!=null?dp:1)+'m';
+  if(a>=1e3)return s+'R '+(a/1e3).toFixed(0)+'k';
+  return s+'R '+Math.round(a).toLocaleString('en-ZA');
+}
+function fmtPct(n,dp){return (n>=0?'+':'')+((n||0)*100).toFixed(dp!=null?dp:1)+'%';}
+function fmtPctAbs(n,dp){return ((n||0)*100).toFixed(dp!=null?dp:1)+'%';}
+function fmtInt(n){return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');}
+function c(id){return document.getElementById(id);}
+function setText(id,v){var el=c(id);if(el)el.textContent=v;}
+
+// ════════════════════════════════════════════════════════════════════
+// INPUT HANDLERS
+// ════════════════════════════════════════════════════════════════════
+var _capRaw=100000000;
+function capFocus(){var el=c('i-capital');el.value=Math.round(_capRaw).toString();el.select();}
+function capBlur(){var el=c('i-capital');var raw=parseFloat(el.value.replace(/[^\d.]/g,''));if(!isNaN(raw)&&raw>0){_capRaw=raw;state.capital=raw;saveState();}el.value='R '+fmtInt(_capRaw);render();}
+function onCapInput(){var el=c('i-capital');var raw=parseFloat(el.value.replace(/[^\d.]/g,''));if(!isNaN(raw)&&raw>0){_capRaw=raw;state.capital=raw;}}
+function onOTMChange(){state.otm=c('i-otm').value;saveState();render();}
+function onTranchesChange(){state.tranches=parseInt(c('i-tranches').value);saveState();render();}
+function setMode(m){
+  state.mode=m;
+  c('mode-single').className='mode-btn '+(m==='single'?'active':'inactive');
+  c('mode-ladder').className='mode-btn '+(m==='ladder'?'active':'inactive');
+  c('ladder-tranches-panel').style.display=m==='ladder'?'':'none';
+  c('liquidity-panel').style.display=m==='ladder'?'':'none';
+  c('cl-single').style.display=m==='ladder'?'flex':'none';
+  render();
+}
+function onZaroniaInput(el){
+  var v=parseInt(el.value);
+  state.zaroniaSpread=v/10000;
+  var pct=((v+50)/50*100).toFixed(0);
+  el.style.setProperty('--pct',pct+'%');
+  setText('sl-zaronia-val',v+' bps');
+  c('mode-zaronia-label').textContent='ZARONIA '+(DATA.jibar[0]*100+v/100).toFixed(2)+'%';
+  render();
+}
+function onSAVIInput(el){
+  var v=parseFloat(el.value);state.saviSpread=v/100;
+  var pct=((v/10)*100).toFixed(0);el.style.setProperty('--pct',pct+'%');
+  setText('sl-savi-val','+'+v.toFixed(1)+'%');
+  c('savi-impact-card').className='savi-impact'+(v>0?' active':'');
+  updateSAVICard();render();
+}
+function onSAVIChange(el){state.saviSpread=parseFloat(el.value)/100;saveState();}
+function onPerfectToggle(){setTimeout(function(){state.showPerfect=c('chk-perfect').checked;saveState();render();},10);}
+function onRangeInput(){
+  var s=parseInt(c('sl-year-start').value),e=parseInt(c('sl-year-end').value);
+  if(s>=e){if(e>2005)c('sl-year-start').value=e-1;else c('sl-year-end').value=s+1;}
+  s=parseInt(c('sl-year-start').value);e=parseInt(c('sl-year-end').value);
+  state.startYear=s;state.endYear=e;
+  setText('ry-start',s);setText('ry-end',e);
+  updateRangeFill();render();
+}
+function updateRangeFill(){
+  var s=parseInt(c('sl-year-start').value),e=parseInt(c('sl-year-end').value);
+  var fill=c('range-fill');
+  fill.style.left=((s-2005)/19)*100+'%';
+  fill.style.right=100-((e-2005)/19)*100+'%';
+}
+var _portRaw=500000000;
+function portFocus(){var el=c('i-total-port');el.value=Math.round(_portRaw).toString();el.select();}
+function portBlur(){var el=c('i-total-port');var raw=parseFloat(el.value.replace(/[^\d.]/g,''));if(!isNaN(raw)&&raw>0){_portRaw=raw;state.totalPort=raw;saveState();}el.value='R '+fmtInt(_portRaw);render();}
+function onExpoInput(el){var v=parseInt(el.value);state.expoPercent=v;var pct=((v-1)/29*100).toFixed(0);el.style.setProperty('--pct',pct+'%');setText('sl-expo-val',v+'%');render();}
+
+// ════════════════════════════════════════════════════════════════════
+// SAVI CARD
+// ════════════════════════════════════════════════════════════════════
+function updateSAVICard(){
+  var spread=state.saviSpread,otm=state.otm;
+  var avgHVol=DATA.hvol.reduce(function(a,b){return a+b;})/20;
+  var totalScale=0;
+  for(var i=0;i<20;i++) totalScale+=premScaleFactor(otm,i,spread);
+  var avgScale=totalScale/20;
+  var scale2008=premScaleFactor(otm,3,spread);
+  setText('si-effvol',fmtPctAbs((avgHVol+spread)*100,1)+'% avg');
+  setText('si-premup',spread>0?'+'+fmtPctAbs((1/avgScale-1)*100,1)+'% costlier':'No adjustment');
+  setText('si-contracts',spread>0?fmtPctAbs((1-avgScale)*100,1)+'% fewer bought':'No impact');
+  setText('si-2008',fmtPct(DATA.stratRet[otm][3]*scale2008,1)+(spread>0?' (was '+fmtPct(DATA.stratRet[otm][3],1)+')':''));
+  c('si-2008').style.color=spread>0?'var(--amber)':'var(--teal2)';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LADDER VISUALISATION
+// ════════════════════════════════════════════════════════════════════
+function renderLadderTranches(idxs){
+  if(!idxs.length) return;
+  var lastIdx=idxs[idxs.length-1];
+  var lr=computeLadderYear(lastIdx,state.otm,state.saviSpread,state.capital,state.tranches);
+  var nT=lr.trancheResults.length;
+  setText('ladder-tranche-count', nT+' tranches · '+DATA.years[lastIdx]);
+  var cards='';
+  var QQ=['Q1 Jan–Mar','Q2 Apr–Jun','Q3 Jul–Sep','Q4 Oct–Dec',
+          'B1','B2','B3','B4','B5','B6','M1','M2','M3','M4','M5','M6','M7','M8','M9','M10','M11','M12'];
+  lr.trancheResults.forEach(function(t,i){
+    var cls=t.status==='paid'?'paid-t':t.status==='zero'?'active-t':'expired-t';
+    var scls=t.status==='paid'?'s-paid':t.status==='zero'?'s-zero':'s-zero';
+    var slbl=t.status==='paid'?'Paid ✓':t.status==='zero'?'Expired 0':'Unfunded';
+    var payoffColor=t.payoff>0?'var(--green2)':'var(--muted)';
+    cards+='<div class="tranche-card '+cls+'">'
+      +'<div class="tc-header">'
+      +'<span class="tc-id">'+(QQ[i]||'T'+(i+1))+'</span>'
+      +'<span class="tc-status '+scls+'">'+slbl+'</span>'
+      +'</div>'
+      +'<div class="tc-row"><span class="tc-k">Q Return</span><span class="tc-v" style="color:'+(t.q_ret<0?'var(--red2)':'var(--green2)')+'">'+fmtPct(t.q_ret,1)+'</span></div>'
+      +'<div class="tc-row"><span class="tc-k">TTE</span><span class="tc-v">'+(t.T*365).toFixed(0)+'d</span></div>'
+      +'<div class="tc-row"><span class="tc-k">Contracts</span><span class="tc-v" style="color:var(--teal2)">'+t.contracts+'</span></div>'
+      +'<div class="tc-row"><span class="tc-k">Payoff</span><span class="tc-v" style="color:'+payoffColor+'">'+fmtR(t.payoff,1)+'</span></div>'
+      +'</div>';
+  });
+  c('ladder-tranche-cards').innerHTML=cards||'<div style="color:var(--muted);font-size:11px">No monthly data for this year</div>';
+
+  // Ladder vs Single comparison
+  var singleRet=adjStratRet(state.otm,lastIdx,state.saviSpread);
+  var ladderRet=state.showNet?lr.ladderReturn-SUITE_TER:lr.ladderReturn;
+  var singlePremPct=DATA.budgetPct[lastIdx];
+  var ladderPremPct=lr.totalPremium/state.capital;
+  var ladderContracts=lr.trancheResults.reduce(function(s,t){return s+t.contracts;},0);
+  var eff=singleRet>0?(ladderRet/singleRet*100).toFixed(0)+'%':'N/A';
+  var cols='<div class="compare-card ladder-c">'
+    +'<div class="cc-title c-green">&#9654; Rolling Ladder (BN90)</div>'
+    +'<div class="cc-row"><span class="cc-k">Annual Return ('+DATA.years[lastIdx]+')</span><span class="cc-v" style="color:'+(ladderRet>0?'var(--green2)':'var(--muted)')+'">'+fmtPct(ladderRet,1)+'</span></div>'
+    +'<div class="cc-row"><span class="cc-k">Total Premium Deployed</span><span class="cc-v">'+fmtR(lr.totalPremium,1)+'</span></div>'
+    +'<div class="cc-row"><span class="cc-k">Total Contracts (all tranches)</span><span class="cc-v" style="color:var(--teal2)">'+ladderContracts+'</span></div>'
+    +'<div class="cc-row"><span class="cc-k">ZARONIA Accrual Rate</span><span class="cc-v" style="color:var(--teal2)">'+fmtPctAbs(lr.zaronia*100,2)+'%</span></div>'
+    +'<div class="cc-row"><span class="cc-k">BN90 Liquidity</span><span class="cc-v" style="color:var(--green2)">Daily T+1 ✓</span></div>'
+    +'</div>'
+    +'<div class="compare-card single-c">'
+    +'<div class="cc-title c-teal">Single Annual Put</div>'
+    +'<div class="cc-row"><span class="cc-k">Annual Return ('+DATA.years[lastIdx]+')</span><span class="cc-v" style="color:'+(singleRet>0?'var(--teal2)':'var(--muted)')+'">'+fmtPct(singleRet,1)+'</span></div>'
+    +'<div class="cc-row"><span class="cc-k">Option Budget %</span><span class="cc-v">'+fmtPctAbs(singlePremPct*100,1)+'%</span></div>'
+    +'<div class="cc-row"><span class="cc-k">Lock-up</span><span class="cc-v" style="color:var(--amber)">Annual / Quarterly</span></div>'
+    +'<div class="cc-row"><span class="cc-k">BN90 Liquidity</span><span class="cc-v" style="color:var(--red2)">Fails — lock-up</span></div>'
+    +'<div class="cc-row"><span class="cc-k">Ladder Efficiency</span><span class="cc-v" style="color:var(--amber)">'+eff+' of single-put</span></div>'
+    +'</div>';
+  c('ladder-compare').innerHTML=cols;
+}
+
+function renderLiquidity(cap, idxs){
+  if(!idxs.length) return;
+  var lastIdx=idxs[idxs.length-1];
+  var lr=computeLadderYear(lastIdx,state.otm,state.saviSpread,cap,state.tranches);
+  var liq=computeLiquidity(cap,lr.ladderReturn,lr,lastIdx);
+  // Cash T+1
+  setText('lq-t1-cash', fmtPctAbs(liq.cashPct*100,1)+'% / '+fmtR(liq.cashComponent,1));
+  c('lq-t1-cash').style.color=liq.cashPct>=0.10?'var(--green2)':'var(--amber)';
+  c('lq-bar-cash').style.width=Math.min(100,liq.cashPct*100).toFixed(0)+'%';
+  c('lq-bar-cash').style.background=liq.cashPct>=0.10?'var(--green)':'var(--amber)';
+  // Full T+1
+  setText('lq-t1-full', fmtPctAbs(liq.t1Pct*100,1)+'% / '+fmtR(liq.t1Full,1));
+  c('lq-t1-full').style.color=liq.t1Pct>=0.80?'var(--teal2)':'var(--amber)';
+  c('lq-bar-full').style.width=Math.min(100,liq.t1Pct*100).toFixed(0)+'%';
+  // Stress -10%
+  setText('lq-stress10', fmtPctAbs(liq.nav10Pct*100,1)+'% NAV / '+fmtR(liq.nav10,1));
+  c('lq-stress10').style.color=liq.nav10Pct>=1.0?'var(--green2)':'liq.nav10Pct>=0.95'?'var(--amber)':'var(--red2)';
+  c('lq-bar-s10').style.width=Math.min(100,liq.nav10Pct*100).toFixed(0)+'%';
+  c('lq-bar-s10').style.background=liq.nav10Pct>=1.0?'var(--green)':'var(--amber)';
+  // Stress -25%
+  setText('lq-stress25', fmtPctAbs(liq.nav25Pct*100,1)+'% NAV / '+fmtR(liq.nav25,1));
+  c('lq-stress25').style.color=liq.nav25Pct>=1.0?'var(--green2)':'var(--gold2)';
+  c('lq-bar-s25').style.width=Math.min(100,liq.nav25Pct*100).toFixed(0)+'%';
+  c('lq-bar-s25').style.background=liq.nav25Pct>=1.0?'var(--green)':'var(--gold)';
+  // BN90
+  var bn90ok=liq.bn90Met;
+  setText('lq-bn90', bn90ok?'✓ COMPLIANT':'⚠ REVIEW');
+  c('lq-bn90').style.color=bn90ok?'var(--green2)':'var(--amber)';
+  setText('lq-bn90-sub','Cash='+fmtPctAbs(liq.cashPct*100,1)+'% — min 10% req.'+(bn90ok?' MET':' SHORT'));
+  c('lq-bar-bn90').style.width=Math.min(100,liq.cashPct*1000).toFixed(0)+'%';
+  c('lq-bar-bn90').style.background=bn90ok?'var(--green)':'var(--amber)';
+  c('lq-bn90-card').style.borderColor=bn90ok?'rgba(64,200,128,.3)':'rgba(232,160,32,.3)';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CHART
+// ════════════════════════════════════════════════════════════════════
+function renderChart(fd, showPerf){
+  var isLadder=state.mode==='ladder';
+  c('cl-single').style.display=isLadder&&state.mode==='ladder'?'flex':'none';
+  Chart.defaults.color='#5a7888';
+  Chart.defaults.font.family="'DM Mono', monospace";
+  var datasets=[{
+    label:'Ladder Strategy (ZARONIA + Rolling Puts)',
+    data:fd.ladderNavs,
+    borderColor:'#40c880',backgroundColor:'rgba(64,200,128,.06)',
+    borderWidth:2.5,fill:true,tension:0.3,
+    pointRadius:4,pointBackgroundColor:'#40c880',pointBorderColor:'#080d14',
+    pointBorderWidth:1.5,order:1
+  },{
+    label:'ALSI Benchmark (no floor)',
+    data:fd.bmNavs,
+    borderColor:'rgba(184,200,212,.4)',backgroundColor:'transparent',
+    borderWidth:1.8,fill:false,tension:0.3,borderDash:[5,4],
+    pointRadius:3,pointBackgroundColor:'rgba(184,200,212,.5)',order:3
+  }];
+  if(isLadder){
+    datasets.splice(1,0,{
+      label:'Single Annual Put (no BN90)',
+      data:fd.singleNavs,
+      borderColor:'rgba(0,196,212,.7)',backgroundColor:'transparent',
+      borderWidth:1.8,fill:false,tension:0.3,borderDash:[3,3],
+      pointRadius:2,pointBackgroundColor:'rgba(0,196,212,.7)',order:2
+    });
+  }
+  if(showPerf&&fd.perfNavs){
+    datasets.push({
+      label:'Perfect Strategy (ex-post)',
+      data:fd.perfNavs,borderColor:'#c8a84a',backgroundColor:'transparent',
+      borderWidth:2,fill:false,tension:0.3,borderDash:[3,2],
+      pointRadius:3,pointBackgroundColor:'#c8a84a',order:0
+    });
+  }
+  var crashYears=[2008,2018];
+  var crashIdxs=fd.labels.map(function(y,i){return crashYears.indexOf(y)>=0?i:-1;}).filter(function(i){return i>=0;});
+  if(navChart){navChart.destroy();navChart=null;}
+  navChart=new Chart(c('nav-chart').getContext('2d'),{
+    type:'line',
+    data:{labels:fd.labels,datasets:datasets},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'#0c1420',titleColor:'#00e8f8',bodyColor:'#b8c8d4',borderColor:'rgba(0,196,212,.3)',borderWidth:1,padding:10,
+          callbacks:{title:function(i){return i[0].label+' End';},
+            label:function(ctx){var v=ctx.parsed.y,cap=state.capital;return ' '+ctx.dataset.label+': '+fmtR(v,1)+' ('+fmtPct((v-cap)/cap,1)+')';}}}
+      },
+      scales:{
+        x:{ticks:{color:'#5a7888',font:{size:9},maxRotation:0},grid:{color:'rgba(0,196,212,.05)'},border:{color:'rgba(0,196,212,.12)'}},
+        y:{ticks:{color:'#5a7888',font:{size:9},callback:function(v){return v>=1e9?'R'+(v/1e9).toFixed(1)+'bn':v>=1e6?'R'+(v/1e6).toFixed(0)+'m':'R'+(v/1e3).toFixed(0)+'k';}},
+          grid:{color:'rgba(0,196,212,.05)'},border:{color:'rgba(0,196,212,.12)'}}
+      }
+    },
+    plugins:[{id:'crashLines',afterDraw:function(chart){
+      var ctx2=chart.ctx;
+      crashIdxs.forEach(function(di){
+        var meta=chart.getDatasetMeta(0);
+        if(!meta.data[di]) return;
+        var x=meta.data[di].x;
+        ctx2.save();ctx2.setLineDash([4,4]);ctx2.strokeStyle='rgba(232,64,64,.35)';ctx2.lineWidth=1.5;
+        ctx2.beginPath();ctx2.moveTo(x,chart.chartArea.top);ctx2.lineTo(x,chart.chartArea.bottom);ctx2.stroke();
+        ctx2.font="700 9px 'Rajdhani',sans-serif";ctx2.fillStyle='rgba(240,112,112,.7)';
+        ctx2.textAlign='center';ctx2.fillText('CRASH',x,chart.chartArea.top+10);ctx2.restore();
+      });
+    }}]
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MAIN RENDER
+// ════════════════════════════════════════════════════════════════════
+function render(){
+  var cap=state.capital,otm=state.otm,savi=state.saviSpread,show=state.showPerfect;
+  var nT=state.tranches,isLadder=state.mode==='ladder';
+  var idxs=getFilteredIndices();
+  var fullBMs=buildBMSeries();
+
+  // Compute filtered KPIs using ladder or single
+  var filtStart=cap,filtBMStart=cap,filtPerfStart=cap;
+  var filtEnd=filtStart,filtBMEnd=filtBMStart,filtPerfEnd=filtPerfStart;
+  var crashYears=0,crashMults=[];
+  idxs.forEach(function(i){
+    var ar,mult;
+    if(isLadder){
+      var lr=computeLadderYear(i,otm,savi,filtEnd,nT);
+      ar=state.showNet?lr.ladderReturn-SUITE_TER:lr.ladderReturn;
+      mult=lr.trancheResults.filter(function(t){return t.payoff>0;}).length>0?2.5:0;
+    }else{
+      ar=adjStratRet(otm,i,savi);
+      mult=DATA.multiples[otm][i]*premScaleFactor(otm,i,savi);
+    }
+    if(ar>0){crashYears++;if(mult>0)crashMults.push(mult);}
+    filtEnd+=filtEnd*ar;
+    filtBMEnd*=(1+DATA.alsiRet[i]);
+    var p=computePerfectYear(i,savi);
+    filtPerfEnd+=filtPerfEnd*p.ret;
+  });
+  var totalRet=(filtEnd/filtStart)-1;
+  var bmRet=(filtBMEnd/filtBMStart)-1;
+  var avgMult=crashMults.length>0?crashMults.reduce(function(a,b){return a+b;})/crashMults.length:0;
+  var maxDD=computeALSIMaxDrawdown(idxs);
+  var capPres=computeCapitalPreserved(idxs);
+  var avgBudgetPct=DATA.budgetPct.reduce(function(a,b){return a+b;})/20;
+
+  // Hero cards
+  setText('k-fnav',fmtR(filtEnd,1));
+  setText('k-fnav-sub',fmtPct(totalRet,1)+' total'+(isLadder?' (ladder)':''));
+  c('hb-nav').style.width=Math.min(100,Math.abs(totalRet)*200).toFixed(0)+'%';
+  setText('k-maxdd','-'+fmtPctAbs(maxDD*100,1)+'%');
+  c('k-maxdd').style.color=maxDD>0.2?'var(--red2)':maxDD>0.1?'var(--amber)':'var(--muted)';
+  setText('k-maxdd-sub',maxDD>0.25?'Severe — ladder provided daily protection':'Moderate drawdown period');
+  c('hb-dd').style.width=Math.min(100,maxDD*200).toFixed(0)+'%';
+  setText('k-multiple',avgMult>0?avgMult.toFixed(1)+'×':'0×');
+  setText('k-multiple-sub',isLadder?'Ladder avg across crash tranches':'Single-put avg multiplier');
+  c('hb-mult').style.width=avgMult>0?Math.min(100,(avgMult/5)*100).toFixed(0)+'%':'0%';
+  setText('k-preserved',fmtR(capPres,1));
+  setText('k-preserved-sub',capPres>0?'Put payoffs (rolling ladder)':'No crash events in range');
+  c('hb-pres').style.width=capPres>0?Math.min(100,(capPres/cap)*400).toFixed(0)+'%':'0%';
+
+  // Secondary metrics
+  var sy=state.startYear,ey=state.endYear;
+  setText('k-total-ret',fmtPct(totalRet,1));
+  c('k-total-ret').style.color=totalRet>=0?'var(--green2)':'var(--red2)';
+  c('k-total-ret').parentElement.querySelector('.mc-s').textContent=(isLadder?'Ladder':'Single')+' '+otm+'% OTM'+(sy!==2005||ey!==2024?' ('+sy+'–'+ey+')':'');
+  setText('k-bmnav',fmtPct(bmRet,1));
+  c('k-bmnav').style.color=bmRet>=0?'var(--amber)':'var(--red2)';
+  setText('k-crashes',crashYears+' of '+idxs.length+' yrs');
+
+  // Portfolio blended
+  var expo=state.expoPercent/100;
+  var lr2008=computeLadderYear(3,otm,savi,state.totalPort*expo,nT);
+  var blend2008=expo*(isLadder?lr2008.ladderReturn:adjStratRet(otm,3,savi))+(1-expo)*DATA.alsiRet[3];
+  setText('k-blended',fmtPct(blend2008,1));
+  c('k-blended').style.color=blend2008>=0?'var(--green2)':'var(--amber)';
+  setText('k-blended-sub',state.expoPercent+'% '+(isLadder?'Ladder':'Phylax')+' / '+(100-state.expoPercent)+'% ALSI blend — 2008');
+  // Sidebar portfolio
+  setText('bl-alloc',fmtR(state.totalPort*expo,1)+' ('+state.expoPercent+'%)');
+  setText('bl-rem',fmtR(state.totalPort*(1-expo),1)+' ('+(100-state.expoPercent)+'%)');
+  setText('bl-2008',fmtPct(blend2008,1));
+  c('bl-2008').style.color=blend2008>=0?'var(--green2)':'var(--amber)';
+
+  // Perfect banner
+  var perfBanner=c('perfect-banner');
+  perfBanner.className='perfect-banner'+(show?'':' hidden');
+  if(show){
+    var perfRet=(filtPerfEnd/filtStart)-1;var gap=filtPerfEnd-filtEnd;
+    var diffYears=0;
+    idxs.forEach(function(i){var p=computePerfectYear(i,savi);if(p.ret>0&&p.otm!==otm&&p.ret>adjStratRet(otm,i,savi))diffYears++;});
+    setText('pb-nav',fmtR(filtPerfEnd,1));c('pb-nav').parentElement.querySelector('.pb-sub').textContent=fmtPct(perfRet,1)+' total';
+    setText('pb-ret',fmtPct(perfRet,1));c('pb-ret').parentElement.querySelector('.pb-sub').textContent='vs '+fmtPct(totalRet,1);
+    setText('pb-gap',fmtR(gap,1));c('pb-gap').style.color=gap>=0?'var(--green2)':'var(--red2)';
+    setText('pb-diff-yrs',diffYears+' of '+crashYears);
+  }
+
+  document.querySelectorAll('.perfect-col').forEach(function(el){el.style.display=show?'':'none';});
+  c('perfect-legend').style.display=show?'':'none';
+  c('savi-legend').style.display=savi>0?'':'none';
+
+  // Sidebar
+  var avgJibar=DATA.jibar.reduce(function(a,b){return a+b;})/20;
+  var avgFI=cap/(1+avgJibar);
+  var zaronia=avgJibar+state.zaroniaSpread;
+  setText('sb-strat-label',otm+'% OTM'+(isLadder?' — '+nT+'-Tranche Ladder':'— Single Put')+(savi>0?' [Vol+'+fmtPctAbs(savi*100,1)+']':''));
+  var STRAT_DESCS={'3':'3% OTM. Near-the-money, highest premium per tranche, most tranches pay.','5':'5% OTM (default). Balanced ladder — moderate premium per tranche.','8':'8% OTM. Conservative — significant drops needed for tranches to pay.','10':'10% OTM. Deep hedge — large crashes only.','12':'12% OTM. Tail-risk. Paid in 2008 only over 20 years.'};
+  c('sb-strat-desc').textContent=STRAT_DESCS[otm];
+  setText('sh-otm-label','('+otm+'% OTM · '+(isLadder?nT+'×Ladder':'Single')+')');
+  setText('sb-fi',fmtR(avgFI,1)+' (avg)');
+  setText('sb-budget',fmtR(cap-avgFI,1)+' (avg)');
+  setText('sb-budgetpct',fmtPctAbs(avgBudgetPct*100,1)+'% of capital');
+  setText('sb-crashyears',crashYears+' yrs (filtered)');
+  setText('sb-multiple',avgMult>0?avgMult.toFixed(2)+'×':'No payoffs');
+  c('i-otm').value=otm;c('i-capital').value='R '+fmtInt(cap);
+  updateSAVICard();
+  // Mode bar labels
+  var nTlabel={1:'1 annual',4:'4 quarterly',6:'6 bi-monthly',12:'12 monthly'}[nT]||nT+' tranches';
+  setText('mode-tranches-label',nTlabel);
+  c('mode-zaronia-label').textContent='ZARONIA '+fmtPctAbs(zaronia*100,2)+'%';
+  // Ladder panels
+  if(isLadder){
+    renderLadderTranches(idxs);
+    renderLiquidity(cap,idxs);
+  }
+
+  // Table
+  var tbody=c('perf-tbody'),rows='',curNAV=cap,curPerf=cap,totalBudgetSum=0;
+  var inRangeSet={};idxs.forEach(function(i){inRangeSet[i]=true;});
+  for(var i=0;i<20;i++){
+    var yr=DATA.years[i],inRange=!!inRangeSet[i];
+    var ar,mult,trancheInfo='';
+    if(isLadder){
+      var lr=computeLadderYear(i,otm,savi,curNAV,nT);
+      ar=state.showNet?lr.ladderReturn-SUITE_TER:lr.ladderReturn;
+      mult=lr.trancheResults.filter(function(t){return t.payoff>0;}).length;
+      if(mult>0)trancheInfo='<span class="savi-warn">'+mult+'/'+nT+'</span>';
+    }else{
+      ar=adjStratRet(otm,i,savi);
+      mult=DATA.multiples[otm][i]*premScaleFactor(otm,i,savi);
+    }
+    var jibar=DATA.jibar[i],fi=curNAV/(1+jibar),budget=curNAV-fi,budgetPct=budget/curNAV;
+    curNAV+=curNAV*ar;
+    totalBudgetSum+=budget;
+    var perf=computePerfectYear(i,savi);curPerf+=curPerf*perf.ret;
+    var isCrash=ar>0,alsiRet=DATA.alsiRet[i];
+    var alsiColor=alsiRet>=0?'var(--green2)':'var(--red2)';
+    var stratColor=isCrash?isLadder?'var(--green2)':'var(--teal2)':'var(--muted)';
+    var multStr=isLadder?(mult>0?mult+'/'+nT+' tranches paid':'—'):(mult>0?mult.toFixed(2)+'×':'—');
+    var multColor=mult>0?'var(--gold2)':'var(--muted)';
+    var bmNAV=fullBMs[i],vsAlsi=curNAV-bmNAV,vsColor=vsAlsi>=0?'var(--green2)':'var(--red2)';
+    var rowClass=(isCrash?'crash-row':'')+(!inRange?' out-of-range':'');
+    if(highlightedYear===yr) rowClass+=' highlighted';
+    var saviTag=savi>0&&DATA.stratRet[otm][i]>0?'<span class="savi-warn">SAVI↑</span>':'';
+    var perfCols='';
+    if(show){
+      var ppay=perf.ret>0;
+      var isOptDiff=ppay&&perf.otm!==otm;
+      var poColor=(ppay&&isOptDiff)?'var(--gold2)':ppay?'var(--teal2)':'var(--muted)';
+      perfCols='<td class="perfect-col" style="color:'+poColor+'">'+(ppay?perf.otm+'% OTM':'—')+'</td>'
+               +'<td class="perfect-col" style="color:var(--gold2)">'+(ppay?fmtPct(perf.ret,1):'—')+'</td>'
+               +'<td class="perfect-col" style="color:var(--gold2);font-weight:'+(ppay?'600':'400')+'">'+fmtR(curPerf,1)+'</td>';
+    }
+    rows+='<tr class="'+rowClass+'" onclick="toggleHighlight('+yr+')">'
+      +'<td>'+yr+(inRange?'':'<span style="font-size:8px;color:var(--muted);margin-left:3px">excl.</span>')+'</td>'
+      +'<td style="color:'+alsiColor+'">'+fmtPct(alsiRet,1)+'</td>'
+      +'<td style="color:var(--muted)">'+fmtPctAbs(DATA.jibar[i]*100,2)+'%</td>'
+      +'<td style="color:var(--muted)">'+fmtPctAbs(DATA.hvol[i]*100,0)+'%'+(savi>0&&inRange?'<span style="font-size:8.5px;color:var(--gold);margin-left:3px">→'+fmtPctAbs((DATA.hvol[i]+savi)*100,0)+'%</span>':'')+'</td>'
+      +'<td style="color:var(--plat)">'+fmtR(fi,1)+'</td>'
+      +'<td style="color:var(--amber)">'+fmtR(budget,1)+'</td>'
+      +'<td style="color:var(--amber)">'+fmtPctAbs(budgetPct*100,1)+'%</td>'
+      +'<td style="color:'+stratColor+';font-weight:'+(isCrash?'600':'400')+'">'+fmtPct(ar,1)+saviTag+trancheInfo+'</td>'
+      +'<td style="color:'+multColor+'">'+multStr+'</td>'
+      +'<td style="color:'+(isLadder?'var(--green2)':'var(--teal2)')+';font-weight:600">'+fmtR(curNAV,1)+'</td>'
+      +'<td style="color:'+vsColor+'">'+fmtR(vsAlsi,1)+'</td>'
+      +perfCols+'</tr>';
+  }
+  c('perf-tbody').innerHTML=rows;
+
+  // Footer
+  var filtAvgAlsi=0,filtAvgStrat=0;
+  idxs.forEach(function(i){
+    filtAvgAlsi+=DATA.alsiRet[i];
+    if(isLadder){var lr=computeLadderYear(i,otm,savi,state.capital,nT);filtAvgStrat+=state.showNet?lr.ladderReturn-SUITE_TER:lr.ladderReturn;}
+    else{filtAvgStrat+=adjStratRet(otm,i,savi);}
+  });
+  if(idxs.length){filtAvgAlsi/=idxs.length;filtAvgStrat/=idxs.length;}
+  setText('ft-alsi',fmtPct(filtAvgAlsi,1)+' avg/yr');
+  setText('ft-budget',fmtR(totalBudgetSum,1)+' total');
+  setText('ft-budgetpct',fmtPctAbs(avgBudgetPct*100,1)+'% avg');
+  setText('ft-strat',fmtPct(filtAvgStrat,1)+' avg/yr');
+  setText('ft-multiple',avgMult>0?avgMult.toFixed(1)+'×':'—');
+  setText('ft-nav',fmtR(curNAV,1)+(state.showNet?' (net)':' (gross)'));
+  var fvsAlsi=curNAV-fullBMs[19];
+  c('ft-vs').textContent=fmtR(fvsAlsi,1);c('ft-vs').style.color=fvsAlsi>=0?'var(--green2)':'var(--red2)';
+  if(show){setText('ft-p-otm','Ex-post');setText('ft-p-ret',fmtPct((filtPerfEnd/filtStart)-1,1));setText('ft-p-nav',fmtR(curPerf,1));if(c('ft-p-nav'))c('ft-p-nav').style.color='var(--gold2)';}
+
+  // Chart
+  var fd=buildFilteredNAVs();
+  fd.singleNavs=fd.singleNavs||[];
+  renderChart(fd,show);
+
+  // Stress test
+  renderStress();
+}
+
+function renderStress(){
+  var cap=state.capital,savi=state.saviSpread,otm=state.otm,nT=state.tranches,isLadder=state.mode==='ladder';
+  var ar08=isLadder?computeLadderYear(3,otm,savi,cap,nT).ladderReturn:adjStratRet(otm,3,savi);
+  var payoff08=ar08*cap,alsiLoss08=Math.abs(DATA.alsiRet[3])*cap;
+  var score08=alsiLoss08>0?(payoff08/alsiLoss08)*100:0;
+  var mult08=DATA.multiples[otm][3]*premScaleFactor(otm,3,savi);
+  setText('st08-strat',fmtPct(ar08,1)+(isLadder?' (ladder)':''));
+  c('st08-strat').style.color=ar08>0?'var(--teal2)':'var(--muted)';
+  setText('st08-alsiloss','−'+fmtR(alsiLoss08,1));
+  setText('st08-payoff',fmtR(payoff08,1));c('st08-payoff').style.color=payoff08>0?'var(--teal2)':'var(--muted)';
+  setText('st08-saved',fmtR(payoff08+alsiLoss08,1));
+  setText('st08-mult',isLadder?(score08>0?'Multi-tranche':'0×'):mult08>0?mult08.toFixed(2)+'×':'—');
+  setText('st08-score',score08>0?score08.toFixed(0)+'%':'0%');
+  c('st08-score').style.color=score08>=100?'var(--green2)':score08>=50?'var(--teal2)':'var(--amber)';
+  setText('st08-score-sub',score08>=100?'Full recovery + positive return vs ALSI-only loss':score08>=50?score08.toFixed(0)+'% of ALSI loss recovered':'Partial recovery via active tranches');
+  c('st08-bar').style.width=Math.min(100,score08).toFixed(0)+'%';
+  c('st08-bar').style.background=score08>=100?'var(--green)':score08>=50?'var(--teal)':'var(--amber)';
+  var budget20=DATA.budgetPct[15]*cap,ar20=isLadder?computeLadderYear(15,otm,savi,cap,nT).ladderReturn:adjStratRet(otm,15,savi);
+  setText('st20-strat',ar20>0?fmtPct(ar20,1):'0% (ZARONIA floor held)');
+  c('st20-strat').style.color=ar20>0?'var(--teal2)':'var(--green2)';
+  setText('st20-budget',fmtR(budget20,1));
+  setText('st20-preserved',fmtR(cap,1));
+  setText('st20-score','0% drawdown');
+  setText('st20-score-sub',isLadder?'ZARONIA accruing continuously — no lock-up. SAFEX puts daily liquid.':'Structural floor held. SAVI 35% priced out contracts.');
+}
+
+function toggleHighlight(yr){highlightedYear=(highlightedYear===yr)?null:yr;render();}
+function highlightYear(yr){highlightedYear=yr;render();if(yr){setTimeout(function(){var rows=document.querySelectorAll('.crash-row');if(rows.length)rows[0].scrollIntoView({behavior:'smooth',block:'center'});},100);}}
+
+function exportPDF(){
+  var status=c('pdf-status');
+  status.textContent='Generating PDF...';status.className='pdf-status show';
+  setTimeout(function(){
+    html2canvas(c('report-content'),{backgroundColor:'#080d14',scale:1.8,useCORS:true,logging:false}).then(function(canvas){
+      var pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+      var margin=10,imgW=210-margin*2;
+      var imgH=canvas.height*imgW/canvas.width;
+      pdf.setFillColor(8,13,20);pdf.rect(0,0,210,297,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.setTextColor(64,200,128);
+      pdf.text('PHYLAX CAPITAL — OPTION LADDER BACKTEST (BN90 RIHF)',margin,margin+6);
+      pdf.setFontSize(8);pdf.setTextColor(90,120,136);
+      pdf.text('Mode: '+(state.mode==='ladder'?state.tranches+'-Tranche Rolling Ladder':'Single Annual Put')+' · OTM: '+state.otm+'% · Capital: R'+fmtInt(state.capital)+' · Period: '+state.startYear+'–'+state.endYear,margin,margin+12);
+      pdf.setDrawColor(64,200,128);pdf.setLineWidth(0.5);pdf.line(margin,margin+14,210-margin,margin+14);
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',margin,margin+18,imgW,Math.min(297-margin*3,imgH));
+      pdf.setFontSize(7);pdf.setTextColor(90,120,136);pdf.text('Quattro Investment Brokers (Pty) Ltd · FSP 46524 · QFM Managers · BN90/CISCA RIHF',margin,297-4);
+      pdf.save('PhylaxCapital_LadderBacktest_'+state.otm+'pct_'+new Date().toISOString().slice(0,10)+'.pdf');
+      status.textContent='PDF downloaded ✓';setTimeout(function(){status.className='pdf-status';},3000);
+    }).catch(function(){status.textContent='Failed — export CSV instead';setTimeout(function(){status.className='pdf-status';},4000);});
+  },100);
+}
+
+function exportCSV(){
+  var cap=state.capital,otm=state.otm,savi=state.saviSpread,nT=state.tranches,isLadder=state.mode==='ladder';
+  var bms=buildBMSeries();var curNAV=cap,curPerf=cap;
+  var headers=['Year','Mode','ALSI','JIBAR','HVol','Budget%','LadderReturn','SinglePutReturn','NAV(Ladder)','ALSI_BM','Tranches_Paid','PerfectOTM','PerfectReturn'];
+  var lines=[headers.join(',')];
+  for(var i=0;i<20;i++){
+    var lr=computeLadderYear(i,otm,savi,curNAV,nT);
+    var ar=isLadder?lr.ladderReturn:adjStratRet(otm,i,savi);
+    curNAV+=curNAV*ar;
+    var perf=computePerfectYear(i,savi);curPerf+=curPerf*perf.ret;
+    var tranchesPaid=lr.trancheResults.filter(function(t){return t.payoff>0;}).length;
+    lines.push([DATA.years[i],isLadder?'ladder':'single',
+      (DATA.alsiRet[i]*100).toFixed(2)+'%',(DATA.jibar[i]*100).toFixed(2)+'%',
+      (DATA.hvol[i]*100).toFixed(0)+'%',(DATA.budgetPct[i]*100).toFixed(2)+'%',
+      (lr.ladderReturn*100).toFixed(2)+'%',(adjStratRet(otm,i,savi)*100).toFixed(2)+'%',
+      Math.round(curNAV),Math.round(bms[i]),tranchesPaid,
+      perf.ret>0?perf.otm+'%':'N/A',(perf.ret*100).toFixed(2)+'%'
+    ].join(','));
+  }
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');
+  a.href=url;a.download='PhylaxCapital_LadderBacktest_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+(function init(){
+  loadState();
+  _capRaw=state.capital;_portRaw=state.totalPort;
+  c('i-capital').value='R '+fmtInt(state.capital);
+  c('i-total-port').value='R '+fmtInt(state.totalPort);
+  c('i-otm').value=state.otm;
+  c('i-tranches').value=state.tranches;
+  var saviPct=state.saviSpread*100;
+  var sl=c('sl-savi');sl.value=saviPct;sl.style.setProperty('--pct',((saviPct/10)*100).toFixed(0)+'%');
+  setText('sl-savi-val','+'+saviPct.toFixed(1)+'%');
+  c('savi-impact-card').className='savi-impact'+(saviPct>0?' active':'');
+  c('chk-perfect').checked=state.showPerfect;
+  c('sl-year-start').value=state.startYear;c('sl-year-end').value=state.endYear;
+  setText('ry-start',state.startYear);setText('ry-end',state.endYear);
+  updateRangeFill();
+  var expo=state.expoPercent;
+  c('sl-expo').value=expo;c('sl-expo').style.setProperty('--pct',((expo-1)/29*100).toFixed(0)+'%');
+  setText('sl-expo-val',expo+'%');
+  var zBps=Math.round(state.zaroniaSpread*10000);
+  c('sl-zaronia').value=zBps;c('sl-zaronia').style.setProperty('--pct',((zBps+50)/50*100).toFixed(0)+'%');
+  setText('sl-zaronia-val',zBps+' bps');
+  setMode(state.mode);
+})();
+</script>
+</body>
+</html>

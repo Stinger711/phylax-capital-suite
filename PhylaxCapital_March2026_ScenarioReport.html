@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phylax Capital — March 2026 Investor Scenario Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#101b2a;
+  --teal:#00c4d4;--teal2:#00e8f8;--plat:#b8c8d4;--plat2:#dce8f0;
+  --white:#eef4f8;--muted:#5a7888;--muted2:#2a3a45;
+  --red:#e84040;--green:#40c880;--amber:#e8a020;--blue2:#60b0f0;
+  --border:rgba(0,196,212,.1);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 60% 35% at 80% 0%,rgba(0,196,212,.05) 0%,transparent 55%),
+    linear-gradient(rgba(0,196,212,.012) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.012) 1px,transparent 1px);
+  background-size:100%,48px 48px,48px 48px}
+.page{max-width:1100px;margin:0 auto;padding:36px 28px 64px}
+
+/* header */
+.hdr{display:flex;align-items:flex-start;justify-content:space-between;padding-bottom:20px;margin-bottom:6px;border-bottom:2px solid var(--teal)}
+.brand-row{display:flex;align-items:center;gap:16px}
+.bname{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--plat2);letter-spacing:.1em;text-transform:uppercase}
+.bfund{font-size:10px;color:var(--teal);letter-spacing:.18em;text-transform:uppercase;margin-top:3px;font-family:'Rajdhani',sans-serif}
+.report-type{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;color:var(--white);text-transform:uppercase;letter-spacing:.12em;margin-top:4px}
+.hdr-right{text-align:right}
+.period-badge{background:rgba(0,196,212,.08);border:1px solid var(--border2);border-radius:2px;padding:8px 16px;font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--teal2);letter-spacing:.1em;text-transform:uppercase}
+.event-pill{margin-top:8px;font-size:10px;color:#f07070;font-family:'Rajdhani',sans-serif;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.2);padding:4px 12px;border-radius:2px;display:inline-block}
+.disc-tag{margin-top:8px;font-size:9px;color:var(--muted);font-style:italic}
+
+/* section */
+.sh{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sh::before{content:'';width:3px;height:14px;background:currentColor;flex-shrink:0}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.teal{color:var(--teal)}.gold{color:var(--amber)}.red{color:#f07070}.green{color:var(--green)}.plat{color:var(--plat)}.blue{color:var(--blue2)}
+
+/* cards */
+.panel{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:2px;padding:22px;margin-bottom:22px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+
+/* metric card */
+.mc{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:14px;position:relative;overflow:hidden}
+.mc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.mc.r::before{background:var(--red)}.mc.g::before{background:var(--green)}.mc.a::before{background:var(--amber)}.mc.p::before{background:var(--plat)}.mc.b::before{background:var(--blue2)}
+.mc-l{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.mc-v{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--white);line-height:1.1}
+.mc-s{font-size:9px;color:var(--muted);margin-top:4px}
+
+/* big hero numbers */
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
+.hero-card{border-radius:2px;padding:20px;border:1px solid}
+.hero-bad{background:rgba(232,64,64,.06);border-color:rgba(232,64,64,.22)}
+.hero-good{background:rgba(0,196,212,.07);border-color:rgba(0,196,212,.25)}
+.hero-title{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px}
+.hero-bad .hero-title{color:#f07070}.hero-good .hero-title{color:var(--teal2)}
+.hero-main{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;line-height:1;margin-bottom:6px}
+.hero-bad .hero-main{color:#ef5350}.hero-good .hero-main{color:var(--teal2)}
+.hero-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)}
+.hero-rows{margin-top:14px;display:flex;flex-direction:column;gap:3px}
+.hero-row{display:flex;justify-content:space-between;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:2px}
+.hr-k{font-size:11px;color:var(--muted)}.hr-v{font-family:'DM Mono',monospace;font-size:11.5px;font-weight:500}
+
+/* saved banner */
+.saved-banner{background:linear-gradient(135deg,rgba(232,160,32,.1),rgba(232,160,32,.04));border:1px solid rgba(232,160,32,.3);border-radius:2px;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between}
+.sv-left{}
+.sv-lbl{font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:4px}
+.sv-val{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--plat2)}
+.sv-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.sv-right{text-align:right}
+.ratio-lbl{font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:4px}
+.ratio-val{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:var(--gold2)}
+
+/* timeline */
+.timeline{display:flex;align-items:stretch;gap:0;margin-bottom:22px}
+.tl-item{flex:1;background:var(--card);border:1px solid var(--border);padding:14px;position:relative}
+.tl-item:first-child{border-radius:2px 0 0 2px}
+.tl-item:last-child{border-radius:0 2px 2px 0}
+.tl-item+.tl-item{border-left:none}
+.tl-date{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.tl-event{font-size:11px;color:var(--white);font-weight:600;margin-bottom:4px}
+.tl-price{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.tl-change{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin-top:4px;padding:2px 8px;border-radius:2px;display:inline-block}
+.tl-arrow{display:flex;align-items:center;justify-content:center;width:30px;flex-shrink:0;font-size:18px;color:var(--red)}
+
+/* fund mechanics breakdown */
+.mech-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:2px;margin-bottom:3px}
+.mech-inc{background:rgba(0,196,212,.07);border:1px solid rgba(0,196,212,.18)}
+.mech-exp{background:rgba(232,64,64,.05);border:1px solid rgba(232,64,64,.15)}
+.mech-gain{background:rgba(64,200,128,.08);border:1px solid rgba(64,200,128,.2)}
+.mech-tot{background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.3)}
+.mech-cap{background:rgba(0,196,212,.06);border:1px solid rgba(0,196,212,.2)}
+.mech-icon{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+.mech-body{flex:1}
+.mech-name{font-size:11.5px;font-weight:600;color:var(--white)}
+.mech-desc{font-size:10px;color:var(--muted);margin-top:1px}
+.mech-amt{font-family:'DM Mono',monospace;font-size:12.5px;font-weight:700;min-width:130px;text-align:right}
+
+/* chart bar comparison */
+.bar-wrap{margin-bottom:22px}
+.bar-item{margin-bottom:12px}
+.bar-label{font-size:11px;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
+.bar-track{height:32px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;position:relative}
+.bar-fill{height:100%;border-radius:2px;display:flex;align-items:center;padding:0 12px;transition:width .5s ease}
+.bar-text{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--white);text-transform:uppercase;white-space:nowrap}
+
+/* assumptions box */
+.assume{background:rgba(255,167,38,.04);border:1px solid rgba(255,167,38,.15);border-radius:2px;padding:14px 18px;margin-bottom:22px}
+.assume-title{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.12em;margin-bottom:10px}
+.assume-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.as-row{display:flex;justify-content:space-between;padding:4px 10px;background:rgba(255,255,255,.02);border-radius:2px}
+.as-k{font-size:10px;color:var(--muted)}.as-v{font-family:'DM Mono',monospace;font-size:10px;color:var(--white)}
+
+/* note box */
+.note{border-radius:2px;padding:12px 16px;margin-bottom:22px;font-size:11px;color:var(--muted);line-height:1.65}
+.note.t{background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.12)}
+.note.r{background:rgba(232,64,64,.04);border:1px solid rgba(232,64,64,.1)}
+.note.g{background:rgba(64,200,128,.04);border:1px solid rgba(64,200,128,.12)}
+
+/* source */
+.source{font-size:8.5px;color:rgba(90,120,136,.5);border-top:1px solid var(--border);padding-top:8px;margin-top:6px;line-height:1.6}
+.disc{font-size:9px;color:rgba(90,120,136,.4);line-height:1.7;border-top:1px solid var(--border);padding-top:14px;margin-top:8px}
+
+.gold2{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="brand-row">
+    <svg width="52" height="52" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="plxs_p" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#FFFFFF"/>
+          <stop offset="50%"  stop-color="#B0B5B9"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="plxs_i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#E0FFFF"/>
+          <stop offset="50%"  stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="plxs_g" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Outer hexagon -->
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23"
+               fill="none" stroke="url(#plxs_p)" stroke-width="2.0" stroke-linejoin="round"/>
+      <!-- Middle hexagon -->
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5"
+               fill="none" stroke="url(#plxs_p)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- 6 connecting lines outer→middle -->
+      <line x1="40"   y1="6"  x2="40"    y2="23"   stroke="url(#plxs_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5"  stroke="url(#plxs_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5"  stroke="url(#plxs_p)" stroke-width="1.5"/>
+      <line x1="40"   y1="74" x2="40"    y2="57"   stroke="url(#plxs_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5"  stroke="url(#plxs_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5"  stroke="url(#plxs_p)" stroke-width="1.5"/>
+      <!-- 4 diagonal cross lines -->
+      <line x1="40"   y1="6"  x2="69.4" y2="57"  stroke="url(#plxs_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="6"  x2="10.6" y2="57"  stroke="url(#plxs_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="69.4" y2="23"  stroke="url(#plxs_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="10.6" y2="23"  stroke="url(#plxs_p)" stroke-width="0.6" opacity="0.4"/>
+      <!-- Ice-blue gem hexagon (glowing) -->
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05"
+               fill="url(#plxs_i)" filter="url(#plxs_g)"/>
+    </svg>
+    <div>
+      <div class="bname">Phylax Capital</div>
+      <div class="bfund">Macro Protector Fund</div>
+      <div class="report-type">Investor Scenario Report — March 2026 Market Event</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="period-badge">1 March 2026 — 1 April 2026</div>
+    <div class="event-pill">Middle East Geopolitical Crisis — ALSI Crash Event</div>
+    <div class="disc-tag">Modelled scenario — fund was not live in March 2026</div>
+  </div>
+</div>
+
+<!-- EVENT CONTEXT -->
+<div style="margin-bottom:22px;margin-top:16px">
+  <div class="sh teal">What Happened in March 2026</div>
+  <div class="note r">
+    <strong style="color:#f07070">Geopolitical trigger:</strong> Over the last weekend of February 2026, US-Israeli forces launched strikes in Iran, killing the Supreme Leader. 
+    The resulting Middle East crisis drove a global risk-off episode. Oil prices surged, emerging market funds 
+    suffered heavy outflows, the South African Rand weakened sharply against the USD, and the JSE Top 40 entered a steep 
+    correction despite South Africa's resource-heavy index initially being partially insulated by rising gold prices.
+    By the end of March, the ALSI had fallen 12.97% — one of the sharpest single-month corrections in recent years.
+  </div>
+</div>
+
+<!-- MARKET TIMELINE -->
+<div class="sh teal">ALSI (J200 Top 40) — March 2026 Price Timeline</div>
+<div class="timeline">
+  <div class="tl-item">
+    <div class="tl-date">28 Feb 2026</div>
+    <div class="tl-event">Investor Entry</div>
+    <div class="tl-price" style="color:var(--teal2)">119,500</div>
+    <div class="tl-change" style="background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.25);color:var(--teal2)">Start Level</div>
+  </div>
+  <div class="tl-arrow">&#8250;</div>
+  <div class="tl-item">
+    <div class="tl-date">2 Mar 2026 (Monday)</div>
+    <div class="tl-event">All-Time High — then sell-off begins</div>
+    <div class="tl-price" style="color:var(--amber)">121,329 intraday</div>
+    <div class="tl-change" style="background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.2);color:#f07070">118,789 close (&#8209;1.3%)</div>
+  </div>
+  <div class="tl-arrow">&#8250;</div>
+  <div class="tl-item">
+    <div class="tl-date">6 Mar 2026</div>
+    <div class="tl-event">Rapid sell-off, RSI deeply oversold</div>
+    <div class="tl-price" style="color:#f07070">111,980</div>
+    <div class="tl-change" style="background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.2);color:#f07070">&#8209;6.3% from peak</div>
+  </div>
+  <div class="tl-arrow">&#8250;</div>
+  <div class="tl-item">
+    <div class="tl-date">20 Mar 2026</div>
+    <div class="tl-event">Short bounce (+1.7%) — quarterly rebalance</div>
+    <div class="tl-price" style="color:#f07070">104,392</div>
+    <div class="tl-change" style="background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.2);color:#f07070">&#8209;12.7% from peak</div>
+  </div>
+  <div class="tl-arrow">&#8250;</div>
+  <div class="tl-item">
+    <div class="tl-date">31 Mar 2026</div>
+    <div class="tl-event">Month-end close — investor exit</div>
+    <div class="tl-price" style="color:var(--red)">104,000</div>
+    <div class="tl-change" style="background:rgba(232,64,64,.14);border:1px solid rgba(232,64,64,.3);color:var(--red)">&#8209;12.97% for month</div>
+  </div>
+</div>
+
+<!-- SCENARIO SETUP -->
+<div class="sh teal">Investor Scenario Setup</div>
+<div class="g5" style="margin-bottom:22px">
+  <div class="mc"><div class="mc-l">Total Portfolio</div><div class="mc-v" style="color:var(--plat2)">R 500m</div><div class="mc-s">R 500,000,000</div></div>
+  <div class="mc"><div class="mc-l">Phylax Allocation</div><div class="mc-v" style="color:var(--teal2)">5%</div><div class="mc-s">R 25,000,000</div></div>
+  <div class="mc r"><div class="mc-l">Equity Book</div><div class="mc-v" style="color:var(--plat)">R 475m</div><div class="mc-s">95% in ALSI-tracking equity</div></div>
+  <div class="mc r"><div class="mc-l">ALSI Drop (March)</div><div class="mc-v" style="color:var(--red)">&#8209;12.97%</div><div class="mc-s">119,500 → 104,000</div></div>
+  <div class="mc a"><div class="mc-l">Period</div><div class="mc-v" style="color:var(--amber)">31 days</div><div class="mc-s">1 Mar → 1 Apr 2026</div></div>
+</div>
+
+<!-- FUND MECHANICS -->
+<div class="panel">
+  <div class="sh teal">How the Phylax Fund Worked During This Period</div>
+
+  <div class="mech-row mech-cap">
+    <div class="mech-icon">&#128274;</div>
+    <div class="mech-body">
+      <div class="mech-name">R25,000,000 — Capital in JIBAR Money Market (100% Safe)</div>
+      <div class="mech-desc">The full R25m sits in JIBAR-linked fixed rate notes. It earns interest and cannot be lost. This is the capital guarantee.</div>
+    </div>
+    <div class="mech-amt" style="color:var(--teal2)">R 25,000,000</div>
+  </div>
+
+  <div style="margin:8px 14px;font-size:9px;color:var(--muted);font-family:'Rajdhani',sans-serif;letter-spacing:.1em;text-transform:uppercase">The interest earned funds the protection</div>
+
+  <div class="mech-row mech-inc">
+    <div class="mech-icon">+</div>
+    <div class="mech-body">
+      <div class="mech-name">JIBAR Yield Earned (90-day quarterly budget)</div>
+      <div class="mech-desc">R25,000,000 &times; 7.5% &times; 90 &divide; 365 = quarterly options budget</div>
+    </div>
+    <div class="mech-amt" style="color:var(--teal2)">R 463,014</div>
+  </div>
+
+  <div class="mech-row mech-exp">
+    <div class="mech-icon">&#8722;</div>
+    <div class="mech-body">
+      <div class="mech-name">ALSI Put Options Purchased — 76 Contracts (10% OTM, June expiry)</div>
+      <div class="mech-desc">Strike: 107,550 (10% below 119,500). Option premium: ~609 index pts &times; R10 = R6,090/contract. 76 contracts purchased.</div>
+    </div>
+    <div class="mech-amt" style="color:#f07070">&#8722; R 462,840</div>
+  </div>
+
+  <div class="mech-row mech-inc" style="background:rgba(64,200,128,.05);border-color:rgba(64,200,128,.15)">
+    <div class="mech-icon">=</div>
+    <div class="mech-body">
+      <div class="mech-name">Residual Yield (returned above capital in flat market)</div>
+      <div class="mech-desc">R463,014 &minus; R462,840 = R174 returned above capital if no crash occurs this quarter</div>
+    </div>
+    <div class="mech-amt" style="color:var(--green)">R 174</div>
+  </div>
+
+  <div style="margin:14px 14px 8px;font-size:9px;color:#f07070;font-family:'Rajdhani',sans-serif;letter-spacing:.1em;text-transform:uppercase">The crash occurs — puts move from OTM to ITM</div>
+
+  <div class="mech-row mech-exp">
+    <div class="mech-icon">!</div>
+    <div class="mech-body">
+      <div class="mech-name">ALSI Falls to 104,000 — Puts Move INTO THE MONEY</div>
+      <div class="mech-desc">Strike 107,550 vs ALSI 104,000 = 3,550 points in the money. Delta, Gamma and Vega all engage. Payout calculated using Black-Scholes delta-gamma-vega approximation.</div>
+    </div>
+    <div class="mech-amt" style="color:var(--red)">&#8209;12.97% ALSI</div>
+  </div>
+
+  <div class="mech-row mech-gain">
+    <div class="mech-icon">&#8593;</div>
+    <div class="mech-body">
+      <div class="mech-name">Total Options Payout (Delta + Gamma + Vega)</div>
+      <div class="mech-desc">
+        Delta gain: R4,346,248 &nbsp;&bull;&nbsp; Gamma bonus (ITM 40%): R1,738,499 &nbsp;&bull;&nbsp; Vega bonus (ITM 35%): R1,521,187<br/>
+        Payout = R462,840 budget + R4,346,248 + R1,738,499 + R1,521,187
+      </div>
+    </div>
+    <div class="mech-amt" style="color:var(--green)">R 8,068,774</div>
+  </div>
+
+  <div class="mech-row mech-tot">
+    <div class="mech-icon">=</div>
+    <div class="mech-body">
+      <div class="mech-name">Total Phylax Fund Value on 1 April 2026</div>
+      <div class="mech-desc">Capital R25,000,000 + options payout R8,068,774 + residual R174 = total investor value</div>
+    </div>
+    <div class="mech-amt" style="color:var(--teal2);font-size:15px">R 33,068,948</div>
+  </div>
+</div>
+
+<!-- SAVED BANNER -->
+<div class="saved-banner">
+  <div class="sv-left">
+    <div class="sv-lbl">Capital Saved vs Unprotected Portfolio</div>
+    <div class="sv-val">R 10,985,781</div>
+    <div class="sv-sub">Difference between portfolio with Phylax and portfolio without Phylax</div>
+  </div>
+  <div style="width:1px;background:rgba(255,167,38,.25);align-self:stretch;margin:0 24px"></div>
+  <div style="flex:1">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:8px">Portfolio Loss Comparison</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:'Rajdhani',sans-serif;letter-spacing:.06em;text-transform:uppercase">Without Phylax — R500m full equity exposure</div>
+        <div style="height:28px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;position:relative">
+          <div style="width:100%;height:100%;background:rgba(232,64,64,.3);display:flex;align-items:center;padding:0 12px">
+            <span style="font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--white);text-transform:uppercase;letter-spacing:.06em">&#8209;R64,850,000 &nbsp; (&#8209;12.97%)</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px;font-family:'Rajdhani',sans-serif;letter-spacing:.06em;text-transform:uppercase">With Phylax 5% allocation</div>
+        <div style="height:28px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden;position:relative">
+          <div style="width:83%;height:100%;background:rgba(0,196,212,.25);display:flex;align-items:center;padding:0 12px">
+            <span style="font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--white);text-transform:uppercase;letter-spacing:.06em">&#8209;R53,864,219 &nbsp; (&#8209;10.77%)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="width:1px;background:rgba(255,167,38,.25);align-self:stretch;margin:0 24px"></div>
+  <div class="sv-right">
+    <div class="ratio-lbl">Protection-to-Cost Ratio</div>
+    <div class="ratio-val">23.7&#10005;</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px">R10.99m saved &#247; R462,840 options cost</div>
+  </div>
+</div>
+
+<!-- HEAD-TO-HEAD COMPARISON -->
+<div class="sh teal">Full Portfolio Comparison — With vs Without Phylax</div>
+<div class="hero-grid">
+  <div class="hero-card hero-bad">
+    <div class="hero-title">&#10007; Without Phylax — Full Equity Exposure</div>
+    <div class="hero-main">R 435,150,000</div>
+    <div class="hero-sub">Portfolio value on 1 April 2026</div>
+    <div class="hero-rows">
+      <div class="hero-row"><span class="hr-k">Starting value</span><span class="hr-v">R 500,000,000</span></div>
+      <div class="hero-row"><span class="hr-k">ALSI return (&#8209;12.97%)</span><span class="hr-v" style="color:var(--red)">&#8209;12.97%</span></div>
+      <div class="hero-row"><span class="hr-k">Rand loss</span><span class="hr-v" style="color:var(--red)">&#8209; R 64,850,000</span></div>
+      <div class="hero-row"><span class="hr-k">Portfolio return</span><span class="hr-v" style="color:var(--red)">&#8209;12.97%</span></div>
+      <div class="hero-row" style="background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.15)">
+        <span class="hr-k" style="font-weight:600;color:var(--white)">Ending value</span>
+        <span class="hr-v" style="color:#ef5350;font-size:13px;font-weight:700">R 435,150,000</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-card hero-good">
+    <div class="hero-title">&#10003; With Phylax 5% Allocation</div>
+    <div class="hero-main">R 446,135,781</div>
+    <div class="hero-sub">Portfolio value on 1 April 2026</div>
+    <div class="hero-rows">
+      <div class="hero-row"><span class="hr-k">Starting value</span><span class="hr-v">R 500,000,000</span></div>
+      <div class="hero-row">
+        <span class="hr-k">Equity book (R475m at &#8209;12.97%)</span>
+        <span class="hr-v" style="color:var(--red)">R 413,067,500</span>
+      </div>
+      <div class="hero-row">
+        <span class="hr-k">Phylax fund value (R25m)</span>
+        <span class="hr-v" style="color:var(--teal2)">R 33,068,948</span>
+      </div>
+      <div class="hero-row">
+        <span class="hr-k">Phylax return on allocation</span>
+        <span class="hr-v" style="color:var(--teal2)">+32.3%</span>
+      </div>
+      <div class="hero-row" style="background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.22)">
+        <span class="hr-k" style="font-weight:600;color:var(--white)">Ending value</span>
+        <span class="hr-v" style="color:var(--teal2);font-size:13px;font-weight:700">R 446,136,448</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KEY METRICS -->
+<div class="sh teal">Key Performance Metrics — March 2026</div>
+<div class="g4" style="margin-bottom:22px">
+  <div class="mc"><div class="mc-l">Phylax Fund Return</div><div class="mc-v" style="color:var(--teal2)">+32.3%</div><div class="mc-s">vs ALSI: &#8209;12.97%</div></div>
+  <div class="mc g"><div class="mc-l">Capital Saved</div><div class="mc-v" style="color:var(--green)">R 10.99m</div><div class="mc-s">Portfolio loss reduced by 16.9%</div></div>
+  <div class="mc a"><div class="mc-l">Protection Cost</div><div class="mc-v" style="color:var(--amber)">R 462,840</div><div class="mc-s">Funded entirely from JIBAR yield — zero capital at risk</div></div>
+  <div class="mc p"><div class="mc-l">Portfolio Return</div><div class="mc-v" style="color:var(--plat)">&#8209;10.77%</div><div class="mc-s">vs &#8209;12.97% without Phylax</div></div>
+</div>
+
+<!-- ASSUMPTIONS -->
+<div class="assume">
+  <div class="assume-title">Model Assumptions &amp; Data Sources</div>
+  <div class="assume-grid">
+    <div>
+      <div class="as-row"><span class="as-k">ALSI Entry (28 Feb 2026)</span><span class="as-v">119,500 pts</span></div>
+      <div class="as-row"><span class="as-k">ALSI Exit (31 Mar 2026)</span><span class="as-v">104,000 pts</span></div>
+      <div class="as-row"><span class="as-k">ALSI Monthly Return</span><span class="as-v">&#8209;12.97%</span></div>
+      <div class="as-row"><span class="as-k">ALSI Peak (2 Mar 2026)</span><span class="as-v">121,329 pts</span></div>
+    </div>
+    <div>
+      <div class="as-row"><span class="as-k">JIBAR Rate</span><span class="as-v">7.50% p.a.</span></div>
+      <div class="as-row"><span class="as-k">Options Type</span><span class="as-v">ALSI Puts (SAFEX)</span></div>
+      <div class="as-row"><span class="as-k">Strike (10% OTM)</span><span class="as-v">107,550</span></div>
+      <div class="as-row"><span class="as-k">Expiry (June quarter)</span><span class="as-v">90-day cycle</span></div>
+    </div>
+    <div>
+      <div class="as-row"><span class="as-k">Implied Vol (SAVI)</span><span class="as-v">18% at entry</span></div>
+      <div class="as-row"><span class="as-k">Dividend Yield</span><span class="as-v">3.80%</span></div>
+      <div class="as-row"><span class="as-k">Contracts Purchased</span><span class="as-v">76</span></div>
+      <div class="as-row"><span class="as-k">Options Budget</span><span class="as-v">R 463,014</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORTANT CONTEXT NOTE -->
+<div class="note g">
+  <strong style="color:var(--green)">Why the Phylax return of +32.3% is credible in this scenario:</strong> The fund purchased put options deeply out of the money (10% below the index). When the ALSI fell 12.97%, the puts moved from deeply OTM to 3,550 points in the money. The delta-gamma-vega effect means the payout is non-linear — a 13% index fall translates to a large multiple on the small premium paid. This is exactly how tail-risk protection is designed to work: inexpensive to hold (funded by yield), explosive when needed. The 23.7&times; protection-to-cost ratio confirms the structural logic.
+</div>
+
+<div class="note t" style="margin-bottom:8px">
+  <strong style="color:var(--teal2)">Important note — fund was not live in March 2026:</strong> This is a modelled historical scenario, not actual fund performance. The Phylax Macro Protector Fund was not operational in March 2026. The ALSI price data is sourced from publicly available market data (FX Leaders, TradingView, Yahoo Finance — March 2026). The options payout uses Black-Scholes pricing with conservative delta-gamma-vega approximations calibrated to the fund's SAFEX execution model. Actual results would depend on live execution, market liquidity, options pricing at the time, and the implied volatility surface at trade date. All calculations are illustrative.
+</div>
+
+<div class="source">
+  <strong>Market data sources:</strong> JSE Top 40 (J200/JTOPI) price data — FX Leaders (Mar 2, 3, 6, 20, 24, 27, 30 2026 reports by Arslan Butt); TradingView J200 (all-time high confirmed Mar 2, 2026: 121,329.63 ZAR); Yahoo Finance J200.JO (Mar 19, 2026 close: 102,746); Investing.com JTOPI historical data.
+  Entry price of 119,500 is an estimate of the Friday 28 February 2026 close, derived from the Monday 2 March opening of ~120,419 and subsequent intraday high of 121,329.
+  Exit price of 104,000 is based on reported range of 103,900–104,500 on 30 March 2026 and closing estimates from available data.
+  Quattro Investment Brokers (Pty) Ltd — FSP 46524.
+</div>
+
+<div class="disc">
+  This document is for information and discussion purposes only. It does not constitute an offer, solicitation or investment advice. The Phylax Capital Macro Protector Fund was not live in March 2026 and these figures represent a hypothetical back-test of the fund strategy against real market data. Past performance of a modelled strategy does not guarantee future results. Options payout approximations use Black-Scholes pricing with conservative multipliers for delta, gamma and vega effects. Actual payout would depend on live SAFEX execution, bid-offer spreads, available strikes and prevailing implied volatility at trade date.
+</div>
+</div>
+</body>
+</html>

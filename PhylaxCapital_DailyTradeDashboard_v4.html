@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phylax Capital — Daily Trade Dashboard v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#101b2a;
+  --teal:#00c4d4;--teal2:#00e8f8;--plat:#b8c8d4;--plat2:#dce8f0;
+  --white:#eef4f8;--muted:#5a7888;--muted2:#2a3a45;
+  --red:#e84040;--red2:#f07070;--green:#40c880;--green2:#60e8a0;--amber:#e8a020;--gold:#c8a84a;--blue2:#60b0f0;
+  --border:rgba(0,196,212,.10);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);
+}
+html{font-size:13px}
+body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 60% 35% at 80% 0%,rgba(0,196,212,.05) 0%,transparent 55%),
+    linear-gradient(rgba(0,196,212,.012) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.012) 1px,transparent 1px);
+  background-size:100%,48px 48px,48px 48px}
+input,button,textarea,select{font-family:inherit}
+.page{max-width:1380px;margin:0 auto;padding:20px 22px 60px}
+
+/* TOP BAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding-bottom:14px;border-bottom:2px solid var(--teal);margin-bottom:16px;gap:16px}
+.brand-row{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.bname{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--plat2);letter-spacing:.20em;text-transform:uppercase;line-height:1.05}
+.bfund{font-size:9.5px;color:var(--teal);letter-spacing:.24em;text-transform:uppercase;margin-top:2px;font-family:'Rajdhani',sans-serif;font-weight:600}
+.bsub{font-size:8.5px;color:var(--muted);margin-top:1px}
+.today-pill{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;color:var(--teal2);text-transform:uppercase;letter-spacing:.1em;background:rgba(0,196,212,.08);border:1px solid var(--border2);padding:5px 12px;border-radius:2px;white-space:nowrap}
+.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal2);animation:pulse 2s infinite;margin-right:5px;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 4px var(--teal2)}50%{opacity:.3}}
+
+/* PERFORMANCE SUMMARY WIDGET */
+.perf-summary{display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:2px;padding:0;overflow:hidden;flex-shrink:0}
+.ps-item{padding:6px 14px;text-align:center;border-right:1px solid var(--border)}
+.ps-item:last-child{border-right:none}
+.ps-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
+.ps-value{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;white-space:nowrap}
+.ps-pos{color:var(--green2)}.ps-neg{color:var(--red2)}.ps-neu{color:var(--plat)}
+
+/* LIVE NAV BANNER */
+.nav-banner{display:grid;grid-template-columns:auto 1fr repeat(4,auto);gap:0;background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));border:1px solid rgba(0,196,212,.28);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.nb-main{padding:14px 20px;border-right:1px solid rgba(0,196,212,.15)}
+.nb-label{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.16em;margin-bottom:4px}
+.nb-val{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--teal2);line-height:1}
+.nb-sub{font-size:8.5px;color:var(--muted);margin-top:3px}
+.nb-cell{padding:10px 16px;border-right:1px solid rgba(0,196,212,.1);display:flex;flex-direction:column;justify-content:center}
+.nb-cell:last-child{border-right:none}
+.nb-cl{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.nb-cv{font-family:'DM Mono',monospace;font-size:11px;color:var(--white)}
+.nb-override{display:flex;align-items:center;gap:6px;padding:10px 14px}
+
+/* SECTION HEADINGS */
+.sh{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sh::before{content:'';width:3px;height:13px;background:currentColor;flex-shrink:0}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.c-teal{color:var(--teal)}.c-gold{color:var(--amber)}.c-red{color:var(--red2)}.c-green{color:var(--green)}.c-plat{color:var(--plat)}.c-blue{color:var(--blue2)}
+
+/* PANELS */
+.panel{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:2px;padding:18px;margin-bottom:14px}
+.panel.br{border-color:rgba(232,64,64,.18)}.panel.bt{border-color:var(--border2)}
+.panel.bg{border-color:rgba(64,200,128,.22);background:linear-gradient(135deg,rgba(64,200,128,.06),rgba(64,200,128,.02))}
+.panel.ba{border-color:rgba(232,160,32,.22)}.panel.beod{border-color:rgba(0,196,212,.4);background:linear-gradient(135deg,rgba(0,196,212,.07),rgba(0,196,212,.02))}
+.panel.bperf{border-color:rgba(96,200,80,.2);background:linear-gradient(135deg,rgba(64,200,128,.05),rgba(0,196,212,.03))}
+
+/* LAYOUT */
+.main-grid{display:grid;grid-template-columns:320px 1fr;gap:14px;margin-bottom:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+
+/* INPUTS */
+.fi{margin-bottom:10px}
+.fi-l{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.fi-badge{font-size:8px;padding:1px 6px;border-radius:2px;background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.2);color:var(--amber)}
+.fi-badge.auto{background:rgba(0,196,212,.08);border-color:rgba(0,196,212,.2);color:var(--teal2)}
+input[type=number],input[type=date],input[type=text]{
+  width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(0,196,212,.2);border-radius:2px;
+  padding:8px 10px;color:var(--white);font-family:'DM Mono',monospace;font-size:12px;outline:none;transition:border .2s}
+input:focus{border-color:var(--teal2)!important;box-shadow:0 0 0 2px rgba(0,196,212,.1)}
+input.auto-field{background:rgba(0,196,212,.04);border-color:rgba(0,196,212,.12);color:var(--teal);cursor:default}
+input.override-active{border-color:rgba(232,160,32,.5);background:rgba(232,160,32,.05);color:var(--amber)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.5)}
+textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(0,196,212,.2);border-radius:2px;padding:8px 10px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:11px;outline:none;resize:vertical;min-height:60px}
+textarea:focus{border-color:var(--teal2)}
+
+/* METRIC CARDS */
+.mc{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:12px;position:relative;overflow:hidden}
+.mc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.mc.r::before{background:var(--red)}.mc.g::before{background:var(--green)}.mc.a::before{background:var(--amber)}.mc.p::before{background:var(--plat)}.mc.b::before{background:var(--blue2)}
+.mc-l{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.mc-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--white)}
+.mc-s{font-size:8.5px;color:var(--muted);margin-top:3px}
+
+/* BS TABLE */
+.bs-table{width:100%;border-collapse:separate;border-spacing:0 2px}
+.bs-table td{padding:6px 10px;font-size:10.5px;background:rgba(255,255,255,.02)}
+.bs-table td:first-child{color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.07em;width:38%;border-radius:2px 0 0 2px}
+.bs-table td:nth-child(2){font-family:'DM Mono',monospace;font-size:11px;color:var(--teal2);width:22%}
+.bs-table td:last-child{color:var(--muted);font-size:9px;border-radius:0 2px 2px 0}
+.bs-table tr.sep td{background:transparent;padding:3px}
+
+/* DECISION */
+.decision-box{border-radius:2px;padding:20px;text-align:center;border:1px solid;margin-bottom:14px}
+.decision-box.buy{background:rgba(0,196,212,.08);border-color:rgba(0,196,212,.3)}
+.decision-box.hold{background:rgba(232,160,32,.06);border-color:rgba(232,160,32,.25)}
+.decision-box.sell{background:rgba(232,64,64,.08);border-color:rgba(232,64,64,.25)}
+.decision-box.warn{background:rgba(232,64,64,.08);border-color:var(--red)}
+.dec-action{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.2em;margin-bottom:8px}
+.dec-contracts{font-family:'Rajdhani',sans-serif;font-size:48px;font-weight:700;line-height:1;margin-bottom:6px}
+.dec-label{font-family:'Rajdhani',sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.dec-details{font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.6}
+
+/* EOD PANEL */
+.eod-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px}
+.eod-note{font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+.eod-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.eb-item{}
+.eb-l{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.eb-v{font-family:'DM Mono',monospace;font-size:11px}
+
+/* PERFORMANCE ANALYTICS */
+.chart-wrap{position:relative;height:260px;margin-bottom:16px}
+.perf-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+.pstat{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:10px 12px}
+.pstat-l{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.pstat-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+
+/* LOG TABLE */
+.log-table{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:10.5px}
+.log-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:5px 8px;text-align:right;font-weight:600;white-space:nowrap}
+.log-table th:first-child{text-align:left}
+.log-table td{padding:7px 8px;text-align:right;font-family:'DM Mono',monospace;font-size:10px;background:var(--card)}
+.log-table td:first-child{text-align:left;border-radius:2px 0 0 2px;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600}
+.log-table td:last-child{border-radius:0 2px 2px 0}
+.log-table tr.buy-row td{background:rgba(0,196,212,.08)}
+.log-table tr.sell-row td{background:rgba(232,64,64,.07)}
+.log-table tr.hold-row td{background:rgba(232,160,32,.06)}
+
+/* NAV HISTORY TABLE */
+.nav-table{width:100%;border-collapse:separate;border-spacing:0 2px}
+.nav-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:5px 10px;text-align:right;font-weight:600;white-space:nowrap}
+.nav-table th:first-child{text-align:left}
+.nav-table td{padding:7px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:10px;background:var(--card)}
+.nav-table td:first-child{text-align:left;border-radius:2px 0 0 2px;font-family:'Rajdhani',sans-serif;font-size:10.5px;font-weight:600}
+.nav-table td:last-child{border-radius:0 2px 2px 0}
+
+/* BUTTONS */
+.btn{padding:9px 20px;border-radius:2px;border:1px solid;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:all .2s}
+.btn-sm{padding:7px 14px;font-size:10px}
+.btn-xs{padding:4px 10px;font-size:9px}
+.btn-primary{background:rgba(0,196,212,.12);border-color:rgba(0,196,212,.4);color:var(--teal2)}
+.btn-primary:hover{background:rgba(0,196,212,.22)}
+.btn-danger{background:rgba(232,64,64,.1);border-color:rgba(232,64,64,.3);color:var(--red2)}
+.btn-danger:hover{background:rgba(232,64,64,.18)}
+.btn-ghost{background:var(--card);border-color:var(--border);color:var(--muted)}
+.btn-ghost:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.btn-green{background:rgba(64,200,128,.12);border-color:rgba(64,200,128,.35);color:var(--green)}
+.btn-green:hover{background:rgba(64,200,128,.2)}
+.btn-amber{background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3);color:var(--amber)}
+.btn-amber:hover{background:rgba(232,160,32,.18)}
+.btn-eod{background:linear-gradient(135deg,rgba(0,196,212,.18),rgba(0,196,212,.1));border-color:rgba(0,196,212,.5);color:var(--teal2);font-size:13px;padding:12px 28px}
+.btn-eod:hover{background:linear-gradient(135deg,rgba(0,196,212,.28),rgba(0,196,212,.18))}
+
+.carry-ok{background:rgba(64,200,128,.08);border:1px solid rgba(64,200,128,.2);border-radius:2px;padding:8px 12px;font-size:10.5px;color:var(--green);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;margin-bottom:14px}
+.carry-bad{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.2);border-radius:2px;padding:8px 12px;font-size:10.5px;color:var(--red);font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;margin-bottom:14px}
+.notes-wrap{background:rgba(232,160,32,.04);border:1px solid rgba(232,160,32,.15);border-radius:2px;padding:14px}
+.toggle-btn{font-size:9px;color:var(--muted);cursor:pointer;font-family:'Rajdhani',sans-serif;letter-spacing:.08em;text-transform:uppercase;background:none;border:none;padding:0;transition:color .2s}
+.toggle-btn:hover{color:var(--teal2)}
+.hidden{display:none!important}
+.confirm-strip{display:flex;gap:10px;align-items:center;padding:12px 16px;border-radius:2px;background:rgba(64,200,128,.07);border:1px solid rgba(64,200,128,.2);margin-bottom:14px}
+.confirm-text{flex:1;font-size:11px;color:var(--muted);line-height:1.5}
+.log-controls{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.log-count{font-family:'Rajdhani',sans-serif;font-size:10px;color:var(--muted);margin-left:auto}
+
+/* ── ZARONIA / CALL RATE ─────────────────────────────────────────── */
+.zaronia-strip{display:flex;align-items:center;gap:14px;padding:10px 16px;
+  background:rgba(64,200,128,.06);border:1px solid rgba(64,200,128,.2);
+  border-radius:2px;margin-bottom:14px;flex-wrap:wrap}
+.zs-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--green)}
+.zs-rate{font-family:'DM Mono',monospace;font-size:16px;font-weight:600;color:var(--green2)}
+.zs-meta{font-size:9px;color:var(--muted);line-height:1.5}
+.zs-daily{font-family:'DM Mono',monospace;font-size:10px;color:var(--green)}
+
+/* ── LADDER TRANCHE TABLE ────────────────────────────────────────── */
+.ladder-table{width:100%;border-collapse:separate;border-spacing:0 3px}
+.ladder-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);padding:5px 10px;text-align:right;font-weight:600;
+  background:rgba(0,0,0,.2);white-space:nowrap}
+.ladder-table th:first-child{text-align:left;padding-left:12px}
+.ladder-table td{padding:8px 10px;text-align:right;font-family:'DM Mono',monospace;
+  font-size:10.5px;background:var(--card)}
+.ladder-table td:first-child{text-align:left;padding-left:12px;border-radius:2px 0 0 2px;
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600}
+.ladder-table td:last-child{border-radius:0 2px 2px 0}
+.ladder-table tr.tranche-itm td{background:rgba(64,200,128,.09);border-color:rgba(64,200,128,.2)}
+.ladder-table tr.tranche-near td{background:rgba(232,160,32,.07)}
+.ladder-table tr.tranche-otm td{background:var(--card)}
+.tdd-badge{display:inline-block;font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:2px;margin-left:4px}
+.tdd-itm{background:rgba(64,200,128,.15);border:1px solid rgba(64,200,128,.3);color:var(--green2)}
+.tdd-otm{background:rgba(90,120,136,.1);border:1px solid rgba(90,120,136,.2);color:var(--muted)}
+.tdd-near{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.25);color:var(--amber)}
+
+/* ── TRANCHE BUTTONS ─────────────────────────────────────────────── */
+.btn-add-tranche{background:rgba(64,200,128,.12);border:1px solid rgba(64,200,128,.35);
+  color:var(--green);font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:8px 16px;border-radius:2px;
+  cursor:pointer;transition:all .2s}
+.btn-add-tranche:hover{background:rgba(64,200,128,.22)}
+.btn-close-tranche{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.25);
+  color:var(--red2);font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:2px;
+  cursor:pointer;transition:all .2s}
+.btn-close-tranche:hover{background:rgba(232,64,64,.18)}
+
+/* ── DAILY NAV BREAKDOWN ─────────────────────────────────────────── */
+.dnav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.dnav-card{background:var(--bg2);border:1px solid var(--border);border-radius:2px;
+  padding:12px 14px;position:relative;overflow:hidden}
+.dnav-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.dnav-card.dc-green::before{background:var(--green)}.dnav-card.dc-amber::before{background:var(--amber)}
+.dnav-card.dc-red::before{background:var(--red)}.dnav-card.dc-gold::before{background:var(--gold)}
+.dnav-l{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.dnav-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--white)}
+.dnav-s{font-size:8.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+
+/* ── LIQUIDITY STRESS ────────────────────────────────────────────── */
+.lstress-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+.lstress-card{border:1px solid;border-radius:2px;padding:14px 16px}
+.lstress-card.lsc-green{background:rgba(64,200,128,.06);border-color:rgba(64,200,128,.25)}
+.lstress-card.lsc-teal{background:rgba(0,196,212,.05);border-color:rgba(0,196,212,.25)}
+.lstress-card.lsc-amber{background:rgba(232,160,32,.05);border-color:rgba(232,160,32,.22)}
+.lstress-card.lsc-red{background:rgba(232,64,64,.05);border-color:rgba(232,64,64,.22)}
+.lsc-title{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px}
+.lsc-title.lsct-green{color:var(--green)}.lsc-title.lsct-teal{color:var(--teal)}
+.lsc-title.lsct-amber{color:var(--amber)}.lsc-title.lsct-red{color:var(--red2)}
+.lsc-row{display:flex;justify-content:space-between;padding:4px 0;
+  border-bottom:1px solid rgba(0,196,212,.06)}
+.lsc-row:last-child{border-bottom:none}
+.lsc-k{font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.lsc-v{font-family:'DM Mono',monospace;font-size:10px}
+.lsc-bar{height:4px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:8px;overflow:hidden}
+.lsc-fill{height:100%;border-radius:2px;transition:width .5s}
+.bn90-pill{display:inline-block;font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:3px 10px;border-radius:2px;margin-top:6px}
+.bn90-ok{background:rgba(64,200,128,.15);border:1px solid rgba(64,200,128,.3);color:var(--green2)}
+.bn90-fail{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.25);color:var(--red2)}
+
+.disc{font-size:8.5px;color:rgba(90,120,136,.4);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
+.override-badge{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.25);padding:2px 7px;border-radius:2px}
+.warn-note{font-size:9px;color:var(--amber);margin-top:4px;font-family:'Rajdhani',sans-serif}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══ TOP BAR ══════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="brand-row">
+    <svg width="44" height="44" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="plxd_p" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#FFFFFF"/>
+          <stop offset="50%"  stop-color="#B0B5B9"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="plxd_i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#E0FFFF"/>
+          <stop offset="50%"  stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="plxd_g" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Outer hexagon -->
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23"
+               fill="none" stroke="url(#plxd_p)" stroke-width="2.0" stroke-linejoin="round"/>
+      <!-- Middle hexagon -->
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5"
+               fill="none" stroke="url(#plxd_p)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- 6 connecting lines outer→middle -->
+      <line x1="40"   y1="6"  x2="40"    y2="23"   stroke="url(#plxd_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5"  stroke="url(#plxd_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5"  stroke="url(#plxd_p)" stroke-width="1.5"/>
+      <line x1="40"   y1="74" x2="40"    y2="57"   stroke="url(#plxd_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5"  stroke="url(#plxd_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5"  stroke="url(#plxd_p)" stroke-width="1.5"/>
+      <!-- 4 diagonal cross lines -->
+      <line x1="40"   y1="6"  x2="69.4" y2="57"  stroke="url(#plxd_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="6"  x2="10.6" y2="57"  stroke="url(#plxd_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="69.4" y2="23"  stroke="url(#plxd_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="10.6" y2="23"  stroke="url(#plxd_p)" stroke-width="0.6" opacity="0.4"/>
+      <!-- Ice-blue gem hexagon (glowing) -->
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05"
+               fill="url(#plxd_i)" filter="url(#plxd_g)"/>
+    </svg>
+    <div>
+      <div class="bname">Phylax Capital</div>
+      <div class="bfund">Macro&nbsp;Protector&nbsp;Fund</div>
+      <div class="bsub">Daily Trade Decision Dashboard &nbsp;·&nbsp; SAFEX ALSI Put Overlay &nbsp;·&nbsp; v3</div>
+    </div>
+  </div>
+
+  <!-- PERFORMANCE SUMMARY WIDGET -->
+  <div class="perf-summary">
+    <div class="ps-item">
+      <div class="ps-label">Total Return</div>
+      <div class="ps-value ps-neu" id="ps-ret">—</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-label">Max Drawdown</div>
+      <div class="ps-value ps-neu" id="ps-dd">—</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-label">Days Running</div>
+      <div class="ps-value ps-neu" id="ps-days">—</div>
+    </div>
+    <div class="ps-item">
+      <div class="ps-label">NAV Closes</div>
+      <div class="ps-value ps-neu" id="ps-closes">0</div>
+    </div>
+    <div class="ps-item" style="padding-right:12px">
+      <div class="ps-label">Today</div>
+      <div class="today-pill" style="display:inline-block"><span class="live-dot"></span><span id="today-display">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LIVE NAV BANNER ═══════════════════════════════════════════════ -->
+<div class="nav-banner">
+  <div class="nb-main">
+    <div class="nb-label">Live Fund NAV</div>
+    <div class="nb-val" id="nb-nav">R —</div>
+    <div class="nb-sub" id="nb-nav-sub">Enter inputs to calculate</div>
+  </div>
+  <div class="nb-cell">
+    <div class="nb-cl">Cash Core (Accreted)</div>
+    <div class="nb-cv" id="nb-cash">—</div>
+  </div>
+  <div class="nb-cell">
+    <div class="nb-cl">Option Book (MTM)</div>
+    <div class="nb-cv" id="nb-book" style="color:var(--amber)">—</div>
+  </div>
+  <div class="nb-cell">
+    <div class="nb-cl">Residual Cash</div>
+    <div class="nb-cv" id="nb-res" style="color:var(--muted)">—</div>
+  </div>
+  <div class="nb-cell">
+    <div class="nb-cl">Day P&amp;L (est.)</div>
+    <div class="nb-cv" id="nb-pnl" style="color:var(--muted)">—</div>
+  </div>
+  <div class="nb-override">
+    <span id="override-badge" class="override-badge hidden">Override Active</span>
+    <button class="btn btn-xs btn-amber" onclick="toggleNAVOverride()" id="override-btn">&#9998; Override</button>
+    <button class="btn btn-xs btn-ghost hidden" onclick="clearNAVOverride()" id="override-clear-btn">&#10005; Auto</button>
+  </div>
+</div>
+
+
+<!-- ══ ZARONIA / CALL RATE STRIP ════════════════════════════════════ -->
+<div class="zaronia-strip">
+  <div>
+    <div class="zs-label">&#9670; ZARONIA / Call Rate (Daily-Accruing)</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-top:2px">
+      <span class="zs-rate" id="zs-rate">—</span>
+      <span style="font-size:9px;color:var(--muted)">p.a.</span>
+      <span style="font-size:9px;color:var(--muted)">·</span>
+      <span class="zs-daily" id="zs-daily">— /day</span>
+    </div>
+  </div>
+  <div class="zs-meta">
+    <strong style="color:var(--plat)">BN90 RIHF Structure:</strong> Cash accretes daily at ZARONIA (≈JIBAR−15bps).<br>
+    SAFEX puts marked to market daily — T+1 redemptions always available. No lock-up periods.
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div style="font-size:8.5px;color:var(--muted);font-family:'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">ZARONIA Spread vs JIBAR</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:9px;color:var(--muted)">−50bps</span>
+      <input type="range" id="sl-zaronia-spread" min="-50" max="0" step="5" value="-15"
+        style="width:100px" oninput="onZaroniaSpreadInput(this)"/>
+      <span style="font-size:9px;color:var(--muted)">0</span>
+      <span id="sl-zaronia-val" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);min-width:40px">−15bps</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OPTION LADDER PANEL ══════════════════════════════════════════ -->
+<div class="panel" style="margin-bottom:14px;border-color:rgba(0,196,212,.3)">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="sh c-teal" style="margin-bottom:0;flex:1">Option Ladder — Active SAFEX Tranches</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-add-tranche" onclick="addTranche()">+ Add Tranche</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportLadderCSV()" style="font-size:9px">&#8595; Ladder CSV</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="ladder-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:12px">Tranche</th>
+          <th>Buy Date</th><th>Expiry</th><th>TTE (days)</th>
+          <th>Strike</th><th>Contracts</th><th>Cost (R)</th>
+          <th>BS MTM (R)</th><th>P&amp;L</th><th>Θ/day</th>
+          <th>Status</th><th style="text-align:center">Close</th>
+        </tr>
+      </thead>
+      <tbody id="ladder-tbody"></tbody>
+    </table>
+  </div>
+  <div id="ladder-totals" style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+    <!-- filled by JS -->
+  </div>
+</div>
+
+<!-- ══ DAILY NAV BREAKDOWN ══════════════════════════════════════════ -->
+<div class="dnav-grid">
+  <div class="dnav-card dc-green">
+    <div class="dnav-l">Cash (ZARONIA-Accreting)</div>
+    <div class="dnav-v" id="dn-cash" style="color:var(--green2)">—</div>
+    <div class="dnav-s" id="dn-cash-s">Daily: +—</div>
+  </div>
+  <div class="dnav-card dc-amber">
+    <div class="dnav-l">Option Book (MTM)</div>
+    <div class="dnav-v" id="dn-book" style="color:var(--amber)">—</div>
+    <div class="dnav-s" id="dn-book-s">Θ bleed: −—/day</div>
+  </div>
+  <div class="dnav-card">
+    <div class="dnav-l">Total Live NAV</div>
+    <div class="dnav-v" id="dn-nav" style="color:var(--teal2)">—</div>
+    <div class="dnav-s" id="dn-nav-s">vs initial capital</div>
+  </div>
+  <div class="dnav-card dc-gold">
+    <div class="dnav-l">Floor Value (Cash+Intrinsic)</div>
+    <div class="dnav-v" id="dn-floor" style="color:var(--gold2)">—</div>
+    <div class="dnav-s" id="dn-floor-s">Minimum T+1 value</div>
+  </div>
+  <div class="dnav-card">
+    <div class="dnav-l">Day P&amp;L</div>
+    <div class="dnav-v" id="dn-pnl">—</div>
+    <div class="dnav-s">vs yesterday close</div>
+  </div>
+</div>
+
+<!-- ══ LIQUIDITY STRESS TEST ════════════════════════════════════════ -->
+<div class="panel" style="margin-bottom:14px;border-color:rgba(64,200,128,.2)">
+  <div class="sh c-green">BN90 Liquidity Stress Test — T+1 Redemption Capacity</div>
+  <div class="lstress-grid">
+    <div class="lstress-card lsc-green">
+      <div class="lsc-title lsct-green">&#9654; T+1 Cash (Instant)</div>
+      <div class="lsc-row"><span class="lsc-k">Available</span><span class="lsc-v" id="ls-cash-r">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">% of NAV</span><span class="lsc-v" id="ls-cash-pct">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">Rate</span><span class="lsc-v" id="ls-cash-rate" style="color:var(--green2)">ZARONIA daily</span></div>
+      <div class="lsc-bar"><div class="lsc-fill" id="ls-bar-cash" style="background:var(--green)"></div></div>
+      <div class="bn90-pill" id="ls-bn90-pill">— BN90</div>
+    </div>
+    <div class="lstress-card lsc-teal">
+      <div class="lsc-title lsct-teal">&#9670; T+1 Full (Options @ Bid)</div>
+      <div class="lsc-row"><span class="lsc-k">Realizable</span><span class="lsc-v" id="ls-full-r">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">% of NAV</span><span class="lsc-v" id="ls-full-pct">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">Bid haircut</span><span class="lsc-v" id="ls-haircut">2.5–5%</span></div>
+      <div class="lsc-bar"><div class="lsc-fill" id="ls-bar-full" style="background:var(--teal)"></div></div>
+    </div>
+    <div class="lstress-card lsc-amber">
+      <div class="lsc-title lsct-amber">&#9660; Stress: ALSI −10%</div>
+      <div class="lsc-row"><span class="lsc-k">NAV Impact</span><span class="lsc-v" id="ls-s10-nav">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">Puts → ITM</span><span class="lsc-v" id="ls-s10-itm" style="color:var(--green2)">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">Net NAV Change</span><span class="lsc-v" id="ls-s10-net">—</span></div>
+      <div class="lsc-bar"><div class="lsc-fill" id="ls-bar-s10" style="background:var(--amber)"></div></div>
+    </div>
+    <div class="lstress-card lsc-red">
+      <div class="lsc-title lsct-red">&#9660; Stress: ALSI −25%</div>
+      <div class="lsc-row"><span class="lsc-k">NAV Impact</span><span class="lsc-v" id="ls-s25-nav">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">Puts → ITM</span><span class="lsc-v" id="ls-s25-itm" style="color:var(--green2)">—</span></div>
+      <div class="lsc-row"><span class="lsc-k">Net NAV Change</span><span class="lsc-v" id="ls-s25-net">—</span></div>
+      <div class="lsc-bar"><div class="lsc-fill" id="ls-bar-s25" style="background:var(--red)"></div></div>
+    </div>
+  </div>
+  <div style="font-size:9px;color:var(--muted);line-height:1.6;border-top:1px solid var(--border);padding-top:8px">
+    <strong style="color:var(--plat)">BN90/CISCA RIHF liquidity:</strong> SAFEX-listed put options = daily liquid (Schedule 1). Cash settles T+0. Options T+1 via SAFEX MTM settlement.
+    Bid haircut: 2.5% (&lt;50 contracts), 4.0% (50–200), 6.0% (&gt;200) including estimated market impact.
+    <strong style="color:var(--green2)">Capital floor:</strong> Cash component ÷ initial capital — always ≥ 0% at any SAFEX quarterly expiry.
+    Stress scenarios reprice option book using current BS model at shocked spot level.
+  </div>
+</div>
+
+<!-- ══ MAIN GRID ═════════════════════════════════════════════════════ -->
+<div class="main-grid">
+
+  <!-- LEFT: INPUTS -->
+  <div>
+
+    <div class="panel bt">
+      <div class="sh c-gold">Market Inputs — Update Each Morning</div>
+      <div class="fi">
+        <div class="fi-l">ALSI Spot (J200 Index Points) <span class="fi-badge">&#9998; Daily</span></div>
+        <input type="text" id="i-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      </div>
+      <div class="fi">
+        <div class="fi-l">Fund NAV (R) <span class="fi-badge auto" id="nav-input-badge">Auto</span></div>
+        <input type="text" id="i-nav" class="auto-field" readonly onfocus="fFocus(this)" onblur="fBlur(this)"/>
+        <div class="warn-note hidden" id="nav-override-warn">&#9888; Manual override active — click "Auto" in the banner to revert</div>
+      </div>
+      <div class="fi">
+        <div class="fi-l">JIBAR Rate <span class="fi-badge">&#9998; Monthly</span></div>
+        <input type="text" id="i-jibar" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      </div>
+      <div class="fi">
+        <div class="fi-l">ALSI Dividend Yield (q) <span class="fi-badge">&#9998; Quarterly</span></div>
+        <input type="text" id="i-dY" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+        <div style="font-size:9px;color:var(--amber);margin-top:3px;font-family:'Rajdhani',sans-serif">&#9888; ~3.8% p.a. — omitting causes 25% mispricing</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="sh c-teal">Option Parameters</div>
+      <div class="fi">
+        <div class="fi-l">Option Expiry (SAFEX Quarterly) <span class="fi-badge">&#9998; Quarterly</span></div>
+        <input type="date" id="i-expiry" oninput="saveInputs();calc()"/>
+      </div>
+      <div class="fi">
+        <div class="fi-l">OTM Target (%) <span class="fi-badge">&#9998; At rebalance</span></div>
+        <input type="text" id="i-otm" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      </div>
+      <div class="fi">
+        <div class="fi-l">Implied Volatility — SAVI (%) <span class="fi-badge">&#9998; Weekly</span></div>
+        <input type="text" id="i-iv" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      </div>
+      <div class="fi">
+        <div class="fi-l">Contracts Held <span class="fi-badge">&#9998; From blotter</span></div>
+        <input type="text" id="i-held" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      </div>
+      <div class="g2">
+        <div class="fi" style="margin-bottom:0">
+          <div class="fi-l">Strike (auto) <span class="fi-badge auto">Auto</span></div>
+          <input type="text" id="i-strike-show" class="auto-field" readonly/>
+        </div>
+        <div class="fi" style="margin-bottom:0">
+          <div class="fi-l">TTE (auto) <span class="fi-badge auto">Auto</span></div>
+          <input type="text" id="i-t-show" class="auto-field" readonly/>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATION STATE -->
+    <div class="panel ba">
+      <div class="sh c-gold">Simulation State</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,196,212,.06)">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Initial Capital</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10.5px" id="sim-capital">R 100,000,000</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,196,212,.06)">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Inception Date</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10.5px" id="sim-inception">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,196,212,.06)">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">NAV History Points</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--teal2)" id="sim-points">0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:5px 0">
+          <span style="font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">Last EOD Close</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted)" id="sim-last-eod">None yet</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" style="flex:1" onclick="exportNAVCSV()">&#8595; Export NAV</button>
+        <button class="btn btn-danger btn-sm" style="flex:1" onclick="resetSimulation()">&#9888; Reset Sim</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: OUTPUTS -->
+  <div>
+
+    <!-- KPI STRIP -->
+    <div class="g4" style="margin-bottom:14px">
+      <div class="mc a">
+        <div class="mc-l">Hedge Multiple</div>
+        <div class="mc-v" id="o-hm">—</div>
+        <div class="mc-s">Target: &#8722;3.0&times; &nbsp;·&nbsp; Δ-adjusted</div>
+      </div>
+      <div class="mc" id="mc-carry">
+        <div class="mc-l">Net Daily Carry</div>
+        <div class="mc-v" id="o-carry">—</div>
+        <div class="mc-s">Yield &minus; Theta bleed</div>
+      </div>
+      <div class="mc r">
+        <div class="mc-l">Daily Theta Bleed</div>
+        <div class="mc-v" id="o-theta-bleed">—</div>
+        <div class="mc-s">Time decay on current book</div>
+      </div>
+      <div class="mc">
+        <div class="mc-l">Put Delta (Δ)</div>
+        <div class="mc-v" id="o-delta">—</div>
+        <div class="mc-s">&#8722;1.0 (deep ITM) → 0.0 (OTM)</div>
+      </div>
+    </div>
+
+    <div id="carry-status" class="carry-ok">&#10003; &nbsp;Carry positive — hedge is self-financing</div>
+
+    <!-- DECISION BOX -->
+    <div id="decision-box" class="decision-box buy">
+      <div class="dec-action" id="dec-action">CALCULATING...</div>
+      <div class="dec-contracts" id="dec-contracts">—</div>
+      <div class="dec-label" id="dec-label">Contracts</div>
+      <div class="dec-details" id="dec-details"></div>
+    </div>
+
+    <!-- SECONDARY METRICS -->
+    <div class="g3" style="margin-bottom:14px">
+      <div class="mc">
+        <div class="mc-l">Put Option Price</div>
+        <div class="mc-v" id="o-price">—</div>
+        <div class="mc-s">Pts &nbsp;·&nbsp; R<span id="o-price-r">—</span>/contract</div>
+      </div>
+      <div class="mc">
+        <div class="mc-l">Recommended Contracts</div>
+        <div class="mc-v" id="o-rec">—</div>
+        <div class="mc-s">Min(budget, carry-neutral)</div>
+      </div>
+      <div class="mc">
+        <div class="mc-l">Option Book Value</div>
+        <div class="mc-v" id="o-bv">—</div>
+        <div class="mc-s">BS mark × contracts × R10</div>
+      </div>
+    </div>
+    <div class="g4" style="margin-bottom:0">
+      <div class="mc">
+        <div class="mc-l">Daily JIBAR Yield</div>
+        <div class="mc-v" id="o-yield">—</div>
+        <div class="mc-s">NAV × JIBAR ÷ 365</div>
+      </div>
+      <div class="mc">
+        <div class="mc-l">Carry Ratio</div>
+        <div class="mc-v" id="o-cr">—</div>
+        <div class="mc-s">&gt;1.0 = self-financing</div>
+      </div>
+      <div class="mc g">
+        <div class="mc-l">Max Carry-Neutral</div>
+        <div class="mc-v" id="o-maxc">—</div>
+        <div class="mc-s">Carry stays positive above this</div>
+      </div>
+      <div class="mc p">
+        <div class="mc-l">Convexity Budget</div>
+        <div class="mc-v" id="o-budget">—</div>
+        <div class="mc-s">NAV − NAV/(1+r·T)</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ END OF DAY CLOSE ══════════════════════════════════════════════ -->
+<div class="panel beod">
+  <div class="sh c-teal">End of Day Close — Record Daily NAV</div>
+  <div class="eod-note">
+    At market close, confirm today's closing ALSI and SAVI to lock in the daily NAV. This snapshots cash core accrual, option book mark-to-market, and carry income — and adds the data point to the performance chart.
+  </div>
+  <div class="eod-grid">
+    <div class="fi" style="margin-bottom:0">
+      <div class="fi-l">Closing ALSI Spot</div>
+      <input type="text" id="eod-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+    </div>
+    <div class="fi" style="margin-bottom:0">
+      <div class="fi-l">Closing IV (SAVI %)</div>
+      <input type="text" id="eod-iv" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+    </div>
+    <div class="fi" style="margin-bottom:0">
+      <div class="fi-l">NAV Override (optional)</div>
+      <input type="text" id="eod-nav-override" placeholder="Leave blank = auto" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+    </div>
+    <button class="btn btn-eod" onclick="endOfDay()">&#9654; &nbsp;End of Day Close</button>
+  </div>
+  <div class="eod-breakdown" id="eod-breakdown" style="display:none">
+    <div class="eb-item"><div class="eb-l">Closing NAV</div><div class="eb-v" id="eb-nav" style="color:var(--teal2)">—</div></div>
+    <div class="eb-item"><div class="eb-l">Cash Core</div><div class="eb-v" id="eb-cash" style="color:var(--plat)">—</div></div>
+    <div class="eb-item"><div class="eb-l">Option Book</div><div class="eb-v" id="eb-book" style="color:var(--amber)">—</div></div>
+    <div class="eb-item"><div class="eb-l">Day P&amp;L</div><div class="eb-v" id="eb-pnl">—</div></div>
+    <div class="eb-item"><div class="eb-l">vs Initial Capital</div><div class="eb-v" id="eb-vs">—</div></div>
+  </div>
+</div>
+
+<!-- ══ PERFORMANCE ANALYTICS ════════════════════════════════════════ -->
+<div class="panel bperf">
+  <div class="sh c-green">Performance Analytics
+    <span style="margin-left:auto;font-size:9px;color:var(--muted);font-family:'DM Mono',monospace" id="chart-data-count"></span>
+  </div>
+
+  <div class="perf-stats" id="perf-stats-row">
+    <div class="pstat"><div class="pstat-l">Current NAV</div><div class="pstat-v" id="st-nav" style="color:var(--teal2)">—</div></div>
+    <div class="pstat"><div class="pstat-l">Total Return</div><div class="pstat-v" id="st-ret">—</div></div>
+    <div class="pstat"><div class="pstat-l">Max Drawdown</div><div class="pstat-v" id="st-dd">—</div></div>
+    <div class="pstat"><div class="pstat-l">Best Day</div><div class="pstat-v" id="st-best" style="color:var(--green2)">—</div></div>
+    <div class="pstat"><div class="pstat-l">Worst Day</div><div class="pstat-v" id="st-worst" style="color:var(--red2)">—</div></div>
+    <div class="pstat"><div class="pstat-l">Avg Daily P&amp;L</div><div class="pstat-v" id="st-avg">—</div></div>
+  </div>
+
+  <div class="chart-wrap">
+    <canvas id="perf-chart"></canvas>
+  </div>
+  <div id="chart-empty" style="text-align:center;padding:40px;color:var(--muted);font-size:11px">
+    No performance data yet. Complete at least 2 End of Day closes to see the chart.
+  </div>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="btn btn-ghost btn-sm" onclick="exportNAVCSV()">&#8595; Export Performance CSV</button>
+    <button class="btn btn-ghost btn-sm" onclick="deleteLastEOD()">&#9888; Delete Last EOD Point</button>
+  </div>
+</div>
+
+<!-- ══ BS INTERMEDIATES ══════════════════════════════════════════════ -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="sh c-plat" style="cursor:pointer" onclick="toggleBS()">
+    Black-Scholes Intermediates — Step-by-Step (Auditable)
+    <span id="bs-toggle-label" class="toggle-btn" style="margin-left:auto;margin-right:0">&#9660; Show</span>
+  </div>
+  <div id="bs-body" class="hidden">
+    <div class="g2">
+      <table class="bs-table">
+        <tr><td>ALSI Spot (S)</td><td id="b-S">—</td><td>Current index</td></tr>
+        <tr><td>Strike (K)</td><td id="b-K">—</td><td>S × (1 − OTM%)</td></tr>
+        <tr><td>TTE (t)</td><td id="b-T">—</td><td>Days ÷ 365</td></tr>
+        <tr><td>JIBAR (r)</td><td id="b-r">—</td><td>Risk-free proxy</td></tr>
+        <tr><td>Vol (σ)</td><td id="b-iv">—</td><td>SAVI ATM</td></tr>
+        <tr><td>Div Yield (q)</td><td id="b-dY">—</td><td>~3.8% p.a.</td></tr>
+        <tr class="sep"><td colspan="3"></td></tr>
+        <tr><td>d1</td><td id="b-d1">—</td><td>(ln(S/K)+(r−q+σ²/2)t)/(σ√t)</td></tr>
+        <tr><td>d2</td><td id="b-d2">—</td><td>d1 − σ√t</td></tr>
+        <tr><td>N(d1)</td><td id="b-Nd1">—</td><td>Cum. normal</td></tr>
+        <tr><td>N(d2)</td><td id="b-Nd2">—</td><td>Cum. normal</td></tr>
+        <tr><td>N(−d2)</td><td id="b-Nnd2">—</td><td>Used in put price</td></tr>
+        <tr><td>n(d1)</td><td id="b-nd1">—</td><td>PDF — used in Greeks</td></tr>
+      </table>
+      <table class="bs-table">
+        <tr><td>Put Price (pts)</td><td id="b-price">—</td><td>Ke^(−rT)N(−d2)−Se^(−qT)N(−d1)</td></tr>
+        <tr><td>Put Price (R)</td><td id="b-price-r">—</td><td>pts × R10 SAFEX multiplier</td></tr>
+        <tr class="sep"><td colspan="3"></td></tr>
+        <tr><td>Delta (Δ)</td><td id="b-delta">—</td><td>e^(−qT)(N(d1)−1)</td></tr>
+        <tr><td>Theta (annual)</td><td id="b-theta-a">—</td><td>Full Merton formula</td></tr>
+        <tr><td>Theta (daily)</td><td id="b-theta-d">—</td><td>Annual ÷ 365</td></tr>
+        <tr><td>Gamma</td><td id="b-gamma">—</td><td>n(d1)e^(−qT)/(Sσ√T)</td></tr>
+        <tr><td>Vega (R/1% vol)</td><td id="b-vega">—</td><td>per contract</td></tr>
+        <tr class="sep"><td colspan="3"></td></tr>
+        <tr><td>Convexity Budget</td><td id="b-budget-bs">—</td><td>NAV − NAV/(1+r·t)</td></tr>
+        <tr><td>Contracts (budget)</td><td id="b-c-budget">—</td><td>Budget ÷ put price</td></tr>
+        <tr><td>Contracts (carry-neutral)</td><td id="b-c-carry">—</td><td>Yield ÷ |theta|/contract</td></tr>
+        <tr><td>Recommended</td><td id="b-c-rec">—</td><td>Min(budget, carry-neutral)</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COMMIT DECISION ═══════════════════════════════════════════════ -->
+<div class="panel ba">
+  <div class="sh c-gold">Commit Today's Decision to Audit Log</div>
+  <div class="notes-wrap" style="margin-bottom:12px">
+    <div class="fi-l" style="margin-bottom:6px;font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">
+      Trade Rationale / Notes (required)
+    </div>
+    <textarea id="i-notes" placeholder="e.g. Rebalanced after ALSI moved 2% overnight. IV rose to 20% — purchasing 8 contracts to maintain hedge multiple. SAFEX execution confirmed 09h05."></textarea>
+  </div>
+  <div class="confirm-strip">
+    <div class="confirm-text">
+      Once committed, this entry is <strong style="color:var(--white)">permanently locked</strong> in the audit log. All inputs, Greeks, and NAV are recorded with timestamp.
+    </div>
+    <button class="btn btn-green" onclick="commitDecision()">&#10003; &nbsp;Commit to Audit Log</button>
+  </div>
+</div>
+
+<!-- ══ AUDIT LOG ═════════════════════════════════════════════════════ -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="sh c-teal">Audit Log — Permanent Decision Record</div>
+  <div class="log-controls">
+    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">&#8595; Export CSV</button>
+    <button class="btn btn-danger btn-sm" onclick="clearLog()">&#9888; Clear All</button>
+    <div class="log-count" id="log-count">0 records</div>
+  </div>
+  <div style="overflow-x:auto">
+    <table class="log-table">
+      <thead><tr>
+        <th style="text-align:left">Date &amp; Time</th>
+        <th>ALSI</th><th>Strike</th><th>T</th><th>σ</th><th>Δ</th><th>Θ/day</th>
+        <th>Put (R)</th><th>Held</th><th>Rec.</th><th>Trade</th>
+        <th>NAV (Rm)</th><th>Carry</th><th>HM</th>
+        <th style="text-align:left;min-width:160px">Notes</th>
+      </tr></thead>
+      <tbody id="log-body">
+        <tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px;font-size:11px">No decisions logged yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══ NAV HISTORY TABLE ═════════════════════════════════════════════ -->
+<div class="panel" style="margin-bottom:14px">
+  <div class="sh c-green">NAV History — End of Day Record</div>
+  <div style="overflow-x:auto">
+    <table class="nav-table">
+      <thead><tr>
+        <th style="text-align:left">Date</th>
+        <th>ALSI Close</th><th>IV</th><th>Contracts</th>
+        <th>Cash Core</th><th>Option Book</th><th>Residual</th>
+        <th style="color:var(--teal2)">Closing NAV</th>
+        <th>Day P&amp;L</th><th>vs Capital</th>
+      </tr></thead>
+      <tbody id="nav-history-body">
+        <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="disc">
+  Phylax Capital — Macro Protector Fund &nbsp;·&nbsp; Quattro Investment Brokers (Pty) Ltd — FSP 46524 &nbsp;·&nbsp;
+  BS engine: Merton (1973) continuous dividend yield, verified against Python/scipy. NAV = Cash Core (JIBAR-accreted from inception) + Option Book (BS MTM) + Residual Cash. &nbsp;·&nbsp;
+  All data stored in this browser's localStorage only — export CSV regularly. Browser data clearing will erase records permanently. &nbsp;·&nbsp;
+  Not investment advice. Trade decisions require fund manager authorisation.
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// STORAGE KEYS & CONSTANTS
+// ════════════════════════════════════════════════════════════════════
+var LOG_KEY     = 'phylax_v4_log';
+var STATE_KEY   = 'phylax_v4_state';
+var NAV_KEY     = 'phylax_v4_navhistory';
+var INPUTS_KEY  = 'phylax_v4_inputs';
+var LADDER_KEY  = 'phylax_v4_ladder';
+
+var INITIAL_CAPITAL  = 100000000; // R100m default
+var INCEPTION_DATE   = null; // set on first EOD or from state
+var bsHidden = true;
+var navOverrideActive = false;
+var perfChart = null;
+
+// ════════════════════════════════════════════════════════════════════
+// MATHS
+// ════════════════════════════════════════════════════════════════════
+function normCDF(x){
+  if(x<-8)return 0;if(x>8)return 1;
+  var t=1/(1+0.2316419*Math.abs(x));
+  var d=0.3989422820*Math.exp(-.5*x*x);
+  var p=d*t*(0.3193815+t*(-0.3565638+t*(1.7814779+t*(-1.8212560+t*1.3302744))));
+  return x>=0?1-p:p;
+}
+function normPDF(x){ return Math.exp(-.5*x*x)/Math.sqrt(2*Math.PI); }
+
+// ════════════════════════════════════════════════════════════════════
+// FORMATTERS
+// ════════════════════════════════════════════════════════════════════
+function fR(n,d){ return 'R '+n.toLocaleString('en-ZA',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); }
+function fRk(n){
+  var a=Math.abs(n), s=(n<0?'−':'');
+  if(a>=1e9) return s+'R '+(a/1e9).toFixed(2)+'bn';
+  if(a>=1e6) return s+'R '+(a/1e6).toFixed(2)+'m';
+  if(a>=1e3) return s+'R '+(a/1e3).toFixed(0)+'k';
+  return s+'R '+Math.round(a).toLocaleString('en-ZA');
+}
+function fRm(n){ return (n<0?'−':'')+' R '+(Math.abs(n)/1e6).toFixed(2)+'m'; }
+function f4(n){ return n.toFixed(4); }
+function f2(n){ return n.toFixed(2); }
+function fP(n,d){ return (n*100).toFixed(d==null?4:d)+'%'; }
+function fPct(n,dp){ return (n>=0?'+':'')+n.toFixed(dp==null?2:dp)+'%'; }
+function dt(){ return new Date().toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function ts(){ return new Date().toISOString().replace('T',' ').slice(0,19); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function fmtInt(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+function fmtRand(n){ return 'R '+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+function fmtPct(n,dp){ return (n*100).toFixed(dp==null?2:dp)+'%'; }
+
+// ════════════════════════════════════════════════════════════════════
+// INPUT FIELD CONFIG (formatted fields)
+// ════════════════════════════════════════════════════════════════════
+var FVAL = {
+  'i-spot':  113000, 'i-jibar': 0.075, 'i-fx': 18.75, 'i-dY': 0.038,
+  'i-otm':   0.10,   'i-iv':    0.18,  'i-held': 0,   'i-nav': 100000000,
+  'eod-spot':113000, 'eod-iv':  0.18,  'eod-nav-override': 0
+};
+var FCFG = {
+  'i-spot':  { fmt:function(v){return fmtInt(v)+' pts';},  parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;} },
+  'i-jibar': { fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;} },
+  'i-fx':    { fmt:function(v){return v.toFixed(4);}, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;} },
+  'i-dY':    { fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;} },
+  'i-otm':   { fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;} },
+  'i-iv':    { fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;} },
+  'i-held':  { fmt:function(v){return Math.round(v).toString();}, parse:function(s){return Math.max(0,parseInt(s.replace(/[^\d]/g,''))||0);} },
+  'i-nav':   { fmt:fmtRand, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;} },
+  'eod-spot':{ fmt:function(v){return fmtInt(v)+' pts';},  parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;} },
+  'eod-iv':  { fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;} },
+  'eod-nav-override':{ fmt:function(v){return v>0?fmtRand(v):'';}, parse:function(s){return s.trim()===''?0:parseFloat(s.replace(/[^\d.]/g,''))||0;} }
+};
+
+function fFocus(el){
+  if(el.readOnly && !navOverrideActive) return;
+  var cfg=FCFG[el.id]; if(!cfg) return;
+  var v=FVAL[el.id]||0;
+  if(['i-jibar','i-dY','i-otm','i-iv','eod-iv'].indexOf(el.id)>=0){
+    el.value=(v*100).toFixed(4).replace(/\.?0+$/,'');
+  } else if(['i-nav','i-spot','eod-spot'].indexOf(el.id)>=0){
+    el.value=Math.round(v).toString();
+  } else if(el.id==='eod-nav-override'){
+    el.value=v>0?Math.round(v).toString():'';
+  } else { el.value=v; }
+  el.select();
+}
+
+function fBlur(el){
+  if(el.id==='i-nav' && !navOverrideActive){ return; }
+  var cfg=FCFG[el.id]; if(!cfg) return;
+  var raw=cfg.parse(el.value);
+  if(!isNaN(raw) && (raw>0 || el.id==='eod-nav-override')){ FVAL[el.id]=raw; }
+  el.value=cfg.fmt(FVAL[el.id]);
+  if(['i-spot','i-jibar','i-dY','i-otm','i-iv','i-held','i-nav'].indexOf(el.id)>=0){
+    saveInputs(); calc();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LOCALSTORAGE — INPUTS
+// ════════════════════════════════════════════════════════════════════
+function saveInputs(){
+  var data = {
+    spot:FVAL['i-spot'], jibar:FVAL['i-jibar'], dY:FVAL['i-dY'],
+    otm:FVAL['i-otm'], iv:FVAL['i-iv'], held:FVAL['i-held'],
+    navOverride: navOverrideActive ? FVAL['i-nav'] : 0,
+    expiry: document.getElementById('i-expiry').value
+  };
+  try{ localStorage.setItem(INPUTS_KEY, JSON.stringify(data)); }catch(e){}
+}
+
+function loadInputs(){
+  try{
+    var v=localStorage.getItem(INPUTS_KEY);
+    if(!v) return;
+    var d=JSON.parse(v);
+    if(d.spot)  { FVAL['i-spot']  =d.spot; }
+    if(d.jibar) { FVAL['i-jibar'] =d.jibar; }
+    if(d.dY)    { FVAL['i-dY']    =d.dY; }
+    if(d.otm)   { FVAL['i-otm']   =d.otm; }
+    if(d.iv)    { FVAL['i-iv']    =d.iv; }
+    if(d.held!=null){ FVAL['i-held']=d.held; }
+    if(d.expiry){ document.getElementById('i-expiry').value=d.expiry; }
+    if(d.navOverride && d.navOverride>0){
+      FVAL['i-nav']=d.navOverride;
+      activateOverride(true);
+    }
+  }catch(e){}
+}
+
+// ════════════════════════════════════════════════════════════════════
+// LOCALSTORAGE — STATE & HISTORY
+// ════════════════════════════════════════════════════════════════════
+function loadState(){
+  try{ var v=localStorage.getItem(STATE_KEY); return v?JSON.parse(v):{capital:INITIAL_CAPITAL,inceptionDate:null,cashCoreInit:0,residualCash:0,jibarAtInception:0.075}; }
+  catch(e){ return {capital:INITIAL_CAPITAL,inceptionDate:null,cashCoreInit:0,residualCash:0,jibarAtInception:0.075}; }
+}
+function saveState(st){ try{ localStorage.setItem(STATE_KEY,JSON.stringify(st)); }catch(e){} }
+function loadNavHistory(){ try{ var v=localStorage.getItem(NAV_KEY); return v?JSON.parse(v):[]; }catch(e){ return []; } }
+function saveNavHistory(h){ try{ localStorage.setItem(NAV_KEY,JSON.stringify(h)); }catch(e){} }
+function loadLog(){ try{ var v=localStorage.getItem(LOG_KEY); return v?JSON.parse(v):[]; }catch(e){ return []; } }
+function saveLog(l){ try{ localStorage.setItem(LOG_KEY,JSON.stringify(l)); }catch(e){} }
+
+// ════════════════════════════════════════════════════════════════════
+// NAV CALCULATION ENGINE
+// ════════════════════════════════════════════════════════════════════
+function bsCalcPutPrice(S, K, r, q, iv, T){
+  if(T<=0) return 0;
+  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
+  var d2=d1-iv*Math.sqrt(T);
+  return K*Math.exp(-r*T)*(1-normCDF(d2)) - S*Math.exp(-q*T)*(1-normCDF(d1));
+}
+
+function computeNAVFromState(spotOverride, ivOverride){
+  var st = loadState();
+  var history = loadNavHistory();
+  if(!st.inceptionDate) return null;
+
+  var today = new Date(); today.setHours(0,0,0,0);
+  var inception = new Date(st.inceptionDate);
+  var daysElapsed = Math.round((today - inception)/86400000);
+  var r = st.jibarAtInception;
+
+  // Cash core accretes from inception
+  var cashCore = st.cashCoreInit > 0
+    ? st.cashCoreInit * (1 + r * daysElapsed/365)
+    : st.capital / (1 + r * (daysElapsed/365 || 0.01));  // fallback
+
+  // Residual cash also accretes
+  var residualToday = (st.residualCash || 0) * (1 + r * daysElapsed/365);
+
+  // Option book: current BS put price × contracts
+  var S   = spotOverride || FVAL['i-spot'];
+  var iv  = ivOverride  || FVAL['i-iv'];
+  var held = FVAL['i-held'];
+  var expiryStr = document.getElementById('i-expiry').value;
+  var optBook = 0;
+  if(held > 0 && expiryStr){
+    var expiry = new Date(expiryStr);
+    var T = Math.max(0,(expiry-today)/(365*24*60*60*1000));
+    var K = Math.round(S*(1-FVAL['i-otm']));
+    var putPts = bsCalcPutPrice(S, K, FVAL['i-jibar'], FVAL['i-dY'], iv, T);
+    optBook = putPts * 10 * held;
+  }
+
+  var totalNAV = cashCore + residualToday + optBook;
+  return { cashCore:cashCore, residual:residualToday, optBook:optBook, total:totalNAV, daysElapsed:daysElapsed };
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NAV OVERRIDE
+// ════════════════════════════════════════════════════════════════════
+function toggleNAVOverride(){
+  if(!navOverrideActive){
+    activateOverride(false);
+  }
+}
+function activateOverride(silent){
+  navOverrideActive = true;
+  var el = document.getElementById('i-nav');
+  el.readOnly = false;
+  el.classList.remove('auto-field');
+  el.classList.add('override-active');
+  document.getElementById('override-badge').classList.remove('hidden');
+  document.getElementById('override-btn').classList.add('hidden');
+  document.getElementById('override-clear-btn').classList.remove('hidden');
+  document.getElementById('nav-override-warn').classList.remove('hidden');
+  document.getElementById('nav-input-badge').textContent='Override';
+  document.getElementById('nav-input-badge').className='fi-badge';
+  if(!silent) el.focus();
+}
+function clearNAVOverride(){
+  navOverrideActive = false;
+  var el = document.getElementById('i-nav');
+  el.readOnly = true;
+  el.classList.add('auto-field');
+  el.classList.remove('override-active');
+  document.getElementById('override-badge').classList.add('hidden');
+  document.getElementById('override-btn').classList.remove('hidden');
+  document.getElementById('override-clear-btn').classList.add('hidden');
+  document.getElementById('nav-override-warn').classList.add('hidden');
+  document.getElementById('nav-input-badge').textContent='Auto';
+  document.getElementById('nav-input-badge').className='fi-badge auto';
+  // clear override from storage
+  var d=JSON.parse(localStorage.getItem(INPUTS_KEY)||'{}');
+  d.navOverride=0; localStorage.setItem(INPUTS_KEY,JSON.stringify(d));
+  calc();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MAIN CALC
+// ════════════════════════════════════════════════════════════════════
+function calc(){
+  var S    = FVAL['i-spot'];
+  var r    = FVAL['i-jibar'];
+  var iv   = FVAL['i-iv'];
+  var otm  = FVAL['i-otm'];
+  var q    = FVAL['i-dY'];
+  var held = FVAL['i-held'];
+  var expiryStr = document.getElementById('i-expiry').value;
+
+  if(!S||!r||!iv||!otm||!expiryStr){ setBlank(); return; }
+  var expiry=new Date(expiryStr);
+  var today=new Date(); today.setHours(0,0,0,0);
+  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+  if(T<=0){ showWarn('Option has expired — update expiry date'); return; }
+  var K=Math.round(S*(1-otm));
+
+  // BS
+  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
+  var d2=d1-iv*Math.sqrt(T);
+  var Nd1=normCDF(d1),Nd2=normCDF(d2),Nnd1=1-Nd1,Nnd2=1-Nd2,nd1=normPDF(d1);
+  var putPrice=K*Math.exp(-r*T)*Nnd2 - S*Math.exp(-q*T)*Nnd1;
+  var putPriceR=putPrice*10;
+  var delta=Math.exp(-q*T)*(Nd1-1);
+  var thetaA=-(S*Math.exp(-q*T)*nd1*iv)/(2*Math.sqrt(T))+r*K*Math.exp(-r*T)*Nnd2-q*S*Math.exp(-q*T)*Nnd1;
+  var thetaD=thetaA/365;
+  var gamma=Math.exp(-q*T)*nd1/(S*iv*Math.sqrt(T));
+  var vega=S*Math.exp(-q*T)*nd1*Math.sqrt(T)*0.01*10;
+
+  // Determine NAV
+  var NAV;
+  var navData = computeNAVFromState();
+  if(navOverrideActive && FVAL['i-nav']>0){
+    NAV = FVAL['i-nav'];
+  } else if(navData){
+    NAV = navData.total;
+    FVAL['i-nav'] = NAV;
+    document.getElementById('i-nav').value = fmtRand(NAV);
+  } else {
+    NAV = FVAL['i-nav'] || INITIAL_CAPITAL;
+  }
+
+  // Update NAV banner
+  if(navData){
+    var history = loadNavHistory();
+    var prevNAV = history.length>0 ? history[history.length-1].nav : loadState().capital;
+    var pnl = navData.total - prevNAV;
+    document.getElementById('nb-nav').textContent = fRk(navData.total);
+    var navPct = ((navData.total - loadState().capital)/loadState().capital*100);
+    document.getElementById('nb-nav-sub').textContent = (navPct>=0?'+':'')+navPct.toFixed(2)+'% vs initial capital';
+    document.getElementById('nb-nav-sub').style.color = navPct>=0?'var(--green2)':'var(--red2)';
+    document.getElementById('nb-cash').textContent = fRk(navData.cashCore);
+    document.getElementById('nb-book').textContent = fRk(navData.optBook);
+    document.getElementById('nb-res').textContent  = fRk(navData.residual);
+    var pnlEl = document.getElementById('nb-pnl');
+    pnlEl.textContent = (pnl>=0?'+':'')+fRk(pnl);
+    pnlEl.style.color = pnl>=0?'var(--green2)':'var(--red2)';
+  }
+
+  // Fund metrics
+  var dailyYield=NAV*r/365;
+  var thetaBleedPC=Math.abs(thetaD)*10;
+  var maxCarryContracts=thetaBleedPC>0?Math.floor(dailyYield/thetaBleedPC):9999;
+  var convexityBudget=NAV-(NAV/(1+r*T));
+  var budgetContracts=putPriceR>0?Math.floor(convexityBudget/putPriceR):0;
+  var recommended=Math.max(0,Math.min(budgetContracts,maxCarryContracts));
+  var tradeRequired=recommended-held;
+  var dailyThetaBleed=thetaBleedPC*held;
+  var netCarry=dailyYield-dailyThetaBleed;
+  var carryRatio=dailyThetaBleed>0?dailyYield/dailyThetaBleed:Infinity;
+  var hedgeMultiple=NAV>0?(S*10*held*delta)/NAV:0;
+  var bookValue=putPriceR*held;
+
+  // Strike & TTE display
+  var daysLeft=Math.round(T*365);
+  document.getElementById('i-strike-show').value=fmtInt(K)+' pts';
+  document.getElementById('i-t-show').value=T.toFixed(4)+' yrs ('+daysLeft+' days)';
+
+  // KPI strip
+  document.getElementById('o-hm').textContent=hedgeMultiple.toFixed(2)+'×';
+  document.getElementById('o-carry').textContent=fRk(netCarry);
+  document.getElementById('o-theta-bleed').textContent=fRk(dailyThetaBleed);
+  document.getElementById('o-delta').textContent=f4(delta);
+  document.getElementById('o-carry').style.color=netCarry>=0?'var(--green)':'var(--red)';
+  document.getElementById('mc-carry').className='mc'+(netCarry>=0?'':' r');
+
+  // Carry status
+  var cs=document.getElementById('carry-status');
+  if(held===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts held — carry N/A until first purchase'; }
+  else if(netCarry>=0){ cs.className='carry-ok'; cs.innerHTML='&#10003; &nbsp;Carry POSITIVE — self-financing at '+held+' contracts ('+fRk(netCarry)+'/day net)'; }
+  else{ cs.className='carry-bad'; cs.innerHTML='&#9888; &nbsp;Carry NEGATIVE — theta bleed exceeds yield at '+held+' contracts. Max carry-neutral: '+maxCarryContracts; }
+
+  // Decision box
+  var box=document.getElementById('decision-box');
+  var action=document.getElementById('dec-action');
+  var num=document.getElementById('dec-contracts');
+  var lbl=document.getElementById('dec-label');
+  var det=document.getElementById('dec-details');
+  if(tradeRequired>0){
+    box.className='decision-box buy'; action.textContent='BUY'; action.style.color='var(--teal2)';
+    num.textContent=tradeRequired; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
+    det.innerHTML='Increase from <strong>'+held+'</strong> → <strong>'+recommended+'</strong><br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequired*putPriceR);
+  } else if(tradeRequired<0){
+    box.className='decision-box sell'; action.textContent='SELL'; action.style.color='var(--red)';
+    num.textContent=Math.abs(tradeRequired); num.style.color='var(--red)'; lbl.textContent='Contracts to Sell / Close';
+    det.innerHTML='Reduce from <strong>'+held+'</strong> → <strong>'+recommended+'</strong><br>Carry ratio: '+carryRatio.toFixed(2)+'× &nbsp;·&nbsp; Max carry-neutral: '+maxCarryContracts+'<br>Close at '+fR(putPriceR)+'/contract';
+  } else {
+    box.className='decision-box hold'; action.textContent='HOLD'; action.style.color='var(--amber)';
+    num.textContent='0'; num.style.color='var(--amber)'; lbl.textContent='No Trade Required';
+    det.innerHTML='Position optimal at <strong>'+held+'</strong> contracts<br>Carry: '+(isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞')+' &nbsp;·&nbsp; HM: '+hedgeMultiple.toFixed(2)+'×<br>Monitor ALSI and SAVI daily';
+  }
+
+  // Metrics rows
+  document.getElementById('o-price').textContent=f2(putPrice)+' pts';
+  document.getElementById('o-price-r').textContent=fR(putPriceR);
+  document.getElementById('o-rec').textContent=recommended;
+  document.getElementById('o-bv').textContent=fRk(bookValue);
+  document.getElementById('o-yield').textContent=fRk(dailyYield);
+  document.getElementById('o-cr').textContent=isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞';
+  document.getElementById('o-cr').style.color=carryRatio>=1?'var(--green)':'var(--red)';
+  document.getElementById('o-maxc').textContent=maxCarryContracts;
+  document.getElementById('o-budget').textContent=fRk(convexityBudget);
+
+  // BS table
+  document.getElementById('b-S').textContent=S.toLocaleString();
+  document.getElementById('b-K').textContent=K.toLocaleString();
+  document.getElementById('b-T').textContent=T.toFixed(6);
+  document.getElementById('b-r').textContent=fP(r,2);
+  document.getElementById('b-iv').textContent=fP(iv,2);
+  document.getElementById('b-dY').textContent=fP(q,2);
+  document.getElementById('b-d1').textContent=f4(d1);
+  document.getElementById('b-d2').textContent=f4(d2);
+  document.getElementById('b-Nd1').textContent=f4(Nd1);
+  document.getElementById('b-Nd2').textContent=f4(Nd2);
+  document.getElementById('b-Nnd2').textContent=f4(Nnd2);
+  document.getElementById('b-nd1').textContent=f4(nd1);
+  document.getElementById('b-price').textContent=f4(putPrice)+' pts';
+  document.getElementById('b-price-r').textContent=fR(putPriceR);
+  document.getElementById('b-delta').textContent=f4(delta);
+  document.getElementById('b-theta-a').textContent=f4(thetaA)+' pts/yr';
+  document.getElementById('b-theta-d').textContent=f4(thetaD)+' pts/day';
+  document.getElementById('b-gamma').textContent=f4(gamma);
+  document.getElementById('b-vega').textContent=fR(vega);
+  document.getElementById('b-budget-bs').textContent=fRk(convexityBudget);
+  document.getElementById('b-c-budget').textContent=budgetContracts;
+  document.getElementById('b-c-carry').textContent=maxCarryContracts;
+  document.getElementById('b-c-rec').textContent=recommended;
+
+  // Pre-fill EOD fields from current inputs
+  FVAL['eod-spot'] = S; FVAL['eod-iv'] = iv;
+  document.getElementById('eod-spot').value = FCFG['eod-spot'].fmt(S);
+  document.getElementById('eod-iv').value   = FCFG['eod-iv'].fmt(iv);
+
+  // Store for commit
+  window._calc = {S,K,T:T.toFixed(6),r,iv,q,d1:f4(d1),d2:f4(d2),Nd1:f4(Nd1),Nd2:f4(Nd2),nd1:f4(nd1),
+    putPrice:f4(putPrice),putPriceR:Math.round(putPriceR),delta:f4(delta),thetaD:f4(thetaD),
+    gamma:f4(gamma),vega:Math.round(vega),dailyYield:Math.round(dailyYield),
+    dailyThetaBleed:Math.round(dailyThetaBleed),netCarry:Math.round(netCarry),
+    carryRatio:carryRatio.toFixed(2),hedgeMultiple:hedgeMultiple.toFixed(2),
+    recommended,held,tradeRequired,bookValue:Math.round(bookValue),
+    navM:(NAV/1e6).toFixed(2),expiry:expiryStr};
+}
+
+function setBlank(){
+  ['o-hm','o-carry','o-theta-bleed','o-delta','o-price','o-rec','o-bv','o-yield','o-cr','o-maxc','o-budget'].forEach(function(id){
+    document.getElementById(id).textContent='—';
+  });
+}
+function showWarn(msg){
+  var box=document.getElementById('decision-box');
+  box.className='decision-box warn';
+  document.getElementById('dec-action').textContent='WARNING';
+  document.getElementById('dec-action').style.color='var(--red)';
+  document.getElementById('dec-contracts').textContent='!';
+  document.getElementById('dec-contracts').style.color='var(--red)';
+  document.getElementById('dec-label').textContent='';
+  document.getElementById('dec-details').textContent=msg;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// END OF DAY CLOSE
+// ════════════════════════════════════════════════════════════════════
+function endOfDay(){
+  var eodSpot = FVAL['eod-spot'] || FVAL['i-spot'];
+  var eodIV   = FVAL['eod-iv']  || FVAL['i-iv'];
+  var held    = FVAL['i-held'];
+  var r       = FVAL['i-jibar'];
+  var q       = FVAL['i-dY'];
+  var otm     = FVAL['i-otm'];
+  var expiryStr = document.getElementById('i-expiry').value;
+  var today   = todayStr();
+
+  if(!eodSpot || !expiryStr){ alert('Please enter all market inputs before closing the day.'); return; }
+
+  // Initialize state if first EOD
+  var st = loadState();
+  if(!st.inceptionDate){
+    // First ever EOD — set inception to today, initialize fund structure
+    var expiry = new Date(expiryStr);
+    var now = new Date(); now.setHours(0,0,0,0);
+    var T0 = Math.max(0,(expiry-now)/(365*24*60*60*1000));
+    st.inceptionDate = today;
+    st.capital = INITIAL_CAPITAL;
+    st.jibarAtInception = r;
+    st.cashCoreInit = st.capital / (1 + r * T0);
+    // Option budget: capital − cash core
+    var optBudget = st.capital - st.cashCoreInit;
+    // Residual: option budget minus what was already spent (assume 0 at inception)
+    var K0 = Math.round(eodSpot*(1-otm));
+    var putPts0 = bsCalcPutPrice(eodSpot, K0, r, q, eodIV, T0);
+    var putR0 = putPts0 * 10;
+    var initContracts = putR0>0 ? Math.floor(optBudget/putR0) : 0;
+    var optSpend = initContracts * putR0;
+    st.residualCash = optBudget - optSpend;
+    // Sync held to initial contracts only if currently 0
+    if(held===0 && initContracts>0){
+      FVAL['i-held'] = initContracts;
+      document.getElementById('i-held').value = initContracts.toString();
+      held = initContracts;
+    }
+    saveState(st);
+  }
+
+  // Compute closing NAV
+  var navData = computeNAVFromState(eodSpot, eodIV);
+  var closingNAV;
+
+  // Check for NAV override in EOD form
+  var overrideRaw = document.getElementById('eod-nav-override').value.trim();
+  if(overrideRaw && FVAL['eod-nav-override'] > 0){
+    closingNAV = FVAL['eod-nav-override'];
+  } else if(navData){
+    closingNAV = navData.total;
+  } else {
+    closingNAV = st.capital;
+  }
+
+  // Day P&L vs last history point
+  var history = loadNavHistory();
+  var prevNAV = history.length > 0 ? history[history.length-1].nav : st.capital;
+  var dayPnl = closingNAV - prevNAV;
+
+  // Carry income for the day
+  var carryToday = (st.cashCoreInit + st.residualCash) * r / 365;
+
+  // Option P&L = dayPnl - carryToday
+  var optionPnl = dayPnl - carryToday;
+
+  // Compute K for display
+  var expiry = new Date(expiryStr);
+  var now2 = new Date(); now2.setHours(0,0,0,0);
+  var T = Math.max(0,(expiry-now2)/(365*24*60*60*1000));
+  var K = Math.round(eodSpot*(1-otm));
+  var putPriceClose = bsCalcPutPrice(eodSpot, K, r, q, eodIV, T) * 10;
+  var optBookClose = putPriceClose * held;
+
+  var cashCoreClose = navData ? navData.cashCore : st.cashCoreInit;
+  var residualClose = navData ? navData.residual : st.residualCash;
+
+  // Save to history (prevent duplicate dates — overwrite if same day)
+  var entry = {
+    date: today,
+    alsi: eodSpot,
+    iv: eodIV,
+    contracts: held,
+    cashCore: cashCoreClose,
+    optBook: optBookClose,
+    residual: residualClose,
+    nav: closingNAV,
+    dayPnl: dayPnl,
+    carryToday: carryToday,
+    optionPnl: optionPnl,
+    putPriceR: putPriceClose
+  };
+  var existing = history.findIndex(function(h){ return h.date===today; });
+  if(existing>=0){ history[existing]=entry; }
+  else{ history.push(entry); }
+  saveNavHistory(history);
+
+  // Show breakdown
+  var eodBD = document.getElementById('eod-breakdown');
+  eodBD.style.display='grid';
+  var pnlColor = dayPnl>=0?'var(--green2)':'var(--red2)';
+  var vsColor  = (closingNAV-st.capital)>=0?'var(--green2)':'var(--red2)';
+  document.getElementById('eb-nav').textContent  = fRk(closingNAV);
+  document.getElementById('eb-cash').textContent = fRk(cashCoreClose);
+  document.getElementById('eb-book').textContent = fRk(optBookClose);
+  document.getElementById('eb-pnl').textContent  = (dayPnl>=0?'+':'')+fRk(dayPnl);
+  document.getElementById('eb-pnl').style.color  = pnlColor;
+  document.getElementById('eb-vs').textContent   = fPct((closingNAV-st.capital)/st.capital*100);
+  document.getElementById('eb-vs').style.color   = vsColor;
+
+  // Clear override field
+  document.getElementById('eod-nav-override').value='';
+  FVAL['eod-nav-override']=0;
+
+  // Update all displays
+  updateSimState();
+  updatePerfSummary();
+  renderNavHistoryTable();
+  renderPerfChart();
+  calc(); // refresh live NAV strip
+
+  // Flash confirm
+  var btn = document.querySelector('.btn-eod');
+  var orig = btn.innerHTML;
+  btn.innerHTML = '&#10003; &nbsp;Saved!';
+  btn.style.background = 'rgba(64,200,128,.3)';
+  setTimeout(function(){ btn.innerHTML=orig; btn.style.background=''; }, 2000);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PERFORMANCE METRICS
+// ════════════════════════════════════════════════════════════════════
+function calcPerfMetrics(){
+  var history = loadNavHistory();
+  var st = loadState();
+  if(!st.inceptionDate || history.length===0) return null;
+
+  var capital = st.capital;
+  var currentNAV = history[history.length-1].nav;
+  var totalReturn = (currentNAV - capital)/capital*100;
+
+  // Max drawdown
+  var peak=capital, maxDD=0;
+  history.forEach(function(h){
+    if(h.nav>peak) peak=h.nav;
+    var dd=(peak-h.nav)/peak*100;
+    if(dd>maxDD) maxDD=dd;
+  });
+
+  // Best / worst day P&L
+  var dailyPnLs = history.map(function(h){ return h.dayPnl||0; });
+  var bestDay  = Math.max.apply(null,dailyPnLs);
+  var worstDay = Math.min.apply(null,dailyPnLs);
+  var avgDay   = dailyPnLs.reduce(function(a,b){return a+b;},0)/dailyPnLs.length;
+
+  var inception = new Date(st.inceptionDate);
+  var today = new Date(); today.setHours(0,0,0,0);
+  var daysRunning = Math.round((today-inception)/86400000);
+
+  return { totalReturn, maxDD, daysRunning, currentNAV, bestDay, worstDay, avgDay, nPoints:history.length };
+}
+
+function updatePerfSummary(){
+  var m = calcPerfMetrics();
+  if(!m){
+    ['ps-ret','ps-dd','ps-days','ps-closes'].forEach(function(id){
+      var el=document.getElementById(id);
+      el.textContent='—'; el.className='ps-value ps-neu';
+    });
+    document.getElementById('ps-closes').textContent='0';
+    return;
+  }
+  var retEl=document.getElementById('ps-ret');
+  retEl.textContent=(m.totalReturn>=0?'+':'')+m.totalReturn.toFixed(2)+'%';
+  retEl.className='ps-value '+(m.totalReturn>=0?'ps-pos':'ps-neg');
+  document.getElementById('ps-dd').textContent='-'+m.maxDD.toFixed(2)+'%';
+  document.getElementById('ps-dd').className='ps-value '+(m.maxDD>0?'ps-neg':'ps-neu');
+  document.getElementById('ps-days').textContent=m.daysRunning+' days';
+  document.getElementById('ps-days').className='ps-value ps-neu';
+  document.getElementById('ps-closes').textContent=m.nPoints;
+
+  // Stats panel
+  setText('st-nav',   fRk(m.currentNAV));
+  var stRet=document.getElementById('st-ret');
+  stRet.textContent=(m.totalReturn>=0?'+':'')+m.totalReturn.toFixed(2)+'%';
+  stRet.style.color=m.totalReturn>=0?'var(--green2)':'var(--red2)';
+  document.getElementById('st-dd').textContent='-'+m.maxDD.toFixed(2)+'%';
+  document.getElementById('st-dd').style.color=m.maxDD>0?'var(--red2)':'var(--muted)';
+  var bestEl=document.getElementById('st-best'); bestEl.textContent=fRk(m.bestDay);
+  var worstEl=document.getElementById('st-worst'); worstEl.textContent=fRk(m.worstDay);
+  var avgEl=document.getElementById('st-avg');
+  avgEl.textContent=(m.avgDay>=0?'+':'')+fRk(m.avgDay);
+  avgEl.style.color=m.avgDay>=0?'var(--green2)':'var(--red2)';
+}
+
+function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+
+// ════════════════════════════════════════════════════════════════════
+// CHART.JS — PERFORMANCE CHART
+// ════════════════════════════════════════════════════════════════════
+function renderPerfChart(){
+  var history = loadNavHistory();
+  var st = loadState();
+  var capital = st.capital || INITIAL_CAPITAL;
+  var countEl = document.getElementById('chart-data-count');
+  var emptyEl = document.getElementById('chart-empty');
+  var canvas  = document.getElementById('perf-chart');
+
+  countEl.textContent = history.length+' data points';
+
+  if(history.length < 2){
+    emptyEl.style.display='block';
+    canvas.style.display='none';
+    if(perfChart){ perfChart.destroy(); perfChart=null; }
+    return;
+  }
+  emptyEl.style.display='none';
+  canvas.style.display='block';
+
+  var initialALSI = history[0].alsi;
+  var labels   = history.map(function(h){ return h.date; });
+  var navIdx   = history.map(function(h){ return +((h.nav/capital*100).toFixed(3)); });
+  var alsiIdx  = history.map(function(h){ return +((h.alsi/initialALSI*100).toFixed(3)); });
+
+  Chart.defaults.color = '#5a7888';
+  Chart.defaults.font.family = "'DM Mono', monospace";
+
+  if(perfChart){ perfChart.destroy(); }
+  var ctx = canvas.getContext('2d');
+  perfChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: labels,
+      datasets:[
+        {
+          label:'Macro Protector Fund NAV',
+          data: navIdx,
+          borderColor:'#00c4d4',
+          backgroundColor:'rgba(0,196,212,.08)',
+          borderWidth:2.5,
+          fill:true,
+          tension:0.35,
+          pointRadius:3,
+          pointBackgroundColor:'#00c4d4',
+          pointBorderColor:'#080d14',
+          pointBorderWidth:1.5
+        },
+        {
+          label:'ALSI Benchmark',
+          data: alsiIdx,
+          borderColor:'#c8a84a',
+          backgroundColor:'transparent',
+          borderWidth:1.8,
+          fill:false,
+          tension:0.35,
+          borderDash:[5,4],
+          pointRadius:2,
+          pointBackgroundColor:'#c8a84a'
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{
+          position:'top',
+          labels:{
+            color:'#b8c8d4',
+            font:{family:"'Rajdhani', sans-serif", size:11, weight:'600'},
+            padding:20,
+            usePointStyle:true,
+            pointStyleWidth:14
+          }
+        },
+        tooltip:{
+          backgroundColor:'#0c1420',
+          titleColor:'#00e8f8',
+          bodyColor:'#b8c8d4',
+          borderColor:'rgba(0,196,212,.3)',
+          borderWidth:1,
+          padding:10,
+          callbacks:{
+            label:function(ctx){
+              var v=ctx.parsed.y.toFixed(2);
+              return ' '+ctx.dataset.label+': '+v+'  (indexed to 100)';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          ticks:{ color:'#5a7888', font:{size:9}, maxTicksLimit:20 },
+          grid:{ color:'rgba(0,196,212,.06)' },
+          border:{ color:'rgba(0,196,212,.15)' }
+        },
+        y:{
+          ticks:{
+            color:'#5a7888', font:{size:9},
+            callback:function(v){ return v.toFixed(1); }
+          },
+          grid:{ color:'rgba(0,196,212,.06)' },
+          border:{ color:'rgba(0,196,212,.15)' },
+          title:{
+            display:true,
+            text:'Indexed Performance (100 = Inception)',
+            color:'#5a7888',
+            font:{size:9, family:"'Rajdhani', sans-serif"}
+          }
+        }
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NAV HISTORY TABLE
+// ════════════════════════════════════════════════════════════════════
+function renderNavHistoryTable(){
+  var history = loadNavHistory();
+  var st = loadState();
+  var capital = st.capital || INITIAL_CAPITAL;
+  var tbody = document.getElementById('nav-history-body');
+  if(history.length===0){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
+    document.getElementById('sim-points').textContent='0';
+    document.getElementById('sim-last-eod').textContent='None yet';
+    return;
+  }
+  document.getElementById('sim-points').textContent=history.length;
+  document.getElementById('sim-last-eod').textContent=history[history.length-1].date;
+
+  var html='';
+  history.slice().reverse().forEach(function(h,i){
+    var pnl = h.dayPnl||0;
+    var vsC = (h.nav-capital)/capital*100;
+    var pnlColor = pnl>=0?'var(--green2)':'var(--red2)';
+    var vsColor  = vsC>=0?'var(--green2)':'var(--red2)';
+    html+='<tr>'
+      +'<td>'+h.date+'</td>'
+      +'<td>'+Math.round(h.alsi).toLocaleString('en-ZA')+'</td>'
+      +'<td>'+(h.iv*100).toFixed(1)+'%</td>'
+      +'<td style="color:var(--teal2)">'+h.contracts+'</td>'
+      +'<td>'+fRk(h.cashCore)+'</td>'
+      +'<td style="color:var(--amber)">'+fRk(h.optBook)+'</td>'
+      +'<td style="color:var(--muted)">'+fRk(h.residual)+'</td>'
+      +'<td style="color:var(--teal2);font-weight:600">'+fRk(h.nav)+'</td>'
+      +'<td style="color:'+pnlColor+'">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
+      +'<td style="color:'+vsColor+'">'+(vsC>=0?'+':'')+vsC.toFixed(2)+'%</td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// SIMULATION STATE DISPLAY
+// ════════════════════════════════════════════════════════════════════
+function updateSimState(){
+  var st = loadState();
+  document.getElementById('sim-capital').textContent = fRk(st.capital||INITIAL_CAPITAL);
+  document.getElementById('sim-inception').textContent = st.inceptionDate||'—';
+  var history = loadNavHistory();
+  document.getElementById('sim-points').textContent = history.length;
+  document.getElementById('sim-last-eod').textContent = history.length>0 ? history[history.length-1].date : 'None yet';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RESET SIMULATION
+// ════════════════════════════════════════════════════════════════════
+function resetSimulation(){
+  if(!confirm('Reset the simulation?\n\nThis will:\n• Clear ALL NAV history and performance data\n• Reset fund state to R100,000,000\n• Clear the performance chart\n\nThe audit log (trade decisions) is preserved.\n\nThis cannot be undone.')) return;
+  var confirm2 = prompt('Type RESET to confirm:');
+  if(confirm2 !== 'RESET'){ alert('Reset cancelled.'); return; }
+
+  localStorage.removeItem(STATE_KEY);
+  localStorage.removeItem(NAV_KEY);
+  FVAL['i-held']=0;
+  document.getElementById('i-held').value='0';
+  saveInputs();
+
+  // Reset INITIAL_CAPITAL default
+  FVAL['i-nav'] = INITIAL_CAPITAL;
+  document.getElementById('i-nav').value = fmtRand(INITIAL_CAPITAL);
+  if(navOverrideActive) clearNAVOverride();
+
+  document.getElementById('eod-breakdown').style.display='none';
+  updateSimState();
+  updatePerfSummary();
+  renderNavHistoryTable();
+  renderPerfChart();
+  calc();
+  alert('Simulation reset. NAV restored to R100,000,000. Audit log preserved.');
+}
+
+function deleteLastEOD(){
+  var history = loadNavHistory();
+  if(history.length===0){ alert('No EOD history to delete.'); return; }
+  if(!confirm('Delete the last EOD entry ('+history[history.length-1].date+')? This cannot be undone.')) return;
+  history.pop();
+  saveNavHistory(history);
+  // If no history left, also reset state inception
+  if(history.length===0){
+    var st=loadState(); st.inceptionDate=null; saveState(st);
+  }
+  updateSimState();
+  updatePerfSummary();
+  renderNavHistoryTable();
+  renderPerfChart();
+  calc();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ════════════════════════════════════════════════════════════════════
+function commitDecision(){
+  if(!window._calc){ alert('Please complete all inputs before committing.'); return; }
+  var notes=document.getElementById('i-notes').value.trim();
+  if(!notes){ alert('Please enter a trade rationale before committing.'); document.getElementById('i-notes').focus(); return; }
+  var c=window._calc;
+  var tradeType=c.tradeRequired>0?'BUY':c.tradeRequired<0?'SELL':'HOLD';
+  var entry={
+    ts:ts(),tradeType:tradeType,S:c.S,K:c.K,T:c.T,r:c.r,iv:c.iv,
+    d1:c.d1,d2:c.d2,delta:c.delta,thetaD:c.thetaD,gamma:c.gamma,vega:c.vega,
+    putPriceR:c.putPriceR,dailyYield:c.dailyYield,dailyThetaBleed:c.dailyThetaBleed,
+    netCarry:c.netCarry,carryRatio:c.carryRatio,hedgeMultiple:c.hedgeMultiple,
+    held:c.held,recommended:c.recommended,tradeRequired:c.tradeRequired,
+    bookValue:c.bookValue,navM:c.navM,expiry:c.expiry,notes:notes
+  };
+  var log=loadLog(); log.unshift(entry); saveLog(log); renderLog();
+  document.getElementById('i-notes').value='';
+  var btn=document.querySelector('.btn-green');
+  var orig=btn.textContent;
+  btn.textContent='✓ Committed!'; btn.style.background='rgba(64,200,128,.3)';
+  setTimeout(function(){ btn.innerHTML='&#10003; &nbsp;Commit to Audit Log'; btn.style.background=''; },2000);
+}
+
+function renderLog(){
+  var log=loadLog();
+  document.getElementById('log-count').textContent=log.length+' record'+(log.length!==1?'s':'');
+  var tbody=document.getElementById('log-body');
+  if(log.length===0){
+    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:20px;font-size:11px">No decisions logged yet.</td></tr>';
+    return;
+  }
+  var html='';
+  log.forEach(function(e){
+    var tc=e.tradeType==='BUY'?'var(--teal2)':e.tradeType==='SELL'?'var(--red)':'var(--amber)';
+    var rc=e.tradeType==='BUY'?'buy-row':e.tradeType==='SELL'?'sell-row':'hold-row';
+    html+='<tr class="'+rc+'">'
+      +'<td style="white-space:nowrap;color:var(--muted)">'+e.ts+'</td>'
+      +'<td>'+Number(e.S).toLocaleString()+'</td>'
+      +'<td>'+Number(e.K).toLocaleString()+'</td>'
+      +'<td style="color:var(--plat)">'+e.T+'</td>'
+      +'<td>'+fP(Number(e.iv),1)+'</td>'
+      +'<td style="color:var(--amber)">'+e.delta+'</td>'
+      +'<td style="color:#f07070">'+e.thetaD+'</td>'
+      +'<td>'+fR(e.putPriceR)+'</td>'
+      +'<td style="color:var(--muted)">'+e.held+'</td>'
+      +'<td>'+e.recommended+'</td>'
+      +'<td style="color:'+tc+';font-weight:700">'+e.tradeType+' '+(e.tradeRequired!==0?Math.abs(e.tradeRequired):'—')+'</td>'
+      +'<td style="color:var(--muted)">'+e.navM+'m</td>'
+      +'<td style="color:'+(Number(e.netCarry)>=0?'var(--green)':'var(--red)')+'" >'+fRk(Number(e.netCarry))+'</td>'
+      +'<td style="color:var(--amber)">'+e.hedgeMultiple+'×</td>'
+      +'<td style="text-align:left;font-family:\'DM Sans\',sans-serif;font-size:9.5px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.notes.replace(/"/g,'&quot;')+'">'+e.notes+'</td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// EXPORTS
+// ════════════════════════════════════════════════════════════════════
+function exportCSV(){
+  var log=loadLog();
+  if(log.length===0){alert('No records to export.');return;}
+  var headers=['Timestamp','TradeType','ALSI','Strike','T','JIBAR','IV','d1','d2','Delta','Theta_daily','Gamma','Vega','PutPrice_R','DailyYield','ThetaBleed','NetCarry','CarryRatio','HedgeMultiple','Held','Recommended','TradeRequired','BookValue','NAV_Rm','Expiry','Notes'];
+  var rows=log.map(function(e){
+    return [e.ts,e.tradeType,e.S,e.K,e.T,e.r,e.iv,e.d1,e.d2,e.delta,e.thetaD,e.gamma,e.vega,
+      e.putPriceR,e.dailyYield,e.dailyThetaBleed,e.netCarry,e.carryRatio,e.hedgeMultiple,
+      e.held,e.recommended,e.tradeRequired,e.bookValue,e.navM,e.expiry,'"'+e.notes.replace(/"/g,'""')+'"'].join(',');
+  });
+  downloadCSV([headers.join(',')].concat(rows).join('\n'), 'PhylaxCapital_TradeLog_'+todayStr()+'.csv');
+}
+
+function exportNAVCSV(){
+  var history=loadNavHistory();
+  if(history.length===0){alert('No NAV history to export.');return;}
+  var headers=['Date','ALSI_Close','IV','Contracts','CashCore_R','OptionBook_R','Residual_R','NAV_R','DayPnL_R','CarryToday_R','OptionPnL_R'];
+  var rows=history.map(function(h){
+    return [h.date,h.alsi,(h.iv*100).toFixed(2),h.contracts,
+      Math.round(h.cashCore),Math.round(h.optBook),Math.round(h.residual),Math.round(h.nav),
+      Math.round(h.dayPnl||0),Math.round(h.carryToday||0),Math.round(h.optionPnl||0)].join(',');
+  });
+  downloadCSV([headers.join(',')].concat(rows).join('\n'), 'PhylaxCapital_NAVHistory_'+todayStr()+'.csv');
+}
+
+function downloadCSV(content, filename){
+  var blob=new Blob([content],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function clearLog(){
+  var log=loadLog();
+  if(log.length===0){alert('Log is already empty.');return;}
+  if(!confirm('Delete all '+log.length+' audit log entries? This cannot be undone.')) return;
+  var a=prompt('Type YES to confirm:');
+  if(a!=='YES'){alert('Cancelled.');return;}
+  localStorage.removeItem(LOG_KEY); renderLog();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MISC UI
+// ════════════════════════════════════════════════════════════════════
+function toggleBS(){
+  bsHidden=!bsHidden;
+  document.getElementById('bs-body').classList.toggle('hidden',bsHidden);
+  document.getElementById('bs-toggle-label').textContent=bsHidden?'▼ Show':'▲ Hide';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════
+(function init(){
+  document.getElementById('today-display').textContent=dt();
+
+  // Set default expiry to next SAFEX quarterly (3rd Thursday of next quarter)
+  if(!document.getElementById('i-expiry').value){
+    var d=new Date(),m=d.getMonth(),y=d.getFullYear();
+    var quarters=[2,5,8,11];
+    var nextQ=quarters.find(function(q){return q>m;});
+    if(nextQ===undefined){nextQ=2;y++;}
+    var first=new Date(y,nextQ,1);
+    var day=first.getDay();
+    var thu=day<=4?4-day:11-day;
+    var thirdThu=new Date(y,nextQ,1+thu+14);
+    document.getElementById('i-expiry').value=thirdThu.toISOString().slice(0,10);
+  }
+
+  // Load persisted inputs
+  loadInputs();
+
+  // Format all input fields
+  Object.keys(FCFG).forEach(function(id){
+    var el=document.getElementById(id);
+    if(el && !el.readOnly){
+      el.value=FCFG[id].fmt(FVAL[id]||0);
+    }
+  });
+  // The i-nav field is auto by default
+  document.getElementById('i-nav').value = fmtRand(FVAL['i-nav']||INITIAL_CAPITAL);
+
+  // Pre-fill EOD fields
+  FVAL['eod-spot']=FVAL['i-spot'];
+  FVAL['eod-iv']=FVAL['i-iv'];
+  document.getElementById('eod-spot').value=FCFG['eod-spot'].fmt(FVAL['eod-spot']);
+  document.getElementById('eod-iv').value=FCFG['eod-iv'].fmt(FVAL['eod-iv']);
+
+  // Initialize all displays from storage
+  updateSimState();
+  updatePerfSummary();
+  renderNavHistoryTable();
+  renderPerfChart();
+  renderLog();
+  calc();
+})();
+
+
+// ════════════════════════════════════════════════════════════════════
+// LADDER ENGINE (v4 additions — BN90 RIHF)
+// ════════════════════════════════════════════════════════════════════
+var ZARONIA_SPREAD_BPS = -15; // bps below JIBAR
+
+function getZaronia(){ return FVAL['i-jibar'] + ZARONIA_SPREAD_BPS/10000; }
+function getDailyZaronia(){ return getZaronia()/365; }
+
+// ── LADDER STATE ──────────────────────────────────────────────────
+function loadLadder(){
+  try{var v=localStorage.getItem(LADDER_KEY);return v?JSON.parse(v):{tranches:[],cashBalance:0};}catch(e){return{tranches:[],cashBalance:0};}
+}
+function saveLadder(l){try{localStorage.setItem(LADDER_KEY,JSON.stringify(l));}catch(e){}}
+
+// Next SAFEX quarterly expiry (3rd Thursday of next quarter)
+function nextSAFEXExpiry(fromDate){
+  var d=fromDate||new Date();
+  var m=d.getMonth(),y=d.getFullYear();
+  var quarters=[2,5,8,11];
+  var nextQ=quarters.find(function(q){return q>m});
+  if(nextQ===undefined){nextQ=2;y++;}
+  var first=new Date(y,nextQ,1),day=first.getDay();
+  var thu=day<=4?4-day:11-day;
+  return new Date(y,nextQ,1+thu+14);
+}
+function safexExpiryStr(fromDate){return nextSAFEXExpiry(fromDate).toISOString().slice(0,10);}
+
+// ── BS put full reprice ───────────────────────────────────────────
+function bsPutRepriceR(S,K,r,q,iv,T){
+  if(T<=0) return Math.max((K-S)*10,0);
+  if(iv<=0||S<=0) return Math.max((K*Math.exp(-r*T)-S*Math.exp(-q*T))*10,0);
+  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
+  var d2=d1-iv*Math.sqrt(T);
+  var put=K*Math.exp(-r*T)*(1-normCDF(d2))-S*Math.exp(-q*T)*(1-normCDF(d1));
+  return Math.max(0,put*10); // R per contract (SAFEX R10 multiplier)
+}
+function bsThetaPerDay(S,K,r,q,iv,T){
+  if(T<=0||iv<=0) return 0;
+  var nd1=normPDF((Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T)));
+  var Nnd2=1-normCDF((Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T))-iv*Math.sqrt(T));
+  var thetaAnn=-(S*Math.exp(-q*T)*nd1*iv)/(2*Math.sqrt(T))+r*K*Math.exp(-r*T)*Nnd2-q*S*Math.exp(-q*T)*(1-normCDF((Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T))));
+  return Math.abs(thetaAnn/365)*10; // R/day per contract
+}
+
+// ── ADD TRANCHE ───────────────────────────────────────────────────
+function addTranche(){
+  if(!window._calc){alert('Run calc first by entering market inputs.');return;}
+  var c_=window._calc;
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var otmFrac=FVAL['i-otm'];
+  var K=Math.round(S*(1-otmFrac));
+  var expStr=safexExpiryStr(new Date());
+  var today=new Date();today.setHours(0,0,0,0);
+  var expiry=new Date(expStr);
+  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+  var putR=bsPutRepriceR(S,K,r,q,iv,T);
+  if(putR<=0){alert('Put price is zero — check inputs.');return;}
+  // Budget: use 1-tranche share of annual option budget
+  var state_=loadState();
+  var capital=state_.capital||100000000;
+  var annualBudget=capital*(r/(1+r));
+  var trancheBudget=annualBudget/4; // quarterly tranche
+  var contracts=Math.max(1,Math.floor(trancheBudget/putR));
+  var premiumTotal=contracts*putR;
+  var ladder=loadLadder();
+  var id='T'+(String(Date.now()).slice(-4));
+  ladder.tranches.push({
+    id:id, buyDate:new Date().toISOString().slice(0,10),
+    expiry:expStr, strikeLevel:K, spotAtBuy:S,
+    tteAtBuyYears:T, contracts:contracts,
+    premiumPerContract:putR, premiumTotal:premiumTotal,
+    status:'active', payoffReceived:0,
+    otmFrac:otmFrac, addedTs:Date.now()
+  });
+  if(ladder.cashBalance===0) ladder.cashBalance=capital-premiumTotal;
+  else ladder.cashBalance-=premiumTotal;
+  saveLadder(ladder);
+  renderLadderPanel();
+  renderDailyNAV();
+  renderLiquidityStress();
+  var btn=document.querySelector('.btn-add-tranche');
+  btn.textContent='✓ Tranche Added';
+  setTimeout(function(){btn.textContent='+ Add Tranche';},2000);
+}
+
+function closeTranche(id){
+  var ladder=loadLadder();
+  var idx=ladder.tranches.findIndex(function(t){return t.id===id;});
+  if(idx<0) return;
+  var t=ladder.tranches[idx];
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date();today.setHours(0,0,0,0);
+  var expiry=new Date(t.expiry);
+  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+  var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+  var closeProceeds=mtm*t.contracts*(1-0.025); // 2.5% bid haircut
+  ladder.cashBalance+=closeProceeds;
+  ladder.tranches.splice(idx,1);
+  saveLadder(ladder);
+  renderLadderPanel();
+  renderDailyNAV();
+  renderLiquidityStress();
+}
+
+// ── RENDER LADDER TABLE ───────────────────────────────────────────
+function renderLadderPanel(){
+  var ladder=loadLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date();today.setHours(0,0,0,0);
+  var tbody=document.getElementById('ladder-tbody');
+  if(!ladder.tranches||!ladder.tranches.length){
+    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No tranches. Click "+ Add Tranche" to build the ladder.</td></tr>';
+    document.getElementById('ladder-totals').innerHTML='';
+    return;
+  }
+  var rows='',totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0;
+  ladder.tranches.forEach(function(t){
+    var expiry=new Date(t.expiry);
+    var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+    var tteDays=Math.round(T*365);
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var totalMtmR=mtm*t.contracts;
+    var pnl=(mtm-t.premiumPerContract)*t.contracts;
+    var theta=bsThetaPerDay(S,t.strikeLevel,r,q,iv,T);
+    var intrinsic=Math.max(0,t.strikeLevel-S)*10;
+    var isITM=S<t.strikeLevel;
+    var isNear=!isITM&&(t.strikeLevel-S)/S<0.03;
+    var rowCls=isITM?'tranche-itm':isNear?'tranche-near':'tranche-otm';
+    var statusBadge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':
+                    isNear?'<span class="tdd-badge tdd-near">Near</span>':
+                           '<span class="tdd-badge tdd-otm">OTM</span>';
+    totalContracts+=t.contracts;totalCost+=t.premiumTotal;
+    totalMTM+=totalMtmR;totalTheta+=theta*t.contracts;
+    rows+='<tr class="'+rowCls+'">'
+      +'<td>'+t.id+statusBadge+'</td>'
+      +'<td>'+t.buyDate+'</td>'
+      +'<td>'+t.expiry+'</td>'
+      +'<td style="color:'+(tteDays<14?'var(--amber)':'var(--muted)')+'">'+tteDays+'</td>'
+      +'<td style="color:var(--plat)">'+Math.round(t.strikeLevel).toLocaleString('en-ZA')+'</td>'
+      +'<td style="color:var(--teal2)">'+t.contracts+'</td>'
+      +'<td style="color:var(--muted)">'+fRk(t.premiumTotal)+'</td>'
+      +'<td style="color:'+(totalMtmR>t.premiumTotal?'var(--green2)':'var(--amber)')+'">'+fRk(totalMtmR)+'</td>'
+      +'<td style="color:'+(pnl>=0?'var(--green2)':'var(--red2)')+'">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
+      +'<td style="color:var(--red2)">−'+fRk(theta*t.contracts)+'</td>'
+      +'<td>'+tteDays+' days</td>'
+      +'<td style="text-align:center"><button class="btn-close-tranche" onclick="closeTranche(''+t.id+'')">✕ Close</button></td>'
+      +'</tr>';
+  });
+  tbody.innerHTML=rows;
+  var pnlTotal=(totalMTM-totalCost);
+  document.getElementById('ladder-totals').innerHTML=
+    '<span style="font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">TOTALS:</span>'
+    +'<span style="font-family:'DM Mono',monospace;font-size:10px">Contracts: <span style="color:var(--teal2)">'+totalContracts+'</span></span>'
+    +'<span style="font-family:'DM Mono',monospace;font-size:10px">Cost: <span style="color:var(--muted)">'+fRk(totalCost)+'</span></span>'
+    +'<span style="font-family:'DM Mono',monospace;font-size:10px">Book MTM: <span style="color:var(--amber)">'+fRk(totalMTM)+'</span></span>'
+    +'<span style="font-family:'DM Mono',monospace;font-size:10px">Total P&L: <span style="color:'+(pnlTotal>=0?'var(--green2)':'var(--red2)')+'">'+fRk(pnlTotal)+'</span></span>'
+    +'<span style="font-family:'DM Mono',monospace;font-size:10px">Θ/day: <span style="color:var(--red2)">−'+fRk(totalTheta)+'</span></span>';
+}
+
+// ── DAILY NAV BREAKDOWN ───────────────────────────────────────────
+function renderDailyNAV(){
+  var ladder=loadLadder();
+  var st=loadState();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date();today.setHours(0,0,0,0);
+  var zaronia=getZaronia();
+  var dailyZaronia=zaronia/365;
+
+  // Cash component
+  var inception=st.inceptionDate?new Date(st.inceptionDate):today;
+  var daysElapsed=Math.round((today-inception)/86400000);
+  var cashCore=st.cashCoreInit>0?st.cashCoreInit*(1+zaronia*daysElapsed/365):st.capital||100000000;
+  var residual=(st.residualCash||0)*(1+zaronia*daysElapsed/365);
+  // Ladder puts reduce residual further
+  var ladderTotalCost=(ladder.tranches||[]).reduce(function(s,t){return s+t.premiumTotal;},0);
+  var effectiveCash=Math.max(0,cashCore+residual-ladderTotalCost);
+  var dailyCashAccrual=effectiveCash*dailyZaronia;
+
+  // Option book MTM
+  var optBook=0,totalTheta=0,totalIntrinsic=0;
+  (ladder.tranches||[]).forEach(function(t){
+    var expiry=new Date(t.expiry);
+    var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    optBook+=mtm*t.contracts;
+    totalTheta+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,T)*t.contracts;
+    totalIntrinsic+=Math.max(0,t.strikeLevel-S)*10*t.contracts;
+  });
+
+  var totalNAV=effectiveCash+optBook;
+  var floor=effectiveCash+totalIntrinsic;
+  var initialCap=st.capital||100000000;
+  var navVsCap=((totalNAV-initialCap)/initialCap*100);
+
+  // Day P&L estimate
+  var navHistory=loadNavHistory();
+  var prevNAV=navHistory.length>0?navHistory[navHistory.length-1].nav:initialCap;
+  var dayPnl=totalNAV-prevNAV;
+
+  // ZARONIA display
+  setText('zs-rate',fmtPctAbs(zaronia*100,3)+'%');
+  setText('zs-daily','+'+fRk(dailyCashAccrual)+'/day on cash');
+
+  // Daily NAV cards
+  setText('dn-cash',fRk(effectiveCash));
+  setText('dn-cash-s','Daily accrual: +'+fRk(dailyCashAccrual));
+  c('dn-cash-s').style.color='var(--green)';
+  setText('dn-book',fRk(optBook));
+  setText('dn-book-s','Θ bleed: −'+fRk(totalTheta)+'/day ('+ladder.tranches.length+' tranches)');
+  c('dn-book-s').style.color=totalTheta>dailyCashAccrual?'var(--red2)':'var(--amber)';
+  setText('dn-nav',fRk(totalNAV));
+  setText('dn-nav-s',(navVsCap>=0?'+':'')+navVsCap.toFixed(2)+'% vs initial capital');
+  c('dn-nav-s').style.color=navVsCap>=0?'var(--green2)':'var(--red2)';
+  setText('dn-floor',fRk(floor));
+  setText('dn-floor-s','Cash+Intrinsic = min T+1 value');
+  c('dn-floor').style.color=floor>=initialCap?'var(--green2)':'var(--amber)';
+  setText('dn-pnl',(dayPnl>=0?'+':'')+fRk(dayPnl));
+  c('dn-pnl').style.color=dayPnl>=0?'var(--green2)':'var(--red2)';
+  c('dn-pnl').parentElement.querySelector('.dnav-s').textContent='vs yesterday close ('+prevNAV/1e6>0?fRk(prevNAV)+' yesterday':'est.)';
+
+  // Store for other functions
+  window._ladderNAV={effectiveCash,optBook,totalNAV,floor,initialCap,totalTheta,dailyCashAccrual,zaronia};
+}
+
+// ── LIQUIDITY STRESS TEST ─────────────────────────────────────────
+function renderLiquidityStress(){
+  var ln=window._ladderNAV;
+  if(!ln){renderDailyNAV();ln=window._ladderNAV;}
+  if(!ln) return;
+  var ladder=loadLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date();today.setHours(0,0,0,0);
+  var NAV=ln.totalNAV,cap=ln.initialCap;
+  var totalContracts=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
+  var haircut=totalContracts<50?0.025:totalContracts<200?0.04:0.06;
+
+  // T+1 Cash
+  var cashPct=ln.effectiveCash/NAV;
+  var bn90ok=cashPct>=0.10;
+  setText('ls-cash-r',fRk(ln.effectiveCash));
+  setText('ls-cash-pct',fmtPctAbs(cashPct*100,1)+'%');
+  setText('ls-cash-rate','ZARONIA '+fmtPctAbs(ln.zaronia*100,2)+'% p.a.');
+  c('ls-bar-cash').style.width=Math.min(100,cashPct*100).toFixed(0)+'%';
+  c('ls-bar-cash').style.background=cashPct>=0.10?'var(--green)':'var(--amber)';
+  var bn90el=document.getElementById('ls-bn90-pill');
+  bn90el.textContent=bn90ok?'✓ BN90 Met':'⚠ Below 10%';
+  bn90el.className='bn90-pill '+(bn90ok?'bn90-ok':'bn90-fail');
+
+  // T+1 Full
+  var optBid=ln.optBook*(1-haircut);
+  var fullLiq=ln.effectiveCash+optBid;
+  var fullPct=fullLiq/NAV;
+  setText('ls-full-r',fRk(fullLiq));
+  setText('ls-full-pct',fmtPctAbs(fullPct*100,1)+'%');
+  setText('ls-haircut',fmtPctAbs(haircut*100,1)+'% bid spread ('+totalContracts+' contracts)');
+  c('ls-bar-full').style.width=Math.min(100,fullPct*100).toFixed(0)+'%';
+
+  // Stress scenarios
+  function stressScenario(shockPct, barEl, navEl, itmEl, netEl){
+    var sS=S*(1+shockPct);
+    var optNewBook=0,optOldBook=ln.optBook;
+    (ladder.tranches||[]).forEach(function(t){
+      var expiry=new Date(t.expiry);
+      var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+      var mtmNew=bsPutRepriceR(sS,t.strikeLevel,r,q,iv,T);
+      optNewBook+=mtmNew*t.contracts;
+    });
+    var navNew=ln.effectiveCash+optNewBook;
+    var navChg=navNew-NAV;
+    var itmGain=optNewBook-optOldBook;
+    setText(navEl,fRk(navNew)+(navNew>=cap?' (floor held)':''));
+    c(navEl).style.color=navNew>=cap?'var(--teal2)':'var(--amber)';
+    setText(itmEl,(itmGain>=0?'+':'')+fRk(itmGain)+(itmGain>0?' ✓':''));
+    c(itmEl).style.color=itmGain>0?'var(--green2)':'var(--muted)';
+    setText(netEl,(navChg>=0?'+':'')+fRk(navChg)+' ('+((navChg/NAV)*100).toFixed(1)+'%)');
+    c(netEl).style.color=navChg>=0?'var(--green2)':navChg>-NAV*0.05?'var(--amber)':'var(--red2)';
+    c(barEl).style.width=Math.min(100,Math.max(0,(navNew/cap)*100)).toFixed(0)+'%';
+    c(barEl).style.background=navNew>=cap?'var(--teal)':'var(--amber)';
+  }
+  stressScenario(-0.10,'ls-bar-s10','ls-s10-nav','ls-s10-itm','ls-s10-net');
+  stressScenario(-0.25,'ls-bar-s25','ls-s25-nav','ls-s25-itm','ls-s25-net');
+}
+
+// ── ZARONIA SPREAD INPUT ──────────────────────────────────────────
+function onZaroniaSpreadInput(el){
+  ZARONIA_SPREAD_BPS=parseInt(el.value);
+  setText('sl-zaronia-val',ZARONIA_SPREAD_BPS+' bps');
+  renderDailyNAV();
+  renderLiquidityStress();
+}
+
+// ── LADDER CSV EXPORT ─────────────────────────────────────────────
+function exportLadderCSV(){
+  var ladder=loadLadder();
+  if(!ladder.tranches||!ladder.tranches.length){alert('No ladder tranches to export.');return;}
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date();today.setHours(0,0,0,0);
+  var headers=['Tranche ID','Buy Date','Expiry','TTE (days)','Strike','Spot at Buy','OTM%','Contracts','Premium/Contract','Total Premium','BS MTM','Total MTM','PnL','Theta/day','Status'];
+  var lines=[headers.join(',')];
+  ladder.tranches.forEach(function(t){
+    var expiry=new Date(t.expiry);
+    var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var theta=bsThetaPerDay(S,t.strikeLevel,r,q,iv,T);
+    var pnl=(mtm-t.premiumPerContract)*t.contracts;
+    lines.push([t.id,t.buyDate,t.expiry,Math.round(T*365),t.strikeLevel,t.spotAtBuy,
+      (t.otmFrac*100).toFixed(1)+'%',t.contracts,Math.round(t.premiumPerContract),
+      Math.round(t.premiumTotal),Math.round(mtm),Math.round(mtm*t.contracts),
+      Math.round(pnl),Math.round(theta*t.contracts),t.status].join(','));
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);var a=document.createElement('a');
+  a.href=url;a.download='PhylaxCapital_Ladder_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ── HOOK INTO EXISTING CALC FUNCTION ─────────────────────────────
+// Override the existing update function to also refresh ladder displays
+var _origCalc = typeof calc === 'function' ? calc : null;
+var _calcPatched = false;
+function patchCalc(){
+  if(_calcPatched) return;
+  var origOnBlur = fBlur;
+  // After any calc, refresh ladder displays
+  var origCalcRef = window.calc;
+  if(origCalcRef){
+    window.calc = function(){
+      origCalcRef.apply(this,arguments);
+      if(document.getElementById('ladder-tbody')){
+        renderLadderPanel();
+        renderDailyNAV();
+        renderLiquidityStress();
+      }
+    };
+    _calcPatched=true;
+  }
+}
+
+// ── INIT LADDER ───────────────────────────────────────────────────
+function initLadder(){
+  renderLadderPanel();
+  // Init zaronia display with current JIBAR
+  var zaronia=getZaronia();
+  var el=document.getElementById('zs-rate');
+  if(el) el.textContent=fmtPctAbs(zaronia*100,3)+'%';
+  var del=document.getElementById('zs-daily');
+  if(del) del.textContent='+'+fRk(zaronia/365*100000000)+'/day (R100m)';
+  renderDailyNAV();
+  renderLiquidityStress();
+  patchCalc();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// Defer initLadder until after existing init runs
+// ════════════════════════════════════════════════════════════════════
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(initLadder,200);});
+}else{
+  setTimeout(initLadder,200);
+}
+
+</script>
+</body>
+</html>

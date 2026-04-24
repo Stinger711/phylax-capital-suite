@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phylax Capital — DFM Portfolio Protector</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#101b2a;--bg4:#0a1018;
+  --teal:#00c4d4;--teal2:#00e8f8;--teal3:rgba(0,196,212,.12);
+  --plat:#b8c8d4;--plat2:#dce8f0;
+  --gold:#c8a84a;--gold2:#e8c870;
+  --red:#e84040;--red2:#ff6060;
+  --green:#40c880;--green2:#60e8a0;
+  --amber:#e8a020;
+  --white:#eef4f8;--muted:#4a6878;--muted2:#2a3a45;
+  --border:rgba(0,196,212,.12);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);--card2:rgba(0,196,212,.08);
+}
+html{font-size:13px;scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--white);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    radial-gradient(ellipse 55% 40% at 85% 5%, rgba(0,196,212,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 10% 90%, rgba(200,168,74,.04) 0%, transparent 55%),
+    linear-gradient(rgba(0,196,212,.013) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,196,212,.013) 1px, transparent 1px);
+  background-size:100%,100%,52px 52px,52px 52px;
+}
+input,button{font-family:inherit}
+.page{max-width:1320px;margin:0 auto;padding:22px 24px 60px}
+
+/* ── TOP BAR ─────────────────────────────────────────────────────── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:16px;border-bottom:2px solid var(--teal);margin-bottom:22px;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-text{}
+.brand-name{
+  font-family:'Rajdhani',sans-serif;font-size:19px;font-weight:700;
+  color:var(--plat2);letter-spacing:.1em;text-transform:uppercase;
+}
+.brand-tag{font-size:9px;color:var(--teal);text-transform:uppercase;letter-spacing:.18em;margin-top:1px}
+.topbar-right{text-align:right}
+.topbar-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.topbar-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--plat)}
+
+/* ── LAYOUT ──────────────────────────────────────────────────────── */
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+
+/* ── INPUT PANEL ─────────────────────────────────────────────────── */
+.input-panel{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:20px;position:sticky;top:20px;
+}
+.panel-title{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.16em;color:var(--teal);
+  display:flex;align-items:center;gap:8px;margin-bottom:18px;
+}
+.panel-title::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.sl-group{margin-bottom:20px}
+.sl-label{
+  font-size:9.5px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.08em;margin-bottom:5px;display:flex;justify-content:space-between;
+}
+.sl-val{
+  font-family:'Rajdhani',monospace;font-size:22px;font-weight:600;
+  color:var(--gold2);line-height:1;margin-bottom:7px;
+}
+.sl-val.teal{color:var(--teal2)}
+.sl-val.red{color:var(--red2)}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:3px;
+  border-radius:2px;outline:none;cursor:pointer;
+  background:linear-gradient(to right,var(--teal) 0%,var(--teal) var(--pct,50%),rgba(255,255,255,.08) var(--pct,50%));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 10px rgba(200,168,74,.5);
+  border:2.5px solid var(--bg);cursor:pointer;
+}
+.sl-ticks{display:flex;justify-content:space-between;margin-top:4px}
+.sl-tick{font-size:8.5px;color:rgba(74,104,120,.4)}
+
+.divider{height:1px;background:var(--border);margin:6px 0 18px}
+
+/* scenario buttons */
+.scenario-row{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.sc-btn{
+  padding:6px 13px;border-radius:7px;border:1px solid var(--border2);
+  background:var(--card);color:var(--muted);font-size:10px;font-weight:600;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.06em;
+  font-family:'Rajdhani',sans-serif;
+}
+.sc-btn:hover{background:var(--card2);color:var(--white)}
+.sc-btn.active{background:rgba(232,64,64,.14);border-color:rgba(232,64,64,.4);color:var(--red2)}
+
+/* crash badge on slider */
+.crash-badge{
+  display:inline-block;padding:2px 10px;border-radius:20px;font-size:9px;
+  font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-left:6px;
+  font-family:'Rajdhani',sans-serif;
+}
+.crash-badge.mild{background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
+.crash-badge.moderate{background:rgba(232,80,32,.14);border:1px solid rgba(232,80,32,.35);color:#e86040}
+.crash-badge.severe{background:rgba(232,40,40,.16);border:1px solid rgba(232,40,40,.4);color:var(--red2)}
+.crash-badge.extreme{background:rgba(180,0,220,.16);border:1px solid rgba(180,0,220,.4);color:#d060f8}
+
+/* ── RESULTS PANEL ───────────────────────────────────────────────── */
+.results{}
+
+/* headline KPI strip */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;
+}
+.kpi.highlight{background:rgba(0,196,212,.07);border-color:var(--border2)}
+.kpi-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.kpi-value{
+  font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;
+  color:var(--white);line-height:1;
+}
+.kpi-value.teal{color:var(--teal2)}
+.kpi-value.green{color:var(--green2)}
+.kpi-value.red{color:var(--red2)}
+.kpi-value.gold{color:var(--gold2)}
+.kpi-sub{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+/* comparison bars */
+.comparison{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:20px;margin-bottom:14px;
+}
+.comp-title{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--plat2);
+  display:flex;align-items:center;gap:8px;margin-bottom:16px;
+}
+.comp-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.bar-label{font-size:10px;color:var(--muted);width:130px;flex-shrink:0;font-weight:500}
+.bar-track{flex:1;height:28px;background:rgba(255,255,255,.04);border-radius:6px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;padding-left:10px;min-width:4px}
+.bar-fill.no-phylax{background:linear-gradient(90deg,rgba(232,64,64,.6),rgba(232,64,64,.3))}
+.bar-fill.with-phylax{background:linear-gradient(90deg,rgba(0,196,212,.7),rgba(0,196,212,.3))}
+.bar-fill.saved{background:linear-gradient(90deg,rgba(64,200,128,.7),rgba(64,200,128,.3))}
+.bar-val{
+  font-family:'DM Mono',monospace;font-size:10px;font-weight:500;
+  white-space:nowrap;padding:0 8px;
+}
+
+/* portfolio outcome visual */
+.outcome-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.outcome-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:16px;
+}
+.outcome-card.bad{border-color:rgba(232,64,64,.25);background:rgba(232,64,64,.04)}
+.outcome-card.good{border-color:rgba(0,196,212,.25);background:rgba(0,196,212,.04)}
+.oc-label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-family:'Rajdhani',sans-serif;font-weight:700}
+.oc-label.bad{color:var(--red)}
+.oc-label.good{color:var(--teal)}
+.oc-portfolio{font-size:9px;color:var(--muted);margin-bottom:4px}
+.oc-value{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;line-height:1;margin-bottom:4px}
+.oc-value.bad{color:var(--red2)}
+.oc-value.good{color:var(--teal2)}
+.oc-delta{font-family:'DM Mono',monospace;font-size:10px}
+.oc-delta.bad{color:var(--red)}
+.oc-delta.good{color:var(--green2)}
+.oc-rows{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.oc-row{display:flex;justify-content:space-between;margin-bottom:5px}
+.oc-row-k{font-size:9.5px;color:var(--muted)}
+.oc-row-v{font-family:'DM Mono',monospace;font-size:9.5px}
+
+/* fund performance box */
+.fund-box{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:14px;padding:20px;margin-bottom:14px;
+}
+.fund-box-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.fund-box-title{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--teal2);
+}
+.fund-rtn-badge{
+  font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;color:var(--green2)
+}
+.fund-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.fm{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:9px;padding:10px 12px;
+}
+.fm-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.fm-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--white)}
+.fm-val.teal{color:var(--teal2)}
+.fm-val.green{color:var(--green2)}
+.fm-val.gold{color:var(--gold2)}
+
+/* sensitivity table */
+.sens-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
+.sens-title{
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--plat2);
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.sens-title::after{content:'';flex:1;height:1px;background:var(--border)}
+table{width:100%;border-collapse:separate;border-spacing:0 3px}
+th{
+  font-size:9px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);padding:5px 10px;text-align:right;font-weight:600;
+  line-height:1.4;vertical-align:bottom;
+}
+th:first-child{text-align:left}
+td{
+  padding:8px 10px;text-align:right;
+  font-family:'DM Mono',monospace;font-size:10.5px;
+  background:var(--card);transition:background .2s;
+}
+td:first-child{text-align:left;border-radius:8px 0 0 8px;color:var(--muted)}
+td:last-child{border-radius:0 8px 8px 0}
+tr.active-row td{background:rgba(0,196,212,.1);border-top:1px solid rgba(0,196,212,.2);border-bottom:1px solid rgba(0,196,212,.2)}
+tr.active-row td:first-child{border-left:1px solid rgba(0,196,212,.2);color:var(--teal2)}
+tr.active-row td:last-child{border-right:1px solid rgba(0,196,212,.2)}
+tr:hover td{background:rgba(0,196,212,.07);cursor:pointer}
+
+/* pitch statement */
+.pitch{
+  background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));
+  border:1px solid rgba(0,196,212,.25);border-radius:12px;
+  padding:18px 22px;margin-bottom:14px;
+  font-size:14px;color:var(--plat2);line-height:1.6;text-align:center;
+  font-family:'DM Sans',sans-serif;
+}
+.pitch strong{color:var(--teal2)}
+.pitch .highlight{
+  display:inline-block;margin-top:8px;
+  font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;
+  color:var(--gold2);
+}
+
+/* disc */
+.disc{
+  font-size:9px;color:rgba(74,104,120,.45);line-height:1.7;
+  border-top:1px solid var(--border);padding-top:14px;margin-top:6px;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="brand">
+      <svg width="44" height="44" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="plxf_p" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#FFFFFF"/>
+          <stop offset="50%"  stop-color="#B0B5B9"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="plxf_i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#E0FFFF"/>
+          <stop offset="50%"  stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="plxf_g" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Outer hexagon -->
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23"
+               fill="none" stroke="url(#plxf_p)" stroke-width="2.0" stroke-linejoin="round"/>
+      <!-- Middle hexagon -->
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5"
+               fill="none" stroke="url(#plxf_p)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- 6 connecting lines outer→middle -->
+      <line x1="40"   y1="6"  x2="40"    y2="23"   stroke="url(#plxf_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5"  stroke="url(#plxf_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5"  stroke="url(#plxf_p)" stroke-width="1.5"/>
+      <line x1="40"   y1="74" x2="40"    y2="57"   stroke="url(#plxf_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5"  stroke="url(#plxf_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5"  stroke="url(#plxf_p)" stroke-width="1.5"/>
+      <!-- 4 diagonal cross lines -->
+      <line x1="40"   y1="6"  x2="69.4" y2="57"  stroke="url(#plxf_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="6"  x2="10.6" y2="57"  stroke="url(#plxf_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="69.4" y2="23"  stroke="url(#plxf_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="10.6" y2="23"  stroke="url(#plxf_p)" stroke-width="0.6" opacity="0.4"/>
+      <!-- Ice-blue gem hexagon (glowing) -->
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05"
+               fill="url(#plxf_i)" filter="url(#plxf_g)"/>
+    </svg>
+      <div class="brand-text">
+        <div class="brand-name">Phylax Capital &nbsp;·&nbsp; Macro Protector Fund</div>
+        <div class="brand-tag">DFM Portfolio Protection Model &nbsp;·&nbsp; Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-label">JIBAR &nbsp;·&nbsp; ALSI Div Yield &nbsp;·&nbsp; IV</div>
+      <div class="topbar-val" id="market-params">7.50% &nbsp;·&nbsp; 3.80% &nbsp;·&nbsp; 18.0%</div>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- LEFT: INPUTS -->
+    <div class="input-panel">
+      <div class="panel-title">Portfolio Parameters</div>
+
+      <div class="sl-group">
+        <div class="sl-label">
+          <span>DFM Portfolio Size</span>
+        </div>
+        <div class="sl-val teal" id="v-port">R 500m</div>
+        <input type="range" id="s-port" min="50" max="5000" step="50" value="500"
+          oninput="updateSlider(this,'v-port','port')"/>
+        <div class="sl-ticks"><span class="sl-tick">R50m</span><span class="sl-tick">R2.5bn</span><span class="sl-tick">R5bn</span></div>
+      </div>
+
+      <div class="sl-group">
+        <div class="sl-label"><span>Phylax Allocation</span></div>
+        <div class="sl-val" id="v-alloc">5.0%</div>
+        <input type="range" id="s-alloc" min="1" max="15" step="0.5" value="5"
+          oninput="updateSlider(this,'v-alloc','alloc')"/>
+        <div class="sl-ticks"><span class="sl-tick">1%</span><span class="sl-tick">7.5%</span><span class="sl-tick">15%</span></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="panel-title">Market Scenario</div>
+
+      <div style="margin-bottom:12px">
+        <div class="sl-label"><span>Preset Crash Scenarios</span></div>
+        <div class="scenario-row">
+          <button class="sc-btn" onclick="setScenario(8)">&minus;8%</button>
+          <button class="sc-btn active" onclick="setScenario(20)">&minus;20%</button>
+          <button class="sc-btn" onclick="setScenario(30)">&minus;30%</button>
+          <button class="sc-btn" onclick="setScenario(40)">&minus;40%</button>
+          <button class="sc-btn" onclick="setScenario(50)">&minus;50%</button>
+        </div>
+      </div>
+
+      <div class="sl-group">
+        <div class="sl-label"><span>ALSI Market Drop</span></div>
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <div class="sl-val red" id="v-drop">&minus;20%</div>
+          <span class="crash-badge moderate" id="crash-label">Significant sell-off</span>
+        </div>
+        <input type="range" id="s-drop" min="5" max="60" step="1" value="20"
+          oninput="updateSlider(this,'v-drop','drop')"/>
+        <div class="sl-ticks"><span class="sl-tick">&minus;5%</span><span class="sl-tick">&minus;30%</span><span class="sl-tick">&minus;60%</span></div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="panel-title">Advanced Parameters</div>
+
+      <div class="sl-group">
+        <div class="sl-label"><span>JIBAR Rate</span></div>
+        <div class="sl-val" id="v-jibar">7.50%</div>
+        <input type="range" id="s-jibar" min="5" max="12" step="0.25" value="7.5"
+          oninput="updateSlider(this,'v-jibar','jibar')"/>
+        <div class="sl-ticks"><span class="sl-tick">5%</span><span class="sl-tick">8.5%</span><span class="sl-tick">12%</span></div>
+      </div>
+
+      <div class="sl-group">
+        <div class="sl-label"><span>Implied Volatility (SAVI)</span></div>
+        <div class="sl-val" id="v-iv">18.0%</div>
+        <input type="range" id="s-iv" min="10" max="45" step="0.5" value="18"
+          oninput="updateSlider(this,'v-iv','iv')"/>
+        <div class="sl-ticks"><span class="sl-tick">10%</span><span class="sl-tick">27%</span><span class="sl-tick">45%</span></div>
+      </div>
+
+      <div class="sl-group" style="margin-bottom:0">
+        <div class="sl-label"><span>ALSI Dividend Yield (q)</span></div>
+        <div class="sl-val" id="v-dY">3.80%</div>
+        <input type="range" id="s-dY" min="0" max="8" step="0.1" value="3.8"
+          oninput="updateSlider(this,'v-dY','dY')"/>
+        <div class="sl-ticks"><span class="sl-tick">0%</span><span class="sl-tick">4%</span><span class="sl-tick">8%</span></div>
+        <div style="font-size:9px;color:var(--amber);margin-top:4px;font-family:'Rajdhani',sans-serif;letter-spacing:.04em">&#9888; JSE ALSI ~3.8% p.a. — verify quarterly from JSE data</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div class="results">
+
+      <!-- Pitch statement -->
+      <div class="pitch" id="pitch-box">
+        A <strong id="p-alloc">5%</strong> allocation to Macro Protector on a <strong id="p-port">R 500m</strong> portfolio<br>
+        reduces a <strong id="p-drop">&minus;20%</strong> ALSI crash from a <strong id="p-loss-without" class="bad" style="color:var(--red2)">R 100m loss</strong>
+        to a <strong id="p-loss-with" style="color:var(--teal2)">R 87m loss</strong><br>
+        <span class="highlight" id="p-ratio">23.4× protection-to-cost ratio</span>
+      </div>
+
+      <!-- KPI strip -->
+      <div class="kpi-strip">
+        <div class="kpi">
+          <div class="kpi-label">Capital Saved</div>
+          <div class="kpi-value green" id="k-saved">R 13.0m</div>
+          <div class="kpi-sub" id="k-saved-pct">2.6% of total portfolio</div>
+        </div>
+        <div class="kpi highlight">
+          <div class="kpi-label">Protection-to-Cost Ratio</div>
+          <div class="kpi-value teal" id="k-ratio">23.4×</div>
+          <div class="kpi-sub">Capital saved ÷ annual cost</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Phylax Fund Return</div>
+          <div class="kpi-value gold" id="k-fund-rtn">+186%</div>
+          <div class="kpi-sub">On the 5% allocation</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Annual Protection Cost</div>
+          <div class="kpi-value" id="k-cost">R 698k</div>
+          <div class="kpi-sub" id="k-cost-pct">0.14% of total portfolio</div>
+        </div>
+      </div>
+
+      <!-- Portfolio outcome comparison -->
+      <div class="outcome-grid">
+        <div class="outcome-card bad">
+          <div class="oc-label bad">Without Phylax</div>
+          <div class="oc-portfolio">Portfolio after crash</div>
+          <div class="oc-value bad" id="o-without">R 400.0m</div>
+          <div class="oc-delta bad" id="o-without-delta">&minus;R 100.0m &nbsp;/&nbsp; &minus;20.00%</div>
+          <div class="oc-rows">
+            <div class="oc-row"><span class="oc-row-k">Starting value</span><span class="oc-row-v" id="o-start">R 500.0m</span></div>
+            <div class="oc-row"><span class="oc-row-k">Equity loss</span><span class="oc-row-v" style="color:var(--red)" id="o-eq-loss">&minus;R 100.0m</span></div>
+            <div class="oc-row"><span class="oc-row-k">Portfolio return</span><span class="oc-row-v" style="color:var(--red)" id="o-rtn-without">&minus;20.00%</span></div>
+          </div>
+        </div>
+        <div class="outcome-card good">
+          <div class="oc-label good">With Phylax (5% carve-out)</div>
+          <div class="oc-portfolio">Portfolio after crash</div>
+          <div class="oc-value good" id="o-with">R 413.0m</div>
+          <div class="oc-delta good" id="o-with-delta">&minus;R 87.0m &nbsp;/&nbsp; &minus;17.40%</div>
+          <div class="oc-rows">
+            <div class="oc-row"><span class="oc-row-k">Equity book (95%)</span><span class="oc-row-v" id="o-eq-book">R 475.0m</span></div>
+            <div class="oc-row"><span class="oc-row-k">Equity loss</span><span class="oc-row-v" style="color:var(--red)" id="o-eq-loss-2">&minus;R 95.0m</span></div>
+            <div class="oc-row"><span class="oc-row-k">Phylax allocation</span><span class="oc-row-v" style="color:var(--teal)" id="o-phylax-alloc">R 25.0m</span></div>
+            <div class="oc-row"><span class="oc-row-k">Phylax fund value</span><span class="oc-row-v" style="color:var(--teal2)" id="o-phylax-val">R 38.7m</span></div>
+            <div class="oc-row"><span class="oc-row-k">Portfolio return</span><span class="oc-row-v" style="color:var(--teal2)" id="o-rtn-with">&minus;17.40%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comparison bars -->
+      <div class="comparison">
+        <div class="comp-title">Visual Comparison</div>
+        <div class="bar-row">
+          <div class="bar-label">Portfolio loss (no Phylax)</div>
+          <div class="bar-track">
+            <div class="bar-fill no-phylax" id="bar-without" style="width:50%">
+              <span class="bar-val" style="color:#ff8080" id="bv-without">&minus;R 100m</span>
+            </div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Portfolio loss (with Phylax)</div>
+          <div class="bar-track">
+            <div class="bar-fill with-phylax" id="bar-with" style="width:40%">
+              <span class="bar-val" style="color:#00e8f8" id="bv-with">&minus;R 87m</span>
+            </div>
+          </div>
+        </div>
+        <div class="bar-row" style="margin-bottom:0">
+          <div class="bar-label">Capital saved by Phylax</div>
+          <div class="bar-track">
+            <div class="bar-fill saved" id="bar-saved" style="width:13%">
+              <span class="bar-val" style="color:#60e8a0" id="bv-saved">R 13m</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fund performance detail -->
+      <div class="fund-box">
+        <div class="fund-box-header">
+          <div class="fund-box-title">Macro Protector Fund Performance</div>
+          <div class="fund-rtn-badge" id="fund-rtn-badge">+186%</div>
+        </div>
+        <div class="fund-metrics">
+          <div class="fm">
+            <div class="fm-label">Options Budget</div>
+            <div class="fm-val gold" id="fm-budget">R 1.74m</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Contracts</div>
+            <div class="fm-val teal" id="fm-contracts">413</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Options Payout</div>
+            <div class="fm-val green" id="fm-payout">R 15.0m</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Fund NAV at Exit</div>
+            <div class="fm-val teal" id="fm-nav">R 38.7m</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Put Premium (per contract)</div>
+            <div class="fm-val" id="fm-put">R 4 477</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Delta</div>
+            <div class="fm-val" id="fm-delta">&minus;0.0916</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Cash Core</div>
+            <div class="fm-val" id="fm-cash">R 23.26m</div>
+          </div>
+          <div class="fm">
+            <div class="fm-label">Annual Cost (foregone yield)</div>
+            <div class="fm-val" id="fm-cost">R 698k</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sensitivity table -->
+      <div class="sens-wrap">
+        <div class="sens-title">Protection Sensitivity Table</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align:left">ALSI Drop</th>
+                <th>Portfolio Value<br><span style="font-weight:400;opacity:.7">Without Phylax</span></th>
+                <th>Return<br><span style="font-weight:400;opacity:.7">Without Phylax</span></th>
+                <th>Portfolio Value<br><span style="font-weight:400;opacity:.7">With Phylax</span></th>
+                <th>Return<br><span style="font-weight:400;opacity:.7">With Phylax</span></th>
+                <th>Difference<br><span style="font-weight:400;opacity:.7">Capital Saved</span></th>
+              </tr>
+            </thead>
+            <tbody id="sens-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="disc">
+        All projections are forward-looking estimates using Black-Scholes option pricing (Merton 1973, q=3.8% ALSI dividend yield, verified against Python/scipy).
+        Option payouts use delta-gamma-vega approximation; actual results depend on live SAFEX execution, implied volatility at the time of the event, and time to expiry.
+        This is not a guarantee of performance. Past crash scenarios are illustrative only.
+        Capital guarantee applies at quarterly exit windows via JIBAR-linked fixed rate notes maturing to par.
+        Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524 &nbsp;·&nbsp; For professional and institutional investors only.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────
+var SPOT    = 113000;
+var OTM     = 0.10;
+var TTE     = 90/365;
+var Q       = 0.038;
+var MULT    = 10; // R10 per index point (SAFEX)
+var SENS_DROPS = [5,8,10,12,15,20,25,30,35,40,50,60];
+
+// ── State ──────────────────────────────────────────────────────────
+var state = { port:500, alloc:5, drop:20, jibar:7.5, iv:18, dY:3.8 };
+
+// ── BS Engine ─────────────────────────────────────────────────────
+function normCDF(x){
+  if(x<-8)return 0;if(x>8)return 1;
+  var t=1/(1+0.2316419*Math.abs(x));
+  var d=0.3989422820*Math.exp(-.5*x*x);
+  var p=d*t*(0.3193815+t*(-0.3565638+t*(1.7814779+t*(-1.8212560+t*1.3302744))));
+  return x>=0?1-p:p;
+}
+function normPDF(x){ return Math.exp(-.5*x*x)/Math.sqrt(2*Math.PI); }
+
+function bsCalc(jibar, iv, dY){
+  var r=jibar/100, sigma=iv/100;
+  var K=Math.round(SPOT*(1-OTM));
+  var q=((dY||0)/100);
+  var d1=(Math.log(SPOT/K)+(r-q+sigma*sigma/2)*TTE)/(sigma*Math.sqrt(TTE));
+  var d2=d1-sigma*Math.sqrt(TTE);
+  var Nd1=normCDF(d1), Nnd1=1-Nd1, Nnd2=1-normCDF(d2);
+  var nd1=normPDF(d1);
+  var putPts=K*Math.exp(-r*TTE)*Nnd2 - SPOT*Math.exp(-q*TTE)*Nnd1;
+  var putR=putPts*MULT;
+  var delta=Math.exp(-q*TTE)*(Nd1-1);
+  var gamma=Math.exp(-q*TTE)*nd1/(SPOT*sigma*Math.sqrt(TTE));
+  var vega=SPOT*Math.exp(-q*TTE)*nd1*Math.sqrt(TTE)*0.01*MULT;
+  return {K:K, putR:putR, putPts:putPts, delta:delta, gamma:gamma, vega:vega};
+}
+
+function phylaxCalc(portM, allocPct, dropPct, jibar, iv, dY){
+  var port   = portM * 1e6;
+  var alloc  = port * (allocPct/100);
+  var eqBook = port - alloc;
+  var r      = jibar/100;
+
+  // Capital guarantee structure
+  var cashCore = alloc / (1 + r*TTE);   // JIBAR note matures to alloc
+  var optBudget = alloc - cashCore;
+
+  var bs     = bsCalc(jibar, iv, dY);
+  var contracts = optBudget > 0 && bs.putR > 0 ? Math.floor(optBudget/bs.putR) : 0;
+
+  // Option payout on crash
+  var drop   = dropPct/100;
+  var spotAtExpiry = SPOT * (1-drop);
+  var itm    = spotAtExpiry < bs.K;
+  var intrinsic = itm ? (bs.K - spotAtExpiry) : 0;
+
+  // Greeks-based payout approximation
+  var dS     = -SPOT * drop;
+  var deltaGain = Math.abs(bs.delta) * Math.abs(dS);
+  var gammaGain = 0.5 * bs.gamma * dS * dS;
+
+  // Vol spike in a crash (empirical)
+  var volSpike = drop > 0.20 ? 0.12 : drop > 0.12 ? 0.07 : 0.03;
+  var vegaGain = bs.vega * (volSpike/0.01) / MULT; // per point
+  var payoutPerContract = (itm ? intrinsic : 0) + Math.max(0, (deltaGain + gammaGain + vegaGain) * (itm ? 0.6 : 0.4));
+
+  // Actual put value at crash (simplified)
+  var payoutPts = itm
+    ? Math.max(intrinsic, bs.putPts * (1 + Math.abs(bs.delta)*drop*2.5 + 0.5*bs.gamma*SPOT*drop*drop*SPOT/bs.putPts))
+    : 0;
+  var fundPayout = payoutPts * MULT * contracts;
+
+  var fundNAV   = cashCore + Math.max(0, fundPayout);
+  var eqLoss    = eqBook * drop;
+  var eqAfter   = eqBook - eqLoss;
+
+  var woPhylax  = port - (port*drop);           // full portfolio falls by drop
+  var withPhylax = eqAfter + fundNAV;
+  var saved     = withPhylax - woPhylax;
+
+  var fundReturn = ((fundNAV - alloc)/alloc)*100;
+  var annCost   = optBudget;  // cost is the foregone yield on the option budget
+
+  // protection ratio: capital saved / annual options budget
+  var ratio = annCost > 0 ? saved/annCost : 0;
+
+  return {
+    port:port, alloc:alloc, eqBook:eqBook,
+    cashCore:cashCore, optBudget:optBudget,
+    contracts:contracts, bs:bs,
+    fundNAV:fundNAV, fundPayout:fundPayout,
+    eqLoss:eqLoss, eqAfter:eqAfter,
+    woPhylax:woPhylax, withPhylax:withPhylax,
+    saved:saved, fundReturn:fundReturn,
+    annCost:annCost, ratio:ratio,
+    portReturn_wo: -drop*100,
+    portReturn_with: ((withPhylax-port)/port)*100,
+  };
+}
+
+// ── Formatters ────────────────────────────────────────────────────
+function fR(n){
+  var abs=Math.abs(n);
+  var s;
+  if(abs>=1e9) s='R '+(n/1e9).toFixed(2)+'bn';
+  else if(abs>=1e6) s='R '+(n/1e6).toFixed(1)+'m';
+  else if(abs>=1e3) s='R '+(n/1e3).toFixed(0)+'k';
+  else s='R '+Math.round(n);
+  return s;
+}
+function fRlong(n){
+  var s=Math.round(Math.abs(n)).toLocaleString('en-ZA');
+  return (n<0?'−':'')+'R '+s;
+}
+function fRm(n){ return 'R '+(n/1e6).toFixed(1)+'m'; }
+function fPct(n,d){ return (n>=0?'+':'')+n.toFixed(d||1)+'%'; }
+function fPctAbs(n,d){ return n.toFixed(d||1)+'%'; }
+function sp(v,mn,mx){ return Math.max(0,Math.min(100,Math.round(((v-mn)/(mx-mn))*100))); }
+
+// ── Crash label ───────────────────────────────────────────────────
+function crashLabel(d){
+  if(d<=8)  return ['mild','Mild correction'];
+  if(d<=15) return ['moderate','Moderate sell-off'];
+  if(d<=25) return ['moderate','Significant sell-off'];
+  if(d<=35) return ['severe','Severe bear market'];
+  if(d<=45) return ['severe','Crash scenario'];
+  return ['extreme','Extreme crash'];
+}
+
+// ── Main update ───────────────────────────────────────────────────
+function update(){
+  var p  = state;
+  var r  = phylaxCalc(p.port, p.alloc, p.drop, p.jibar, p.iv, p.dY);
+
+  // Pitch box
+  document.getElementById('p-alloc').textContent = p.alloc+'%';
+  document.getElementById('p-port').textContent  = 'R '+(p.port>=1000?(p.port/1000).toFixed(1)+'bn':p.port+'m');
+  document.getElementById('p-drop').textContent  = '−'+p.drop+'%';
+  document.getElementById('p-loss-without').textContent = fR(r.woPhylax - r.port);
+  document.getElementById('p-loss-with').textContent    = fR(r.withPhylax - r.port);
+  document.getElementById('p-ratio').textContent        = r.ratio.toFixed(1)+'× protection-to-cost ratio';
+
+  // KPIs
+  setText('k-saved',     fR(r.saved));
+  setText('k-saved-pct', (r.saved/r.port*100).toFixed(1)+'% of total portfolio');
+  setText('k-ratio',     r.ratio.toFixed(1)+'×');
+  setText('k-fund-rtn',  fPct(r.fundReturn,0));
+  setText('k-cost',      fR(r.annCost));
+  setText('k-cost-pct',  (r.annCost/r.port*100).toFixed(2)+'% of total portfolio');
+
+  // Outcome cards
+  setText('o-without',    fRm(r.woPhylax));
+  setText('o-without-delta', '−'+fRm(r.port-r.woPhylax)+'  /  '+r.portReturn_wo.toFixed(2)+'%');
+  setText('o-start',      fRm(r.port));
+  setText('o-eq-loss',    '−'+fRm(r.port * p.drop/100));
+  setText('o-rtn-without',r.portReturn_wo.toFixed(2)+'%');
+
+  setText('o-with',       fRm(r.withPhylax));
+  setText('o-with-delta', (r.withPhylax-r.port>=0?'+':'−')+fRm(Math.abs(r.withPhylax-r.port))+'  /  '+r.portReturn_with.toFixed(2)+'%');
+  setText('o-eq-book',    fRm(r.eqBook));
+  setText('o-eq-loss-2',  '−'+fRm(r.eqLoss));
+  setText('o-phylax-alloc', fRm(r.alloc));
+  setText('o-phylax-val',   fRm(r.fundNAV));
+  setText('o-rtn-with',     r.portReturn_with.toFixed(2)+'%');
+
+  // Bars
+  var maxLoss = r.port * 0.65;
+  var pctWO   = Math.min(95, (r.port-r.woPhylax)/maxLoss*100);
+  var pctW    = Math.min(95, Math.max(0, (r.port-r.withPhylax)/maxLoss*100));
+  var pctSv   = Math.min(95, Math.max(2, r.saved/maxLoss*100));
+  document.getElementById('bar-without').style.width = pctWO+'%';
+  document.getElementById('bar-with').style.width    = pctW+'%';
+  document.getElementById('bar-saved').style.width   = pctSv+'%';
+  setText('bv-without', '−'+fRm(r.port-r.woPhylax));
+  setText('bv-with',    (r.port-r.withPhylax>0?'−':'')+fRm(Math.abs(r.port-r.withPhylax)));
+  setText('bv-saved',   fR(r.saved));
+
+  // Fund detail
+  setText('fund-rtn-badge', fPct(r.fundReturn,0));
+  document.getElementById('fund-rtn-badge').style.color = r.fundReturn>=0?'var(--green2)':'var(--red2)';
+  setText('fm-budget',    fR(r.optBudget));
+  setText('fm-contracts', r.contracts.toString());
+  setText('fm-payout',    fR(r.fundPayout));
+  setText('fm-nav',       fRm(r.fundNAV));
+  setText('fm-put',       'R '+Math.round(r.bs.putR).toLocaleString('en-ZA'));
+  setText('fm-delta',     r.bs.delta.toFixed(4));
+  setText('fm-cash',      fRm(r.cashCore));
+  setText('fm-cost',      fR(r.annCost));
+
+  // Market params line
+  document.getElementById('market-params').textContent =
+    p.jibar.toFixed(2)+'%  ·  '+p.dY.toFixed(2)+'%  ·  '+p.iv.toFixed(1)+'%';
+
+  // Sensitivity table
+  buildSens();
+}
+
+function setText(id,val){ var el=document.getElementById(id); if(el) el.textContent=val; }
+
+// ── Sensitivity table ─────────────────────────────────────────────
+function buildSens(){
+  var tbody = document.getElementById('sens-body');
+  var html  = '';
+  SENS_DROPS.forEach(function(d){
+    var r     = phylaxCalc(state.port, state.alloc, d, state.jibar, state.iv, state.dY);
+    var isAct = d === state.drop;
+    var rWith  = r.portReturn_with.toFixed(1)+'%';
+    var rWout  = r.portReturn_wo.toFixed(1)+'%';
+    var diff   = r.saved;
+    var diffColor = diff >= 0 ? 'var(--green2)' : 'var(--red)';
+    html += '<tr class="'+(isAct?'active-row':'')+'" onclick="setDropFrom('+d+')">';
+    html += '<td>−'+d+'%</td>';
+    html += '<td style="color:var(--red2)">'+fRm(r.woPhylax)+'</td>';
+    html += '<td style="color:var(--red)">'+rWout+'</td>';
+    html += '<td style="color:var(--teal2)">'+fRm(r.withPhylax)+'</td>';
+    html += '<td style="color:'+(r.portReturn_with > r.portReturn_wo ? 'var(--teal2)' : 'var(--amber)')+'">'+rWith+'</td>';
+    html += '<td style="color:'+diffColor+';font-weight:600">'+fR(diff)+'</td>';
+    html += '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+// ── Slider helpers ────────────────────────────────────────────────
+function updateSlider(el, labelId, key){
+  var v = parseFloat(el.value);
+  state[key] = v;
+  // format display
+  var disp;
+  if(key==='port')  disp = v>=1000?'R '+(v/1000).toFixed(1)+'bn':'R '+v+'m';
+  else if(key==='alloc') disp = v.toFixed(1)+'%';
+  else if(key==='drop')  disp = '−'+v+'%';
+  else if(key==='jibar') disp = v.toFixed(2)+'%';
+  else if(key==='iv')    disp = v.toFixed(1)+'%';
+  else if(key==='dY')    disp = v.toFixed(2)+'%';
+  document.getElementById(labelId).textContent = disp;
+  // update crash badge
+  if(key==='drop'){
+    var cl = crashLabel(v);
+    var badge = document.getElementById('crash-label');
+    badge.textContent = cl[1];
+    badge.className = 'crash-badge '+cl[0];
+    // sync scenario buttons
+    document.querySelectorAll('.sc-btn').forEach(function(btn){
+      btn.classList.toggle('active', btn.textContent.trim() === '−'+v+'%');
+    });
+  }
+  // update range gradient
+  var min=parseFloat(el.min), max=parseFloat(el.max);
+  el.style.setProperty('--pct', sp(v,min,max)+'%');
+  update();
+}
+
+function setScenario(d){
+  state.drop = d;
+  var sl = document.getElementById('s-drop');
+  sl.value = d;
+  sl.style.setProperty('--pct', sp(d,5,60)+'%');
+  document.getElementById('v-drop').textContent = '−'+d+'%';
+  var cl = crashLabel(d);
+  var badge = document.getElementById('crash-label');
+  badge.textContent = cl[1];
+  badge.className = 'crash-badge '+cl[0];
+  document.querySelectorAll('.sc-btn').forEach(function(btn){
+    btn.classList.toggle('active', btn.textContent.trim() === '−'+d+'%');
+  });
+  update();
+}
+
+function setDropFrom(d){ setScenario(d); }
+
+// ── Init ──────────────────────────────────────────────────────────
+(function init(){
+  // Set initial slider gradients
+  var configs = [
+    {id:'s-port',  min:50,   max:5000, val:500},
+    {id:'s-alloc', min:1,    max:15,   val:5},
+    {id:'s-drop',  min:5,    max:60,   val:20},
+    {id:'s-jibar', min:5,    max:12,   val:7.5},
+    {id:'s-iv',    min:10,   max:45,   val:18},
+    {id:'s-dY',    min:0,    max:8,    val:3.8},
+  ];
+  configs.forEach(function(c){
+    var el = document.getElementById(c.id);
+    if(el) el.style.setProperty('--pct', sp(c.val,c.min,c.max)+'%');
+  });
+  update();
+})();
+</script>
+</body>
+</html>

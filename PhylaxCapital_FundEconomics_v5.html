@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phylax Capital — Fund Economics</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#101b2a;
+  --teal:#00c4d4;--teal2:#00e8f8;--plat:#b8c8d4;--plat2:#dce8f0;
+  --white:#eef4f8;--muted:#5a7888;--muted2:#2a3a45;
+  --red:#e84040;--green:#40c880;--amber:#e8a020;--blue2:#60b0f0;
+  --border:rgba(0,196,212,.1);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);
+}
+html{font-size:14px}
+body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 60% 35% at 80% 0%,rgba(0,196,212,.06) 0%,transparent 55%),
+    linear-gradient(rgba(0,196,212,.013) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.013) 1px,transparent 1px);
+  background-size:100%,48px 48px,48px 48px}
+.app{max-width:1200px;margin:0 auto;padding:28px 24px 64px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid var(--border2);margin-bottom:6px}
+.brand{display:flex;align-items:center;gap:16px}
+.bname{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--plat2);letter-spacing:.1em;text-transform:uppercase}
+.bfund{font-size:10px;color:var(--teal);letter-spacing:.18em;text-transform:uppercase;margin-top:3px;font-family:'Rajdhani',sans-serif}
+.btag{font-size:10px;color:var(--muted);margin-top:2px}
+.lpill{display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:2px;border:1px solid var(--border2);background:rgba(0,196,212,.06);font-size:9px;color:var(--teal2);text-transform:uppercase;letter-spacing:.12em;font-family:'Rajdhani',sans-serif;font-weight:600}
+.ldot{width:5px;height:5px;border-radius:50%;background:var(--teal2);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 4px var(--teal2)}50%{opacity:.3}}
+.spills{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;justify-content:flex-end}
+.sp{padding:3px 10px;border-radius:2px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;font-family:'Rajdhani',sans-serif}
+.spr{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:#f07070}
+.spb{background:rgba(64,144,216,.1);border:1px solid rgba(64,144,216,.3);color:var(--blue2)}
+.spt{background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.22);color:var(--teal2)}
+.tab-bar{display:flex;margin-bottom:22px;border-bottom:1px solid var(--border)}
+.tab{padding:10px 20px;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;margin-bottom:-1px;transition:all .2s}
+.tab.on{color:var(--teal2);border-bottom-color:var(--teal2)}
+.tab:hover{color:var(--plat)}
+.sh{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;display:flex;align-items:center;gap:10px;margin-bottom:14px;color:var(--teal)}
+.sh::before{content:'';width:3px;height:14px;background:currentColor;flex-shrink:0}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.panel{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:2px;padding:22px;margin-bottom:20px;box-shadow:0 4px 32px rgba(0,0,0,.4)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.sl-l{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.sl-v{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--teal2);margin-bottom:6px}
+input[type=range]{-webkit-appearance:none;width:100%;height:2px;border-radius:1px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:2px;background:var(--teal2);box-shadow:0 0 8px rgba(0,196,212,.6);border:1px solid var(--bg)}
+.ticks{display:flex;justify-content:space-between;margin-top:4px}
+.tick{font-size:9px;color:var(--muted2)}
+.mc{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:14px;position:relative;overflow:hidden}
+.mc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
+.mc-r::before{background:var(--red)}.mc-a::before{background:var(--amber)}.mc-g::before{background:var(--green)}.mc-p::before{background:var(--plat)}
+.mc-l{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px}
+.mc-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--white)}
+.mc-s{font-size:9px;color:var(--muted);margin-top:3px}
+.wr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:2px;margin-bottom:3px}
+.wi{background:rgba(0,196,212,.07);border:1px solid rgba(0,196,212,.18)}
+.wp{background:rgba(232,64,64,.05);border:1px solid rgba(232,64,64,.15)}
+.wc{background:rgba(64,144,216,.05);border:1px solid rgba(64,144,216,.15)}
+.wo{background:rgba(232,160,32,.05);border:1px solid rgba(232,160,32,.12)}
+.wt{background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.3)}
+.wpr{background:rgba(64,200,128,.07);border:1px solid rgba(64,200,128,.2)}
+.wl{background:rgba(232,64,64,.07);border:1px solid rgba(232,64,64,.2)}
+.wpe{background:rgba(184,200,212,.04);border:1px dashed rgba(184,200,212,.15)}
+.wf-icon{font-size:13px;flex-shrink:0;width:18px;text-align:center}
+.wf-body{flex:1}
+.wf-name{font-size:11.5px;font-weight:600;color:var(--white)}
+.wf-desc{font-size:10px;color:var(--muted);margin-top:1px}
+.wf-src{font-family:'Rajdhani',sans-serif;font-size:8px;padding:2px 8px;border-radius:2px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;flex-shrink:0}
+.wsrcp{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.25);color:#f07070}
+.wsrcc{background:rgba(64,144,216,.1);border:1px solid rgba(64,144,216,.25);color:var(--blue2)}
+.wsrcm{background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.25);color:var(--teal2)}
+.wf-amt{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;min-width:110px;text-align:right}
+.wf-pct{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);min-width:70px;text-align:right}
+.wf-sec{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;padding:8px 14px 3px;color:var(--muted)}
+table{width:100%;border-collapse:separate;border-spacing:0 2px}
+th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:6px 10px;text-align:right;font-weight:600}
+th:first-child{text-align:left}
+td{padding:8px 10px;text-align:right;font-family:'DM Mono',monospace;font-size:11px;background:var(--card)}
+td:first-child{text-align:left;border-radius:2px 0 0 2px}
+td:last-child{border-radius:0 2px 2px 0}
+.trbe td{background:rgba(232,160,32,.1);border-top:1px solid rgba(232,160,32,.25);border-bottom:1px solid rgba(232,160,32,.25)}
+.trbe td:first-child{border-left:1px solid rgba(232,160,32,.25);color:var(--amber)}
+.trbe td:last-child{border-right:1px solid rgba(232,160,32,.25)}
+.trpr td{background:rgba(64,200,128,.05)}.trlo td{background:rgba(232,64,64,.05)}
+.trac td{background:rgba(0,196,212,.09);border-top:1px solid rgba(0,196,212,.22);border-bottom:1px solid rgba(0,196,212,.22)}
+.trac td:first-child{border-left:1px solid rgba(0,196,212,.22);color:var(--teal2)}
+.trac td:last-child{border-right:1px solid rgba(0,196,212,.22)}
+.be-box{background:linear-gradient(135deg,rgba(232,160,32,.08),rgba(232,160,32,.03));border:1px solid rgba(232,160,32,.28);border-radius:2px;padding:18px 22px;margin-bottom:20px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:20px}
+.be-lbl{font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:.14em;font-weight:700;margin-bottom:5px}
+.be-val{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;color:var(--plat2);line-height:1}
+.be-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.ter-card{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:16px;position:relative;overflow:hidden}
+.ter-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--teal),transparent)}
+.ter-aum{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--teal2);margin-bottom:2px}
+.ter-sub{font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.ter-r{display:flex;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,.02);border-radius:2px;margin-bottom:2px}
+.ter-k{font-size:10px;color:var(--muted)}.ter-v{font-family:'DM Mono',monospace;font-size:10px}
+.ter-tot{background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.2);border-radius:2px;padding:9px 10px;margin-top:8px;display:flex;justify-content:space-between}
+.ter-tl{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;color:var(--teal2)}
+.ter-tv{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--teal2)}
+.tog{padding:8px 18px;border-radius:2px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;margin-right:8px;margin-bottom:8px;transition:all .2s}
+.togb{background:rgba(64,144,216,.1);border-color:rgba(64,144,216,.35);color:var(--blue2)}
+.togt{background:rgba(0,196,212,.1);border-color:rgba(0,196,212,.35);color:var(--teal2)}
+.note{border-radius:2px;padding:12px 14px;font-size:11px;color:var(--muted);line-height:1.65}
+.nt{background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.12)}
+.nb{background:rgba(64,144,216,.04);border:1px solid rgba(64,144,216,.12)}
+.na{background:rgba(232,160,32,.04);border:1px solid rgba(232,160,32,.12)}
+.ng{background:rgba(64,200,128,.04);border:1px solid rgba(64,200,128,.12)}
+.cc{background:rgba(232,64,64,.04);border-left:2px solid var(--red);border:1px solid rgba(232,64,64,.1);border-left:2px solid var(--red);border-radius:2px;padding:10px 12px;margin-bottom:6px}
+.cc-n{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;color:#f07070;margin-bottom:2px;text-transform:uppercase;letter-spacing:.06em}
+.cc-v{font-family:'DM Mono',monospace;font-size:11px;color:var(--white)}.cc-s{font-size:9.5px;color:var(--muted);margin-top:2px}
+.fc{background:rgba(0,196,212,.04);border-left:2px solid var(--teal);border:1px solid rgba(0,196,212,.12);border-left:2px solid var(--teal);border-radius:2px;padding:14px}
+.fc-l{font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.fc-v{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;margin-bottom:3px}
+.fc-a{font-family:'DM Mono',monospace;font-size:11px;color:var(--white);margin-bottom:3px}
+.fc-s{font-size:10px;color:var(--muted)}
+.hidden{display:none!important}
+.disc{font-size:9px;color:rgba(90,120,136,.4);line-height:1.7;border-top:1px solid var(--border);padding-top:14px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <div class="brand">
+    <svg width="50" height="50" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="plxe_p" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#FFFFFF"/>
+          <stop offset="50%"  stop-color="#B0B5B9"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="plxe_i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#E0FFFF"/>
+          <stop offset="50%"  stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="plxe_g" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Outer hexagon -->
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23"
+               fill="none" stroke="url(#plxe_p)" stroke-width="2.0" stroke-linejoin="round"/>
+      <!-- Middle hexagon -->
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5"
+               fill="none" stroke="url(#plxe_p)" stroke-width="1.5" stroke-linejoin="round"/>
+      <!-- 6 connecting lines outer→middle -->
+      <line x1="40"   y1="6"  x2="40"    y2="23"   stroke="url(#plxe_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5"  stroke="url(#plxe_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5"  stroke="url(#plxe_p)" stroke-width="1.5"/>
+      <line x1="40"   y1="74" x2="40"    y2="57"   stroke="url(#plxe_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5"  stroke="url(#plxe_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5"  stroke="url(#plxe_p)" stroke-width="1.5"/>
+      <!-- 4 diagonal cross lines -->
+      <line x1="40"   y1="6"  x2="69.4" y2="57"  stroke="url(#plxe_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="6"  x2="10.6" y2="57"  stroke="url(#plxe_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="69.4" y2="23"  stroke="url(#plxe_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40"   y1="74" x2="10.6" y2="23"  stroke="url(#plxe_p)" stroke-width="0.6" opacity="0.4"/>
+      <!-- Ice-blue gem hexagon (glowing) -->
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05"
+               fill="url(#plxe_i)" filter="url(#plxe_g)"/>
+    </svg>
+    <div>
+      <div class="bname">Phylax Capital</div>
+      <div class="bfund">Macro Protector Fund</div>
+      <div class="btag">Fund Economics, Fee Waterfall + AUM Breakeven Model</div>
+    </div>
+  </div>
+  <div>
+    <div class="lpill"><span class="ldot"></span>Live Model</div>
+    <div class="spills">
+      <span class="sp spr">Prescient — Mar 2026</span>
+      <span class="sp spb">CAEP — Confirmed Fee Table</span>
+      <span class="sp spt">Phylax — Your Fees</span>
+    </div>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <button class="tab on" onclick="showTab('structure',this)">Fee Structure</button>
+  <button class="tab" onclick="showTab('waterfall',this)">P&amp;L Waterfall</button>
+  <button class="tab" onclick="showTab('breakeven',this)">AUM Breakeven</button>
+  <button class="tab" onclick="showTab('ter',this)">TER Analysis</button>
+</div>
+
+<!-- GLOBAL INPUTS -->
+<div class="panel">
+  <div class="sh">Scenario Inputs</div>
+  <div class="g5">
+    <div><div class="sl-l">Fund AUM</div><div class="sl-v" id="v-aum">R 100m</div><input type="range" id="s-aum" min="10000000" max="1000000000" step="10000000" value="100000000" oninput="inp(this)"/><div class="ticks"><span class="tick">R10m</span><span class="tick">R500m</span><span class="tick">R1bn</span></div></div>
+    <div><div class="sl-l">Fund Year</div><div class="sl-v" id="v-yr">Year 1</div><input type="range" id="s-yr" min="1" max="3" step="1" value="1" oninput="inp(this)"/><div class="ticks"><span class="tick">1</span><span class="tick">2</span><span class="tick">3</span></div></div>
+    <div><div class="sl-l">Management Fee p.a.</div><div class="sl-v" id="v-mgmt">1.50%</div><input type="range" id="s-mgmt" min="0.005" max="0.025" step="0.0025" value="0.015" oninput="inp(this)"/><div class="ticks"><span class="tick">0.5%</span><span class="tick">1.5%</span><span class="tick">2.5%</span></div></div>
+    <div><div class="sl-l">Phylax Service Fee p.a.</div><div class="sl-v" id="v-svc">0.40%</div><input type="range" id="s-svc" min="0.001" max="0.010" step="0.001" value="0.004" oninput="inp(this)"/><div class="ticks"><span class="tick">0.1%</span><span class="tick">0.5%</span><span class="tick">1.0%</span></div></div>
+    <div><div class="sl-l">Performance Fee</div><div class="sl-v" id="v-perf" style="color:var(--plat)">20% above 7.5%</div><input type="range" id="s-perf" min="0.10" max="0.25" step="0.025" value="0.20" oninput="inp(this)"/><div class="ticks"><span class="tick">10%</span><span class="tick">17%</span><span class="tick">25%</span></div></div>
+  </div>
+</div>
+
+<!-- PERF PANEL -->
+<div class="panel" style="background:linear-gradient(135deg,rgba(64,200,128,.07),rgba(64,200,128,.02));border-color:rgba(64,200,128,.2)">
+  <div class="sh" style="color:var(--green)">Annual Fund Performance Toggle — Performance Fee Calculator</div>
+  <div class="g4">
+    <div style="grid-column:1/3">
+      <div class="sl-l">Annual Fund Return (this year)</div>
+      <div class="sl-v" id="v-ret" style="color:var(--green)">+10.0%</div>
+      <input type="range" id="s-ret" min="-0.30" max="0.50" step="0.01" value="0.10" oninput="inp(this)" style="background:linear-gradient(to right,var(--green) 63%,rgba(255,255,255,.08) 63%)"/>
+      <div class="ticks"><span class="tick">-30%</span><span class="tick">0%</span><span class="tick">+15%</span><span class="tick">+30%</span><span class="tick">+50%</span></div>
+      <div id="perf-status" style="margin-top:10px;padding:8px 12px;border-radius:2px;background:rgba(64,200,128,.08);border:1px solid rgba(64,200,128,.25);font-size:11px;font-family:'Rajdhani',sans-serif;font-weight:700;letter-spacing:.04em;color:var(--green)">Performance fee ACTIVE</div>
+    </div>
+    <div class="mc mc-g"><div class="mc-l">Excess Return above Hurdle</div><div class="mc-v" id="v-excess" style="color:var(--green)">+2.50%</div><div class="mc-s" id="v-exsub">Fund 10.0% - Hurdle 7.5%</div></div>
+    <div class="mc mc-g"><div class="mc-l">Performance Fee Earned</div><div class="mc-v" id="v-pfee" style="color:var(--green)">—</div><div class="mc-s" id="v-pfsub">20% of excess</div></div>
+  </div>
+</div>
+
+<!-- TAB PANELS -->
+<div id="tab-structure">
+  <div class="panel" style="border-color:rgba(64,144,216,.18)">
+    <div class="sh" style="color:var(--blue2)">CAEP Cat2a — Confirmed Fee Structure (CAEP Fee Table, March 2026)</div>
+    <div style="margin-bottom:14px">
+      <button class="tog togb" id="tog1" onclick="swOpt('opt1')">Option 1 — Key Individual on Your Own FSP</button>
+      <button class="tog" id="tog2" onclick="swOpt('opt2')">Option 2 — Rep Hosting on CAEP License</button>
+    </div>
+    <div class="g2" style="margin-bottom:16px">
+      <div style="background:rgba(64,144,216,.04);border:1px solid rgba(64,144,216,.12);border-radius:2px;padding:14px">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:9px;background:rgba(64,144,216,.1);border:1px solid rgba(64,144,216,.25);color:var(--blue2);padding:2px 8px;border-radius:2px;display:inline-block;margin-bottom:10px;font-weight:700;text-transform:uppercase">Option 1 — KI Services</div>
+        <div id="opt1f"></div>
+      </div>
+      <div style="background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.15);border-radius:2px;padding:14px">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:9px;background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.22);color:var(--teal2);padding:2px 8px;border-radius:2px;display:inline-block;margin-bottom:10px;font-weight:700;text-transform:uppercase">Option 2 — Rep Hosting</div>
+        <div id="opt2f"></div>
+      </div>
+    </div>
+    <div class="g2">
+      <div><div class="sl-l" id="cfixlbl">CAEP Fixed Monthly (confirmed R35k — Option 2)</div><div class="sl-v" id="v-cfix" style="color:var(--blue2)">R 35,000/month</div><input type="range" id="s-cfix" min="20000" max="90000" step="5000" value="35000" oninput="inp(this)"/><div class="ticks"><span class="tick">R20k</span><span class="tick">R55k</span><span class="tick">R90k</span></div></div>
+      <div id="caum-wrap">
+        <div class="sl-l">CAEP AUM Fee p.a. (sliding scale from 0.20%)</div>
+        <div class="sl-v" id="v-caum" style="color:var(--blue2)">0.20%</div>
+        <input type="range" id="s-caum" min="0.001" max="0.005" step="0.0005" value="0.002" oninput="inp(this)"/>
+        <div class="ticks"><span class="tick">0.10%</span><span class="tick">0.25%</span><span class="tick">0.50%</span></div>
+        <div style="margin-top:6px;font-size:9.5px;color:var(--muted)">Confirmed sliding scale starting at 0.20% ex VAT p.a. — CAEP fee table March 2026</div>
+      </div>
+      <div id="opt1note" class="hidden note nb">
+        <strong style="color:var(--blue2)">Option 1 — No AUM fee.</strong> Higher fixed monthly (R60k–R80k) replaces the AUM fee. More expensive at low AUM but no percentage drag on a large fund.
+      </div>
+    </div>
+    <div id="caep-note" class="note na" style="margin-top:14px"></div>
+  </div>
+
+  <div class="panel">
+    <div class="sh">Phylax Capital — Other Operating Costs</div>
+    <div style="max-width:420px"><div class="sl-l">Other Manager Costs p.a. (office, tech, salaries etc.)</div><div class="sl-v" id="v-other" style="color:var(--amber)">R 0k/year</div><input type="range" id="s-other" min="0" max="500000" step="25000" value="0" oninput="inp(this)"/><div class="ticks"><span class="tick">R0</span><span class="tick">R250k</span><span class="tick">R500k</span></div></div>
+    <div class="note na" style="margin-top:12px"><strong style="color:var(--amber)">Placeholder for Phylax Capital's own operating costs</strong> — not from any proposal. Covers office, technology, staff and other business costs not funded by the fund. Defaults to R0.</div>
+  </div>
+
+  <div class="panel" style="border-color:rgba(232,64,64,.18)">
+    <div class="sh" style="color:#f07070">Prescient Fund Services — Third-Party Fund Costs (March 2026 Proposal)</div>
+    <div class="g2">
+      <div>
+        <div class="sh" style="color:#f07070;font-size:9px;margin-bottom:10px">Variable — AUM-Based</div>
+        <div class="cc"><div class="cc-n">Platform Fee</div><div class="cc-v">0–R500m: 20 bps | R500m–R1bn: 18 bps | &gt;R1bn: 15 bps</div><div class="cc-s">Min R18,000/month — waived first 6 months</div></div>
+        <div class="cc"><div class="cc-n">Trustee — Nedbank</div><div class="cc-v">0.51 bps p.a.</div><div class="cc-s">Min R445.63/month per safekeeping account</div></div>
+        <div class="cc"><div class="cc-n">Custody — Nedbank (local)</div><div class="cc-v">0.40 bps p.a.</div><div class="cc-s">Min R122.71/month per safekeeping account</div></div>
+      </div>
+      <div>
+        <div class="sh" style="color:#f07070;font-size:9px;margin-bottom:10px">Fixed Annual</div>
+        <div class="cc"><div class="cc-n">Independent Risk Management</div><div class="cc-v">R12,000/month (&gt;R35m AUM) = R144,000/year</div><div class="cc-s">R6,200/month if AUM &lt;R35m = R74,400/year</div></div>
+        <div class="cc"><div class="cc-n">Audit Fee — EY</div><div class="cc-v">0–R100m: R39,320 | R100m–R500m: R62,520 | &gt;R500m: R111,408</div><div class="cc-s">Sliding scale based on NAV</div></div>
+        <div class="cc"><div class="cc-n">MDD Preparation</div><div class="cc-v">R2,100/month x 12 = R25,200/year</div><div class="cc-s">Regulatory Minimum Disclosure Documents</div></div>
+        <div class="cc"><div class="cc-n">FSCA Registration</div><div class="cc-v">R23,055 once-off (Year 1 only)</div><div class="cc-s">First co-manager portfolio registration</div></div>
+      </div>
+    </div>
+    <div class="note na" style="margin-top:12px"><strong style="color:var(--amber)">Seed Capital:</strong> If AUM at launch is below R50m, Prescient requires a R1,000,000 loan from Phylax Capital as regulatory seed capital — returned once AUM exceeds R50m. All fees exclude VAT. Prescient minimums escalate at CPI+2% per year.</div>
+  </div>
+
+  <div class="panel" style="border-color:var(--border2)">
+    <div class="sh">Phylax Capital — Revenue Fee Structure</div>
+    <div class="g4" id="fee-cards"></div>
+    <div class="note nt" style="margin-top:14px" id="phylax-sum"></div>
+  </div>
+</div>
+
+<div id="tab-waterfall" class="hidden">
+  <div class="g6" style="margin-bottom:22px" id="wf-mets"></div>
+  <div class="panel"><div class="sh" style="color:var(--amber)">INVESTOR VIEW — Total Fund Charges (TER)</div><div id="inv-wf"></div></div>
+  <div class="panel"><div class="sh">PHYLAX CAPITAL — Manager P&amp;L</div><div id="mgr-wf"></div></div>
+</div>
+
+<div id="tab-breakeven" class="hidden">
+  <div class="be-box" id="be-box"></div>
+  <div class="panel"><div class="sh" style="color:var(--amber)">Manager Profit vs AUM</div><svg id="be-svg" viewBox="0 0 820 200" style="width:100%;height:210px"></svg></div>
+  <div class="panel">
+    <div class="sh" style="color:var(--amber)">Full Breakeven Table — Click Any Row to Set AUM</div>
+    <div style="overflow-x:auto"><table><thead id="be-hd"></thead><tbody id="be-bd"></tbody></table></div>
+    <div id="be-note" style="margin-top:10px;font-size:9.5px;color:var(--muted)"></div>
+  </div>
+</div>
+
+<div id="tab-ter" class="hidden">
+  <div class="note nt" style="margin-bottom:18px"><strong style="color:var(--teal2)">Total Expense Ratio (TER)</strong> is what investors pay as a percentage of AUM per year — all costs charged to the fund including Phylax fees. Performance fees excluded from base TER. The Prescient platform minimum of R216,000/year means R100m+ AUM is the commercially viable threshold for DFM distribution.</div>
+  <div class="g4" style="margin-bottom:22px" id="ter-cards"></div>
+  <div class="panel">
+    <div class="sh">TER Dilution — Fixed Costs vs AUM</div>
+    <div style="overflow-x:auto"><table><thead id="ter-hd"></thead><tbody id="ter-bd"></tbody></table></div>
+    <div id="ter-note" style="margin-top:10px;font-size:9.5px;color:var(--muted)"></div>
+  </div>
+</div>
+
+<div class="disc">
+  Prescient costs: Prescient Fund Platform and Administration Services proposal for Phylax Capital (formerly MyQ Asset Management), March 2026.
+  CAEP fees: CAEP Cat2a fee table, March 2026 (Nicky Oates, CAEP Asset Managers Pty Ltd, FSP 33933). Option 1 confirmed R60,000–R80,000/month fixed, no AUM fee. Option 2 confirmed R35,000/month fixed + 0.20% AUM sliding scale p.a. + R50,000 once-off onboarding (excluded from annual model). CAEP does not participate in performance fees under either option.
+  All fees exclude VAT. Prescient minimums escalate CPI+2% annually. For internal planning purposes only.
+  Phylax Capital — Macro Protector Fund. Quattro Investment Brokers (Pty) Ltd — FSP 46524.
+</div>
+</div>
+
+<script>
+var S={aum:1e8,yr:1,mgmt:.015,svc:.004,perf:.20,perfH:.075,ret:.10,opt:'opt1',cfix:70000,caum:.002,other:0,jibar:.075};
+
+var AUM=[1e7,2.5e7,5e7,7.5e7,1e8,1.5e8,2e8,3e8,5e8,7.5e8,1e9];
+
+function fRk(n){return n>=1e6?'R '+(n/1e6).toFixed(2)+'m':'R '+(n/1e3).toFixed(0)+'k';}
+function fP(n,d){return(n*100).toFixed(d==null?2:d)+'%';}
+function fBps(n){return(n*1e4).toFixed(1)+' bps';}
+function pct(v,a,b){return Math.max(0,Math.min(100,Math.round(((v-a)/(b-a))*100)));}
+function setBg(el,r,g){var p=pct(+el.value,+el.min,+el.max);el.style.background='linear-gradient(to right,'+(r||'var(--teal)')+' 0%,'+(r||'var(--teal)')+' '+p+'%,'+(g||'rgba(255,255,255,.08)')+' '+p+'%)';}
+
+function prP(aum){var f=aum<=5e8?aum*.002:aum<=1e9?5e8*.002+(aum-5e8)*.0018:5e8*.002+5e8*.0018+(aum-1e9)*.0015;return Math.max(f,216000);}
+function prA(aum){return aum<1e8?39320:aum<5e8?62520:111408;}
+function prR(aum){return aum<3.5e7?74400:144000;}
+
+function calc(aum,yr,mgmt,svc,perf,perfH,ret,opt,cfix,caum,other){
+  var pp=prP(aum),pt=Math.max(aum*.000051,5347.56),pc=Math.max(aum*.00004,1472.52);
+  var pa=prA(aum),pr=prR(aum),pm=25200,pf=yr===1?23055:0,ptot=pp+pt+pc+pa+pr+pm;
+  var mR=aum*mgmt,sR=aum*svc,bR=mR+sR;
+  var ex=Math.max(0,ret-perfH),pf2=ex>0?aum*ex*perf:0,tR=bR+pf2;
+  var cF=cfix*12,cA=opt==='opt2'?aum*caum:0,cT=cF+cA;
+  var tC=cT+other,pEx=bR-tC,pIn=tR-tC;
+  var ter=(ptot+bR)/aum,nb=mgmt+svc,be=nb>0?tC/nb:Infinity;
+  return{pp,pt,pc,pa,pr,pm,pf,ptot,mR,sR,bR,pf2,tR,cF,cA,cT,tC,pEx,pIn,ter,be,nb,ex};
+}
+
+function inp(el){
+  setBg(el);
+  var id=el.id,v=+el.value;
+  if(id==='s-aum'){S.aum=v;document.getElementById('v-aum').textContent='R '+(v/1e6).toFixed(0)+'m';}
+  else if(id==='s-yr'){S.yr=Math.round(v);document.getElementById('v-yr').textContent='Year '+Math.round(v);}
+  else if(id==='s-mgmt'){S.mgmt=v;document.getElementById('v-mgmt').textContent=fP(v);}
+  else if(id==='s-svc'){S.svc=v;document.getElementById('v-svc').textContent=fP(v);}
+  else if(id==='s-perf'){S.perf=v;document.getElementById('v-perf').textContent=fP(v,0)+' above '+fP(S.perfH,1);}
+  else if(id==='s-ret'){S.ret=v;updRet();}
+  else if(id==='s-cfix'){S.cfix=v;document.getElementById('v-cfix').textContent='R '+v.toLocaleString()+'/month';}
+  else if(id==='s-caum'){S.caum=v;document.getElementById('v-caum').textContent=fP(v,2)+' of AUM';}
+  else if(id==='s-other'){S.other=v;document.getElementById('v-other').textContent='R '+(v/1e3).toFixed(0)+'k/year';}
+  render();
+}
+
+function updRet(){
+  var v=S.ret,h=S.perfH;
+  var el=document.getElementById('v-ret');
+  el.textContent=(v>=0?'+':'')+fP(v,1);
+  el.style.color=v>h?'var(--green)':v>=0?'var(--amber)':'var(--red)';
+  var st=document.getElementById('perf-status');
+  if(v>h){st.textContent='Performance fee ACTIVE — return exceeds JIBAR hurdle';st.style.color='var(--green)';st.style.borderColor='rgba(64,200,128,.25)';}
+  else if(v>=0){st.textContent='No performance fee — return below JIBAR hurdle';st.style.color='var(--amber)';st.style.borderColor='rgba(232,160,32,.25)';}
+  else{st.textContent='Negative fund performance — no performance fee';st.style.color='var(--red)';st.style.borderColor='rgba(232,64,64,.25)';}
+  setBg(document.getElementById('s-ret'),'var(--green)');
+}
+
+function swOpt(o){
+  S.opt=o;S.cfix=o==='opt1'?70000:35000;
+  var sl=document.getElementById('s-cfix');sl.value=S.cfix;setBg(sl);
+  document.getElementById('v-cfix').textContent='R '+S.cfix.toLocaleString()+'/month';
+  document.getElementById('tog1').className='tog'+(o==='opt1'?' togb':'');
+  document.getElementById('tog2').className='tog'+(o==='opt2'?' togt':'');
+  document.getElementById('cfixlbl').textContent=o==='opt1'?'CAEP Fixed Monthly (R60k–R80k range — Option 1)':'CAEP Fixed Monthly (confirmed R35k — Option 2)';
+  document.getElementById('caum-wrap').classList.toggle('hidden',o!=='opt2');
+  document.getElementById('opt1note').classList.toggle('hidden',o!=='opt1');
+  render();
+}
+
+function showTab(name,btn){
+  ['structure','waterfall','breakeven','ter'].forEach(function(t){document.getElementById('tab-'+t).classList.toggle('hidden',t!==name);});
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+  render();
+}
+
+function row(k,v,c){return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:10px;color:var(--muted)">'+k+'</span><span style="font-family:DM Mono,monospace;font-size:10px;color:'+(c||'var(--white)')+'">'+v+'</span></div>';}
+
+function wr(icon,name,desc,cls,sc,sl,amt,ac,p){
+  return '<div class="wr '+cls+'"><div class="wf-icon">'+icon+'</div><div class="wf-body"><div class="wf-name">'+name+'</div><div class="wf-desc">'+desc+'</div></div><div class="wf-src '+sc+'">'+sl+'</div><div class="wf-amt" style="color:'+ac+'">'+amt+'</div><div class="wf-pct">'+p+'</div></div>';
+}
+
+function mc(l,v,vc,s,cls){return '<div class="mc'+(cls?' mc-'+cls:'')+'" style=""><div class="mc-l">'+l+'</div><div class="mc-v" style="color:'+(vc||'var(--white)')+'">'+v+'</div><div class="mc-s">'+s+'</div></div>';}
+
+function render(){
+  var r=calc(S.aum,S.yr,S.mgmt,S.svc,S.perf,S.perfH,S.ret,S.opt,S.cfix,S.caum,S.other);
+  var am=(S.aum/1e6).toFixed(0);
+
+  // perf metrics
+  var exEl=document.getElementById('v-excess');exEl.textContent=r.ex>0?'+'+fP(r.ex,2):'Nil';exEl.style.color=r.ex>0?'var(--green)':'var(--muted)';
+  document.getElementById('v-exsub').textContent='Fund '+fP(S.ret,1)+' - Hurdle '+fP(S.perfH,1);
+  var pfEl=document.getElementById('v-pfee');pfEl.textContent=r.pf2>0?fRk(r.pf2):'R 0';pfEl.style.color=r.pf2>0?'var(--green)':'var(--muted)';
+  document.getElementById('v-pfsub').textContent=fP(S.perf,0)+' of '+fRk(S.aum*r.ex)+' excess';
+
+  // CAEP facts
+  document.getElementById('opt1f').innerHTML=row('Fixed Cost','R60,000–R80,000/month (max 2 Reps)')+row('AUM Fee','Nil')+row('Performance Fee','Nil')+row('Onboarding','Negotiable — depends on FSCA KI scope')+row('Fund Application','You carry FSCA + Manco fees ~R30k–R40k')+row('PI Cover','Your FSP responsible')+row('Financial Soundness','Exceed liabilities by R3m + 10%');
+  document.getElementById('opt2f').innerHTML=row('Onboarding','R50,000 ex VAT once-off (before appointment)')+row('Fixed Cost','R35,000 ex VAT/month (up to 2 Reps)','var(--teal2)')+row('AUM Fee','Sliding scale from 0.20% ex VAT p.a.','var(--teal2)')+row('Performance Fee','Nil — CAEP does not participate')+row('Fund Application','R25k–R35k CAEP + R30k–R40k FSCA/Manco')+row('PI Cover','CAEP bears full cost','var(--green)')+row('Financial Soundness','CAEP maintains (individual Reps only)','var(--green)');
+
+  var cn=document.getElementById('caep-note');
+  cn.innerHTML=S.opt==='opt2'
+    ?'<strong style="color:var(--amber)">Option 2 total CAEP cost at R'+am+'m AUM:</strong> Fixed '+fRk(r.cF)+'/year + AUM fee '+fRk(r.cA)+'/year = <strong>'+fRk(r.cT)+'/year</strong> ex VAT.'
+    :'<strong style="color:var(--amber)">Option 1 total CAEP cost at R'+am+'m AUM:</strong> Fixed '+fRk(r.cF)+'/year only. No AUM fee. Total = <strong>'+fRk(r.cT)+'/year</strong> ex VAT.';
+
+  var pc2=r.pEx>=0?'var(--green)':'var(--red)';
+  document.getElementById('fee-cards').innerHTML=
+    '<div class="fc"><div class="fc-l">Management Fee</div><div class="fc-v" style="color:var(--teal2)">'+fP(S.mgmt)+' on AUM</div><div class="fc-a">'+fRk(r.mR)+' p.a.</div><div class="fc-s">Charged to fund — primary Phylax revenue stream</div></div>'+
+    '<div class="fc"><div class="fc-l">Service Fee (2nd Revenue Line)</div><div class="fc-v" style="color:var(--teal2)">'+fP(S.svc)+' on AUM</div><div class="fc-a">'+fRk(r.sR)+' p.a.</div><div class="fc-s">Investment services — separate from Prescient admin costs</div></div>'+
+    '<div class="fc"><div class="fc-l">Performance Fee</div><div class="fc-v" style="color:var(--plat)">'+fP(S.perf,0)+' above hurdle</div><div class="fc-a">'+(r.pf2>0?fRk(r.pf2)+' this year':'Nil at '+fP(S.ret,1)+' return')+'</div><div class="fc-s">Triggers when fund return exceeds JIBAR hurdle</div></div>'+
+    '<div class="fc"><div class="fc-l">Hurdle Rate</div><div class="fc-v" style="color:var(--amber)">'+fP(S.perfH,2)+' p.a.</div><div class="fc-a">JIBAR-linked</div><div class="fc-s">Investor must beat JIBAR before performance fee applies</div></div>';
+
+  var ps='<strong style="color:var(--teal2)">Phylax net at R'+am+'m (excl. perf fee):</strong> Revenue '+fRk(r.bR)+' — CAEP '+fRk(r.cT)+' — Other '+fRk(S.other)+' = <strong style="color:'+pc2+'">'+fRk(Math.abs(r.pEx))+' '+(r.pEx>=0?'profit':'LOSS')+'</strong>';
+  if(r.pf2>0)ps+=' + <strong style="color:var(--green)">perf fee '+fRk(r.pf2)+'</strong> = <strong style="color:var(--green)">'+fRk(r.pIn)+' total</strong>';
+  ps+='. Breakeven AUM = '+fRk(r.be)+'.';
+  document.getElementById('phylax-sum').innerHTML=ps;
+
+  if(!document.getElementById('tab-waterfall').classList.contains('hidden')){
+    document.getElementById('wf-mets').innerHTML=
+      mc('AUM','R '+am+'m','Active scenario','')+
+      mc('Base Revenue',fRk(r.bR),'var(--amber)','Mgmt + service fee','a')+
+      mc('Perf Fee',r.pf2>0?fRk(r.pf2):'Nil',r.pf2>0?'var(--green)':'var(--muted)',fP(S.ret,1)+' return','g')+
+      mc('Total Revenue',fRk(r.tR),'var(--teal2)','Incl. perf fee','')+
+      mc('Total Costs',fRk(r.tC),'var(--red)','CAEP + other','r')+
+      mc('Net Profit',fRk(Math.abs(r.pIn)),r.pIn>=0?'var(--green)':'var(--red)',r.pIn>=0?'Profit':'LOSS',r.pIn>=0?'g':'r');
+
+    document.getElementById('inv-wf').innerHTML=
+      '<div class="wf-sec">Revenue charged to fund (all flows to Phylax Capital)</div>'+
+      wr('+','Management Fee — Phylax Capital',fP(S.mgmt)+' on AUM','wi','wsrcm','Phylax','+'+fRk(r.mR),'var(--teal2)',fP(S.mgmt))+
+      wr('+','Service Fee — Phylax Capital',fP(S.svc)+' on AUM — investment services fee','wi','wsrcm','Phylax','+'+fRk(r.sR),'var(--teal2)',fP(S.svc))+
+      wr('+','Prescient Platform Fee',fBps(r.pp/S.aum)+' effective — sliding scale, min R216,000/year','wp','wsrcp','Prescient',fRk(r.pp),'#f07070',fP(r.pp/S.aum,3))+
+      wr('+','Trustee — Nedbank','0.51 bps p.a., min R5,348/year','wp','wsrcp','Prescient',fRk(r.pt),'#f07070',fP(r.pt/S.aum,4))+
+      wr('+','Custody — Nedbank (local)','0.40 bps p.a., min R1,473/year','wp','wsrcp','Prescient',fRk(r.pc),'#f07070',fP(r.pc/S.aum,4))+
+      wr('+','Independent Risk Management',(S.aum<3.5e7?'R6,200/month = R74,400/year':'R12,000/month = R144,000/year'),'wp','wsrcp','Prescient',fRk(r.pr),'#f07070',fP(r.pr/S.aum,3))+
+      wr('+','Audit Fee — EY',(S.aum<1e8?'Band 0–R100m: R39,320':S.aum<5e8?'Band R100m–R500m: R62,520':'Band &gt;R500m: R111,408'),'wp','wsrcp','Prescient',fRk(r.pa),'#f07070',fP(r.pa/S.aum,3))+
+      wr('+','MDD Preparation','R2,100/month x 12 = R25,200/year','wp','wsrcp','Prescient',fRk(r.pm),'#f07070',fP(r.pm/S.aum,3))+
+      (S.yr===1?wr('+','FSCA Registration (Year 1 only)','R23,055 once-off, first co-manager portfolio','wp','wsrcp','Prescient',fRk(r.pf),'#f07070',fP(r.pf/S.aum,3)):'')+
+      wr('D','Performance Fee (conditional — above JIBAR hurdle)',fP(S.perf,0)+' of return above '+fP(S.perfH,2)+' hurdle — conditional on fund outperforming JIBAR','wpe','wsrcm','Phylax',r.pf2>0?fRk(r.pf2):'Nil this year',r.pf2>0?'var(--green)':'var(--muted)',r.pf2>0?fP(r.pf2/S.aum,3):'—')+
+      wr('=','Total Fund TER (base — excl. performance fee)','All costs charged to fund divided by AUM','wt','wsrcm','Total',fRk(r.ptot+r.bR),'var(--teal2)',fP(r.ter)+' TER');
+
+    document.getElementById('mgr-wf').innerHTML=
+      '<div class="wf-sec">Revenue received from fund</div>'+
+      wr('+','Management Fee Revenue',fP(S.mgmt)+' x R'+am+'m AUM','wi','wsrcm','Phylax','+'+fRk(r.mR),'var(--teal2)',fP(S.mgmt)+' p.a.')+
+      wr('+','Service Fee Revenue',fP(S.svc)+' x R'+am+'m AUM','wi','wsrcm','Phylax','+'+fRk(r.sR),'var(--teal2)',fP(S.svc)+' p.a.')+
+      wr('+','Performance Fee — '+fP(S.ret,1)+' fund return',(r.pf2>0?fP(S.perf,0)+' of '+fRk(S.aum*r.ex)+' excess above '+fP(S.perfH,1)+' hurdle':'Fund return ('+fP(S.ret,1)+') does not exceed hurdle ('+fP(S.perfH,1)+') — no fee triggered'),(r.pf2>0?'wi':'wpe'),'wsrcm','Phylax',r.pf2>0?'+'+fRk(r.pf2):'Nil',r.pf2>0?'var(--green)':'var(--muted)',r.pf2>0?fP(r.pf2/S.aum,3):'—')+
+      '<div style="padding:4px 14px;font-size:9px;color:var(--muted);font-family:Rajdhani,sans-serif;letter-spacing:.1em;text-transform:uppercase">less manager costs — paid by Phylax, not charged to fund</div>'+
+      wr('-','CAEP — '+(S.opt==='opt1'?'Key Individual Services':'Representative Hosting'),'Fixed: R'+S.cfix.toLocaleString()+'/mth x 12 = '+fRk(r.cF)+(S.opt==='opt2'?' | AUM fee: '+fP(S.caum,2)+' = '+fRk(r.cA):' | No AUM fee (Option 1)'),'wc','wsrcc','CAEP','-'+fRk(r.cT),'var(--blue2)',fP(r.cT/S.aum,3))+
+      (S.other>0?wr('-','Other Operating Costs','Office, technology, staff etc.','wo','wsrcm','Phylax','-'+fRk(S.other),'var(--amber)',fP(S.other/S.aum,3)):'')+
+      '<div class="wr '+(r.pIn>=0?'wpr':'wl')+'" style="margin-top:6px"><div class="wf-icon">'+(r.pIn>=0?'+':'-')+'</div><div class="wf-body"><div class="wf-name" style="color:'+(r.pIn>=0?'var(--green)':'var(--red)')+';font-family:Rajdhani,sans-serif;font-size:14px;text-transform:uppercase;letter-spacing:.04em">Phylax Capital Net '+(r.pIn>=0?'Profit':'Loss')+' (incl. perf fee)</div><div class="wf-desc">Breakeven = '+fRk(r.be)+' | Excl. perf fee: '+(r.pEx>=0?'+':'')+fRk(r.pEx)+'</div></div><div class="wf-src wsrcm">NET</div><div class="wf-amt" style="color:'+(r.pIn>=0?'var(--green)':'var(--red)')+';font-size:15px">'+(r.pIn>=0?'+':'')+fRk(r.pIn)+'</div><div class="wf-pct" style="color:'+(r.pIn>=0?'var(--green)':'var(--red)')+'">'+fP(r.pIn/S.aum,3)+'</div></div>';
+  }
+
+  if(!document.getElementById('tab-breakeven').classList.contains('hidden')){
+    document.getElementById('be-box').innerHTML=
+      '<div><div class="be-lbl">Manager Breakeven AUM</div><div class="be-val">'+fRk(r.be)+'</div><div class="be-sub">At '+fP(r.nb)+' net fee margin</div></div>'+
+      '<div><div class="be-lbl">Annual CAEP Cost</div><div class="be-val">'+fRk(r.cT)+'</div><div class="be-sub">'+(S.opt==='opt2'?'Fixed '+fRk(r.cF)+' + AUM '+fRk(r.cA):'Fixed only (Option 1)')+'</div></div>'+
+      '<div><div class="be-lbl">Total Manager Costs</div><div class="be-val">'+fRk(r.tC)+'</div><div class="be-sub">CAEP '+fRk(r.cT)+' + other '+fRk(S.other)+'</div></div>'+
+      '<div><div class="be-lbl">Net Fee Margin</div><div class="be-val">'+fBps(r.nb)+'</div><div class="be-sub">Mgmt '+fP(S.mgmt)+' + service '+fP(S.svc)+'</div></div>';
+
+    var rows=AUM.map(function(a){return Object.assign({aum:a},calc(a,S.yr,S.mgmt,S.svc,S.perf,S.perfH,S.ret,S.opt,S.cfix,S.caum,S.other));});
+    var pr=rows.map(function(x){return x.pEx;}),mn=Math.min.apply(null,pr),mx=Math.max.apply(null,pr),rng=mx-mn||1;
+    var W=820,H=200,PX=56,CW=W-PX*2,CH=H-44;
+    var xs=function(i){return PX+i*(CW/(rows.length-1));};
+    var ys=function(p){return 8+(1-(p-mn)/rng)*CH;};
+    var zy=ys(0),pts=rows.map(function(x,i){return xs(i)+','+ys(x.pEx);}).join(' ');
+    var beI=AUM.findIndex(function(a){return a>=r.be;}),beX=beI>=0?xs(beI):null;
+    var labs=['R10m','R25m','R50m','R75m','R100m','R150m','R200m','R300m','R500m','R750m','R1bn'];
+    var s='<rect x="'+PX+'" y="8" width="'+CW+'" height="'+Math.max(0,zy-8)+'" fill="rgba(64,200,128,.04)"/>';
+    s+='<rect x="'+PX+'" y="'+zy+'" width="'+CW+'" height="'+Math.max(0,8+CH-zy)+'" fill="rgba(232,64,64,.04)"/>';
+    s+='<line x1="'+PX+'" y1="'+zy+'" x2="'+(W-PX)+'" y2="'+zy+'" stroke="rgba(232,160,32,.45)" stroke-width="1" stroke-dasharray="4,3"/>';
+    s+='<text x="'+(PX-5)+'" y="'+(zy+4)+'" fill="rgba(232,160,32,.65)" font-size="9" text-anchor="end">R0</text>';
+    if(beX){s+='<line x1="'+beX+'" y1="8" x2="'+beX+'" y2="'+(H-32)+'" stroke="rgba(232,160,32,.55)" stroke-width="1.5" stroke-dasharray="3,3"/>';s+='<text x="'+beX+'" y="'+(H-20)+'" fill="#e8a020" font-size="8.5" text-anchor="middle">BE: '+fRk(r.be)+'</text>';}
+    s+='<polyline points="'+pts+'" fill="none" stroke="#00e8f8" stroke-width="2" stroke-linejoin="round"/>';
+    rows.forEach(function(x,i){var cx=xs(i),cy=ys(x.pEx),fc=x.pEx>=0?'#40c880':'#e84040';s+='<rect x="'+(cx-5)+'" y="'+(cy-5)+'" width="10" height="10" transform="rotate(45,'+cx+','+cy+')" fill="'+fc+'" stroke="#080d14" stroke-width="1.5" style="cursor:pointer" onclick="setAum('+x.aum+')"/>';});
+    labs.forEach(function(l,i){s+='<text x="'+xs(i)+'" y="'+(H-5)+'" fill="rgba(90,120,136,.55)" font-size="8" text-anchor="middle">'+l+'</text>';});
+    s+='<text x="'+(PX+8)+'" y="24" fill="rgba(64,200,128,.6)" font-size="9" font-family="Rajdhani,sans-serif" font-weight="700" letter-spacing="1">PROFITABLE ZONE</text>';
+    s+='<text x="'+(PX+8)+'" y="'+(H-36)+'" fill="rgba(232,64,64,.5)" font-size="9" font-family="Rajdhani,sans-serif" font-weight="700" letter-spacing="1">LOSS ZONE</text>';
+    document.getElementById('be-svg').innerHTML=s;
+
+    document.getElementById('be-hd').innerHTML='<tr><th style="text-align:left">AUM</th><th>Base Revenue</th><th>CAEP Fixed</th><th>CAEP AUM Fee</th><th>Total Costs</th><th>Profit (ex-perf)</th><th>Prescient Fee</th><th>TER</th><th>Investor Net*</th></tr>';
+    var tb='';
+    rows.forEach(function(x,i){
+      var isA=Math.abs(x.aum-S.aum)<1e6,isBE=x.pEx>=0&&(i===0||rows[i-1].pEx<0);
+      var cls=isA?'trac':isBE?'trbe':x.pEx>=0?'trpr':'trlo';
+      var nr=S.jibar-x.ter;
+      tb+='<tr class="'+cls+'" style="cursor:pointer" onclick="setAum('+x.aum+')">'
+        +'<td style="font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700">'+fRk(x.aum)+'</td>'
+        +'<td style="color:var(--teal2)">'+fRk(x.bR)+'</td>'
+        +'<td style="color:var(--blue2)">'+fRk(x.cF)+'</td>'
+        +'<td style="color:'+(S.opt==='opt2'?'var(--blue2)':'var(--muted2)')+'">'+( S.opt==='opt2'?fRk(x.cA):'—')+'</td>'
+        +'<td style="color:var(--amber)">'+fRk(x.tC)+'</td>'
+        +'<td style="color:'+(x.pEx>=0?'var(--green)':'var(--red)')+';font-weight:700">'+(x.pEx>=0?'+':'')+fRk(x.pEx)+(isBE?' BE':'')+'</td>'
+        +'<td style="color:#f07070">'+fRk(x.pp)+'</td>'
+        +'<td style="color:var(--plat2)">'+fP(x.ter)+'</td>'
+        +'<td style="color:'+(nr>=0?'var(--green)':'var(--red)')+'">'+fP(nr)+'</td>'
+        +'</tr>';
+    });
+    document.getElementById('be-bd').innerHTML=tb;
+    document.getElementById('be-note').textContent='BE = breakeven row. * Investor Net = JIBAR ('+fP(S.jibar)+') minus TER in a flat market. Performance fee excluded from breakeven — only accrues in outperformance years.';
+  }
+
+  if(!document.getElementById('tab-ter').classList.contains('hidden')){
+    var ta=[5e7,1e8,2e8,5e8],tc='';
+    ta.forEach(function(a){
+      var t=calc(a,S.yr,S.mgmt,S.svc,S.perf,S.perfH,S.ret,S.opt,S.cfix,S.caum,S.other);
+      var pc3=t.pEx>=0?'var(--green)':'var(--red)';
+      tc+='<div class="ter-card"><div class="ter-aum">R'+(a/1e6).toFixed(0)+'m</div><div class="ter-sub">AUM Scenario</div>'
+        +'<div class="ter-r"><span class="ter-k">Mgmt Fee</span><span class="ter-v" style="color:var(--teal2)">'+fP(S.mgmt)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">Service Fee</span><span class="ter-v" style="color:var(--teal2)">'+fP(S.svc)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">Platform</span><span class="ter-v" style="color:#f07070">'+fP(t.pp/a,3)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">Trustee</span><span class="ter-v" style="color:#f07070">'+fP(t.pt/a,4)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">Custody</span><span class="ter-v" style="color:#f07070">'+fP(t.pc/a,4)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">Risk</span><span class="ter-v" style="color:#f07070">'+fP(t.pr/a,3)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">Audit</span><span class="ter-v" style="color:#f07070">'+fP(t.pa/a,3)+'</span></div>'
+        +'<div class="ter-r"><span class="ter-k">MDD</span><span class="ter-v" style="color:#f07070">'+fP(t.pm/a,3)+'</span></div>'
+        +'<div class="ter-tot"><span class="ter-tl">Base TER</span><span class="ter-tv">'+fP(t.ter)+'</span></div>'
+        +'<div style="margin-top:8px;font-size:9px;font-family:Rajdhani,sans-serif;font-weight:700;letter-spacing:.04em;color:'+pc3+'">PHYLAX: '+(t.pEx>=0?'+':'')+fRk(t.pEx)+'</div></div>';
+    });
+    document.getElementById('ter-cards').innerHTML=tc;
+
+    var ar=AUM.map(function(a){return Object.assign({aum:a},calc(a,S.yr,S.mgmt,S.svc,S.perf,S.perfH,S.ret,S.opt,S.cfix,S.caum,S.other));});
+    document.getElementById('ter-hd').innerHTML='<tr><th style="text-align:left">AUM</th><th>Fixed Costs</th><th>Fixed % AUM</th><th>Platform Rate</th><th>Fees to Phylax</th><th>Base TER</th><th>Phylax Profit</th><th>Investor Net*</th></tr>';
+    var tb2='';
+    ar.forEach(function(x){
+      var fx=x.pa+x.pr+x.pm,isA=Math.abs(x.aum-S.aum)<1e6,nr=S.jibar-x.ter;
+      tb2+='<tr class="'+(isA?'trac':'')+'" style="cursor:pointer" onclick="setAum('+x.aum+')">'
+        +'<td style="font-family:Rajdhani,sans-serif;font-size:12px;font-weight:700">'+fRk(x.aum)+'</td>'
+        +'<td style="color:var(--amber)">'+fRk(fx)+'</td>'
+        +'<td style="color:var(--amber)">'+fP(fx/x.aum,3)+'</td>'
+        +'<td style="color:#f07070">'+fP(x.pp/x.aum,3)+'</td>'
+        +'<td style="color:var(--teal2)">'+fP(S.mgmt+S.svc)+'</td>'
+        +'<td style="color:var(--plat2);font-weight:700">'+fP(x.ter)+'</td>'
+        +'<td style="color:'+(x.pEx>=0?'var(--green)':'var(--red)')+'">'+fRk(x.pEx)+'</td>'
+        +'<td style="color:'+(nr>=0?'var(--green)':'var(--red)')+';font-weight:700">'+fP(nr)+'</td>'
+        +'</tr>';
+    });
+    document.getElementById('ter-bd').innerHTML=tb2;
+    document.getElementById('ter-note').textContent='* Investor Net (flat market) = JIBAR ('+fP(S.jibar)+') minus base TER. In a good year the options payout adds return before performance fee.';
+  }
+}
+
+function setAum(a){
+  S.aum=a;var sl=document.getElementById('s-aum');sl.value=a;setBg(sl);
+  document.getElementById('v-aum').textContent='R '+(a/1e6).toFixed(0)+'m';
+  render();
+}
+
+// Init sliders
+document.querySelectorAll('input[type=range]').forEach(function(el){setBg(el);});
+swOpt('opt2');
+updRet();
+render();
+</script>
+</body>
+</html>
