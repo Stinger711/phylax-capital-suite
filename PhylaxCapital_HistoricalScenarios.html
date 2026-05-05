@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Phylax Capital — Historical Crash Scenarios</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--teal:#00c4d4;--teal2:#00e5ff;
+  --plat:#b8c8d4;--plat2:#dce8f0;--gold:#c8a84a;--gold2:#e8c870;
+  --red:#e84040;--red2:#ff6060;--green:#40c880;--green2:#60e8a0;
+  --amber:#e8a020;--muted:#4a6878;--border:rgba(0,196,212,.12);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);
+}
+html{font-size:13px}
+body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 55% 40% at 85% 5%,rgba(0,196,212,.07) 0%,transparent 60%),
+    linear-gradient(rgba(0,196,212,.013) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.013) 1px,transparent 1px);
+  background-size:100%,52px 52px,52px 52px;}
+.page{max-width:1160px;margin:0 auto;padding:22px 24px 60px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid var(--teal);margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-name{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--plat2);letter-spacing:.1em;text-transform:uppercase}
+.brand-tag{font-size:9px;color:var(--teal);text-transform:uppercase;letter-spacing:.18em;margin-top:1px}
+.topbar-right{text-align:right}
+.tl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+.tv{font-family:'DM Mono',monospace;font-size:11px;color:var(--plat)}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.tab-btn{
+  padding:9px 22px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--card);color:var(--muted);font-size:10px;font-weight:700;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.08em;
+  font-family:'Rajdhani',sans-serif;
+}
+.tab-btn:hover{background:rgba(0,196,212,.1);color:var(--plat2)}
+.tab-btn.active{color:var(--bg);border-color:transparent}
+.tab-btn.t911{background:linear-gradient(135deg,#2a1a3a,#1a1428)}
+.tab-btn.t911.active{background:linear-gradient(135deg,#8040c0,#6030a0);color:#fff}
+.tab-btn.tgfc{background:var(--card)}
+.tab-btn.tgfc.active{background:linear-gradient(135deg,var(--red),#a02020);color:#fff}
+.tab-btn.tcov{background:var(--card)}
+.tab-btn.tcov.active{background:linear-gradient(135deg,var(--amber),#a05010);color:#fff}
+.tab-btn.t22{background:var(--card)}
+.tab-btn.t22.active{background:linear-gradient(135deg,var(--teal),#006878);color:#fff}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* Event header */
+.ev-header{
+  border-radius:14px;padding:24px 28px;margin-bottom:18px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
+}
+.ev-header.col-911{background:linear-gradient(135deg,rgba(128,64,192,.12),rgba(80,30,140,.06));border:1px solid rgba(128,64,192,.3)}
+.ev-header.col-gfc{background:linear-gradient(135deg,rgba(232,64,64,.10),rgba(160,20,20,.05));border:1px solid rgba(232,64,64,.28)}
+.ev-header.col-cov{background:linear-gradient(135deg,rgba(232,160,32,.10),rgba(180,80,10,.05));border:1px solid rgba(232,160,32,.28)}
+.ev-header.col-22{background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,80,100,.04));border:1px solid rgba(0,196,212,.25)}
+.ev-title{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;letter-spacing:.06em;margin-bottom:4px}
+.ev-date{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:12px;text-transform:uppercase}
+.ev-context{font-size:12px;color:var(--plat);line-height:1.7;max-width:560px}
+.ev-drop{text-align:right;flex-shrink:0}
+.ev-drop-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}
+.ev-drop-val{font-family:'Rajdhani',sans-serif;font-size:48px;font-weight:700;color:var(--red2);line-height:1}
+.ev-drop-sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+/* KPI strip */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kpi.hl{background:rgba(0,196,212,.07);border-color:var(--border2)}
+.kpi-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.kpi-val{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;line-height:1}
+.kpi-val.teal{color:var(--teal2)} .kpi-val.green{color:var(--green2)}
+.kpi-val.red{color:var(--red2)} .kpi-val.gold{color:var(--gold2)} .kpi-val.plat{color:var(--plat2)}
+.kpi-sub{font-size:9px;color:var(--muted);margin-top:4px;line-height:1.4}
+
+/* Comparison */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.ccard{background:var(--bg2);border-radius:12px;padding:18px}
+.ccard.bad{border:1px solid rgba(232,64,64,.25);background:rgba(232,64,64,.04)}
+.ccard.good{border:1px solid rgba(0,196,212,.25);background:rgba(0,196,212,.04)}
+.cc-lbl{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.cc-lbl.bad{color:var(--red)} .cc-lbl.good{color:var(--teal)}
+.cc-val{font-family:'Rajdhani',sans-serif;font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
+.cc-val.bad{color:var(--red2)} .cc-val.good{color:var(--teal2)}
+.cc-delta{font-family:'DM Mono',monospace;font-size:10px;margin-bottom:10px}
+.cc-rows{border-top:1px solid var(--border);padding-top:10px}
+.cc-row{display:flex;justify-content:space-between;margin-bottom:5px}
+.cc-rk{font-size:10px;color:var(--muted)}
+.cc-rv{font-family:'DM Mono',monospace;font-size:10px}
+
+/* Mechanics */
+.mech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.mech{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.mech-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.mech-val{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--white,#eef4f8)}
+
+/* Note box */
+.note{background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.25);border-radius:10px;
+  padding:14px 18px;font-size:11px;color:var(--plat);line-height:1.6;margin-bottom:16px}
+.note strong{color:var(--gold2)}
+
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px}
+.sh{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.16em;display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.sh.c-teal{color:var(--teal)} .sh.c-gold{color:var(--gold2)}
+
+.disc{font-size:9px;color:rgba(74,104,120,.4);line-height:1.7;border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="topbar">
+  <div class="brand">
+    <svg width="44" height="44" viewBox="0 0 80 80" fill="none">
+      <defs>
+        <linearGradient id="hs_p" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/><stop offset="50%" stop-color="#B0B5B9"/><stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="hs_i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E0FFFF"/><stop offset="50%" stop-color="#00E5FF"/><stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="hs_g"><feGaussianBlur stdDeviation="2.2" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
+      </defs>
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23" fill="none" stroke="url(#hs_p)" stroke-width="2.0" stroke-linejoin="round"/>
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5" fill="none" stroke="url(#hs_p)" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="40" y1="6" x2="40" y2="23" stroke="url(#hs_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5" stroke="url(#hs_p)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5" stroke="url(#hs_p)" stroke-width="1.5"/>
+      <line x1="40" y1="74" x2="40" y2="57" stroke="url(#hs_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5" stroke="url(#hs_p)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5" stroke="url(#hs_p)" stroke-width="1.5"/>
+      <line x1="40" y1="6" x2="69.4" y2="57" stroke="url(#hs_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="6" x2="10.6" y2="57" stroke="url(#hs_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="69.4" y2="23" stroke="url(#hs_p)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="10.6" y2="23" stroke="url(#hs_p)" stroke-width="0.6" opacity="0.4"/>
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05" fill="url(#hs_i)" filter="url(#hs_g)"/>
+    </svg>
+    <div>
+      <div class="brand-name">Phylax Capital &nbsp;·&nbsp; Macro Protector Fund</div>
+      <div class="brand-tag">Historical Crash Scenarios &nbsp;·&nbsp; Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="tl">Hypothetical Portfolio</div>
+    <div class="tv">R 500m &nbsp;·&nbsp; 5% Phylax Allocation &nbsp;·&nbsp; R 25m Sleeve</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn t911 active" onclick="showTab('t911')">&#9632; September 2001 &mdash; 9/11 Attacks</button>
+  <button class="tab-btn tgfc" onclick="showTab('tgfc')">&#9632; Q4 2008 &mdash; Global Financial Crisis</button>
+  <button class="tab-btn tcov" onclick="showTab('tcov')">&#9632; Q1 2020 &mdash; COVID-19 Pandemic</button>
+  <button class="tab-btn t22"  onclick="showTab('t22')">&#9632; Q2 2022 &mdash; Rate Shock &amp; Ukraine</button>
+</div>
+
+<!-- ═══════════════════ 9/11 ═══════════════════ -->
+<div class="tab-pane active" id="t911">
+  <div class="ev-header col-911">
+    <div>
+      <div class="ev-title" style="color:#a060e0">September 11, 2001 &mdash; Terror Attacks</div>
+      <div class="ev-date">1 July 2001 → 21 September 2001 &nbsp;·&nbsp; 82 days</div>
+      <div class="ev-context">Al-Qaeda's coordinated attacks on New York and Washington caused the immediate closure of US equity markets for four trading days — the longest shutdown since 1933. When markets reopened, a global risk-off wave struck every exchange. The JSE was already weakened by the dot-com aftermath and rand pressure. In the two weeks following the attacks, the ALSI fell sharply as foreign capital fled emerging markets en masse. JIBAR stood at 10.25%, making the option budget meaningful despite the modest fund size.</div>
+    </div>
+    <div class="ev-drop">
+      <div class="ev-drop-label">ALSI Decline</div>
+      <div class="ev-drop-val">&minus;15.7%</div>
+      <div class="ev-drop-sub">9 200 &rarr; 7 760 pts<br>Over 82 days</div>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi"><div class="kpi-lbl">Fund Return</div><div class="kpi-val green">+31.3%</div><div class="kpi-sub">On R25m sleeve</div></div>
+    <div class="kpi hl"><div class="kpi-lbl">Capital Saved</div><div class="kpi-val teal">R 11.73m</div><div class="kpi-sub">2.3% of total portfolio</div></div>
+    <div class="kpi"><div class="kpi-lbl">Protection Ratio</div><div class="kpi-val gold">19.0×</div><div class="kpi-sub">Saved ÷ option cost</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (no Phylax)</div><div class="kpi-val red">&minus;R 78.3m</div><div class="kpi-sub">&minus;15.7% of R500m</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (with Phylax)</div><div class="kpi-val plat">&minus;R 66.5m</div><div class="kpi-sub">&minus;13.3% of R500m</div></div>
+  </div>
+
+  <div class="compare">
+    <div class="ccard bad">
+      <div class="cc-lbl bad">Without Phylax</div>
+      <div class="cc-val bad">R 421.7m</div>
+      <div class="cc-delta" style="color:var(--red)">&minus;R 78.3m &nbsp;/&nbsp; &minus;15.65%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Starting portfolio</span><span class="cc-rv">R 500.0m</span></div>
+        <div class="cc-row"><span class="cc-rk">Full equity loss (−15.7%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 78.3m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--red)">&minus;15.65%</span></div>
+      </div>
+    </div>
+    <div class="ccard good">
+      <div class="cc-lbl good">With Phylax (5% carve-out)</div>
+      <div class="cc-val good">R 433.5m</div>
+      <div class="cc-delta" style="color:var(--teal2)">&minus;R 66.5m &nbsp;/&nbsp; &minus;13.30%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Equity book (R475m × −15.7%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 74.6m</span></div>
+        <div class="cc-row"><span class="cc-rk">Phylax sleeve: R25m → </span><span class="cc-rv" style="color:var(--teal2)">R 32.8m</span></div>
+        <div class="cc-row"><span class="cc-rk">Options payout (520 pts × 1 622)</span><span class="cc-rv" style="color:var(--green2)">R 8.43m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--teal2)">&minus;13.30%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="sh c-gold">Option Mechanics</div>
+    <div class="mech-grid">
+      <div class="mech"><div class="mech-lbl">ALSI at Entry</div><div class="mech-val">9 200 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Strike (10% OTM)</div><div class="mech-val">8 280 pts</div></div>
+      <div class="mech"><div class="mech-lbl">JIBAR</div><div class="mech-val">10.25%</div></div>
+      <div class="mech"><div class="mech-lbl">Implied Vol</div><div class="mech-val">19.0%</div></div>
+      <div class="mech"><div class="mech-lbl">Put Premium</div><div class="mech-val">38 pts = R380</div></div>
+      <div class="mech"><div class="mech-lbl">Option Budget</div><div class="mech-val">R 616 274</div></div>
+      <div class="mech"><div class="mech-lbl">Contracts Purchased</div><div class="mech-val">1 622</div></div>
+      <div class="mech"><div class="mech-lbl">Cash Core (JIBAR note)</div><div class="mech-val">R 24.38m</div></div>
+      <div class="mech"><div class="mech-lbl">ALSI at Expiry</div><div class="mech-val">7 760 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Intrinsic Value</div><div class="mech-val">520 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Total Payout</div><div class="mech-val">R 8.43m</div></div>
+      <div class="mech"><div class="mech-lbl">Fund NAV at Exit</div><div class="mech-val">R 32.82m</div></div>
+    </div>
+  </div>
+  <div class="note"><strong>Note:</strong> The Macro Protector Fund and RIHF regulatory framework did not exist in 2001. This is a hypothetical reconstruction to illustrate what the strategy would have returned had it been operational. SAFEX-listed ALSI options were available from 1996. JIBAR and vol inputs are sourced from historical SA rates data. All figures verified by Black-Scholes (scipy) with q=3.8% ALSI dividend yield.</div>
+  <div class="disc">Hypothetical backtest. Past modelled performance does not guarantee future results. Capital guarantee applies at quarterly exit windows only. Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524 &nbsp;·&nbsp; For professional investors only.</div>
+</div>
+
+<!-- ═══════════════════ GFC ═══════════════════ -->
+<div class="tab-pane" id="tgfc">
+  <div class="ev-header col-gfc">
+    <div>
+      <div class="ev-title" style="color:var(--red2)">Q4 2008 &mdash; Global Financial Crisis</div>
+      <div class="ev-date">1 October 2008 → 19 December 2008 &nbsp;·&nbsp; 79 days (Q4 expiry)</div>
+      <div class="ev-context">The collapse of Lehman Brothers on September 15 triggered the worst financial crisis since the Great Depression. By October 2008, credit markets had frozen globally. The ALSI had already fallen from its May 2008 peak of ~32,500 pts, but the October–November period saw the most violent single-quarter destruction in modern JSE history. JIBAR peaked at 12.5% as the SARB held rates before beginning a cutting cycle in December. Volatility was elevated but pre-spike vol of ~24% was used for the entry pricing — the SAVI equivalent would have spiked to 40–50% after entry, massively increasing the value of the put positions.</div>
+    </div>
+    <div class="ev-drop">
+      <div class="ev-drop-label">ALSI Decline (Q4)</div>
+      <div class="ev-drop-val">&minus;33.1%</div>
+      <div class="ev-drop-sub">27 800 &rarr; 18 600 pts<br>Single quarter</div>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi"><div class="kpi-lbl">Fund Return</div><div class="kpi-val green">+81.5%</div><div class="kpi-sub">On R25m sleeve</div></div>
+    <div class="kpi hl"><div class="kpi-lbl">Capital Saved</div><div class="kpi-val teal">R 28.65m</div><div class="kpi-sub">5.7% of total portfolio</div></div>
+    <div class="kpi"><div class="kpi-lbl">Protection Ratio</div><div class="kpi-val gold">38.3×</div><div class="kpi-sub">Saved ÷ option cost</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (no Phylax)</div><div class="kpi-val red">&minus;R 165.5m</div><div class="kpi-sub">&minus;33.1% of R500m</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (with Phylax)</div><div class="kpi-val plat">&minus;R 136.8m</div><div class="kpi-sub">&minus;27.4% of R500m</div></div>
+  </div>
+
+  <div class="compare">
+    <div class="ccard bad">
+      <div class="cc-lbl bad">Without Phylax</div>
+      <div class="cc-val bad">R 334.5m</div>
+      <div class="cc-delta" style="color:var(--red)">&minus;R 165.5m &nbsp;/&nbsp; &minus;33.10%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Starting portfolio</span><span class="cc-rv">R 500.0m</span></div>
+        <div class="cc-row"><span class="cc-rk">Full equity loss (−33.1%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 165.5m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--red)">&minus;33.10%</span></div>
+      </div>
+    </div>
+    <div class="ccard good">
+      <div class="cc-lbl good">With Phylax (5% carve-out)</div>
+      <div class="cc-val good">R 363.2m</div>
+      <div class="cc-delta" style="color:var(--teal2)">&minus;R 136.8m &nbsp;/&nbsp; &minus;27.36%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Equity book (R475m × −33.1%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 157.2m</span></div>
+        <div class="cc-row"><span class="cc-rk">Phylax sleeve: R25m → </span><span class="cc-rv" style="color:var(--teal2)">R 45.4m</span></div>
+        <div class="cc-row"><span class="cc-rk">Options payout (6 420 pts × 329)</span><span class="cc-rv" style="color:var(--green2)">R 21.12m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--teal2)">&minus;27.36%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="sh c-gold">Option Mechanics</div>
+    <div class="mech-grid">
+      <div class="mech"><div class="mech-lbl">ALSI at Entry</div><div class="mech-val">27 800 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Strike (10% OTM)</div><div class="mech-val">25 020 pts</div></div>
+      <div class="mech"><div class="mech-lbl">JIBAR</div><div class="mech-val">12.50%</div></div>
+      <div class="mech"><div class="mech-lbl">Implied Vol (entry)</div><div class="mech-val">24.0%</div></div>
+      <div class="mech"><div class="mech-lbl">Put Premium</div><div class="mech-val">227 pts = R2 266</div></div>
+      <div class="mech"><div class="mech-lbl">Option Budget</div><div class="mech-val">R 747 508</div></div>
+      <div class="mech"><div class="mech-lbl">Contracts Purchased</div><div class="mech-val">329</div></div>
+      <div class="mech"><div class="mech-lbl">Cash Core (JIBAR note)</div><div class="mech-val">R 24.25m</div></div>
+      <div class="mech"><div class="mech-lbl">ALSI at Expiry</div><div class="mech-val">18 600 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Intrinsic Value</div><div class="mech-val">6 420 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Total Payout</div><div class="mech-val">R 21.12m</div></div>
+      <div class="mech"><div class="mech-lbl">Fund NAV at Exit</div><div class="mech-val">R 45.37m</div></div>
+    </div>
+  </div>
+  <div class="note"><strong>Note:</strong> Entry vol of 24% reflects pre-Lehman collapse levels (Sep 1 2008). By mid-October, SAVI-equivalent vol exceeded 40%, significantly increasing mark-to-market put values above intrinsic. The payout shown uses expiry intrinsic value only — a conservative floor. Mid-quarter NAV would have shown substantially higher unrealised gains. JIBAR peaked at ~13% in Q4 2008 before the SARB began its 500bps cutting cycle in December.</div>
+  <div class="disc">Hypothetical backtest. Past modelled performance does not guarantee future results. Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524 &nbsp;·&nbsp; For professional investors only.</div>
+</div>
+
+<!-- ═══════════════════ COVID ═══════════════════ -->
+<div class="tab-pane" id="tcov">
+  <div class="ev-header col-cov">
+    <div>
+      <div class="ev-title" style="color:var(--amber)">Q1 2020 &mdash; COVID-19 Pandemic</div>
+      <div class="ev-date">2 January 2020 → 19 March 2020 &nbsp;·&nbsp; 77 days</div>
+      <div class="ev-context">The fastest bear market in modern history. From an all-time high of ~59,000 pts in early January, the ALSI collapsed 35.6% in under 11 weeks as the WHO declared a global pandemic on March 11. South Africa announced a national lockdown on March 23. The violence of the sell-off was unprecedented — the JSE fell over 10% in a single session on March 18. JIBAR stood at 6.75% (SARB then cut 300bps between March and July 2020). Entry implied vol of ~16.5% was exceptionally low — markets had priced almost no tail risk. This is why the option budget bought 233 contracts: the options were cheap, making the eventual payout extraordinary relative to cost.</div>
+    </div>
+    <div class="ev-drop">
+      <div class="ev-drop-label">ALSI Decline</div>
+      <div class="ev-drop-val">&minus;35.6%</div>
+      <div class="ev-drop-sub">59 000 &rarr; 37 985 pts<br>77 days</div>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi"><div class="kpi-lbl">Fund Return</div><div class="kpi-val green">+139.2%</div><div class="kpi-sub">On R25m sleeve</div></div>
+    <div class="kpi hl"><div class="kpi-lbl">Capital Saved</div><div class="kpi-val teal">R 43.71m</div><div class="kpi-sub">8.7% of total portfolio</div></div>
+    <div class="kpi"><div class="kpi-lbl">Protection Ratio</div><div class="kpi-val gold">106.8×</div><div class="kpi-sub">Saved ÷ option cost</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (no Phylax)</div><div class="kpi-val red">&minus;R 178.1m</div><div class="kpi-sub">&minus;35.6% of R500m</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (with Phylax)</div><div class="kpi-val plat">&minus;R 134.4m</div><div class="kpi-sub">&minus;26.9% of R500m</div></div>
+  </div>
+
+  <div class="compare">
+    <div class="ccard bad">
+      <div class="cc-lbl bad">Without Phylax</div>
+      <div class="cc-val bad">R 321.9m</div>
+      <div class="cc-delta" style="color:var(--red)">&minus;R 178.1m &nbsp;/&nbsp; &minus;35.62%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Starting portfolio</span><span class="cc-rv">R 500.0m</span></div>
+        <div class="cc-row"><span class="cc-rk">Full equity loss (−35.6%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 178.1m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--red)">&minus;35.62%</span></div>
+      </div>
+    </div>
+    <div class="ccard good">
+      <div class="cc-lbl good">With Phylax (5% carve-out)</div>
+      <div class="cc-val good">R 365.6m</div>
+      <div class="cc-delta" style="color:var(--teal2)">&minus;R 134.4m &nbsp;/&nbsp; &minus;26.88%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Equity book (R475m × −35.6%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 169.2m</span></div>
+        <div class="cc-row"><span class="cc-rk">Phylax sleeve: R25m → </span><span class="cc-rv" style="color:var(--teal2)">R 59.8m</span></div>
+        <div class="cc-row"><span class="cc-rk">Options payout (15 115 pts × 233)</span><span class="cc-rv" style="color:var(--green2)">R 35.22m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--teal2)">&minus;26.88%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="sh c-gold">Option Mechanics</div>
+    <div class="mech-grid">
+      <div class="mech"><div class="mech-lbl">ALSI at Entry</div><div class="mech-val">59 000 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Strike (10% OTM)</div><div class="mech-val">53 100 pts</div></div>
+      <div class="mech"><div class="mech-lbl">JIBAR</div><div class="mech-val">6.75%</div></div>
+      <div class="mech"><div class="mech-lbl">Implied Vol (entry)</div><div class="mech-val">16.5%</div></div>
+      <div class="mech"><div class="mech-lbl">Put Premium</div><div class="mech-val">175 pts = R1 753</div></div>
+      <div class="mech"><div class="mech-lbl">Option Budget</div><div class="mech-val">R 409 284</div></div>
+      <div class="mech"><div class="mech-lbl">Contracts Purchased</div><div class="mech-val">233</div></div>
+      <div class="mech"><div class="mech-lbl">Cash Core (JIBAR note)</div><div class="mech-val">R 24.59m</div></div>
+      <div class="mech"><div class="mech-lbl">ALSI at Expiry</div><div class="mech-val">37 985 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Intrinsic Value</div><div class="mech-val">15 115 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Total Payout</div><div class="mech-val">R 35.22m</div></div>
+      <div class="mech"><div class="mech-lbl">Fund NAV at Exit</div><div class="mech-val">R 59.81m</div></div>
+    </div>
+  </div>
+  <div class="note"><strong>The COVID scenario illustrates the most important principle:</strong> Options bought when volatility is low (16.5%) and markets are calm are the cheapest and most effective protection. The R409k option budget — just 1.6% of the R25m sleeve — funded puts that paid out R35.2m. This is why systematic, unconditional quarterly rolling is essential: you cannot know in advance when the next shock will arrive, and waiting for vol to spike before buying protection means you buy at exactly the wrong time.</div>
+  <div class="disc">Hypothetical backtest. Past modelled performance does not guarantee future results. Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524 &nbsp;·&nbsp; For professional investors only.</div>
+</div>
+
+<!-- ═══════════════════ 2022 ═══════════════════ -->
+<div class="tab-pane" id="t22">
+  <div class="ev-header col-22">
+    <div>
+      <div class="ev-title" style="color:var(--teal2)">Q2 2022 &mdash; Ukraine Invasion &amp; Rate Shock</div>
+      <div class="ev-date">1 April 2022 → 30 June 2022 &nbsp;·&nbsp; 91 days (Q2 expiry)</div>
+      <div class="ev-context">Russia's invasion of Ukraine on February 24 2022 shocked commodity and credit markets globally. While the JSE benefited briefly from commodity exposure, aggressive Fed rate hikes (fastest hiking cycle since 1980) and domestic load-shedding concerns dragged the ALSI lower through Q2. From its January 2022 high of ~74,500, the ALSI fell 8.9% to close the quarter at ~67,900 — just above the 10% OTM strike of 67,050. This scenario illustrates the capital guarantee: options expired worthless, but the fund still returned capital in full, and the DFM portfolio was marginally better off than an unhedged equivalent due to the carve-out avoiding some equity market exposure.</div>
+    </div>
+    <div class="ev-drop">
+      <div class="ev-drop-label">ALSI Decline (Q2)</div>
+      <div class="ev-drop-val">&minus;8.9%</div>
+      <div class="ev-drop-sub">74 500 &rarr; 67 900 pts<br>Options expired OTM</div>
+    </div>
+  </div>
+
+  <div class="kpi-strip">
+    <div class="kpi"><div class="kpi-lbl">Fund Return</div><div class="kpi-val" style="color:var(--amber)">&minus;1.1%</div><div class="kpi-sub">Capital guaranteed at par</div></div>
+    <div class="kpi hl"><div class="kpi-lbl">Capital Saved vs Unhedged</div><div class="kpi-val teal">R 1.94m</div><div class="kpi-sub">Carve-out avoided equity loss</div></div>
+    <div class="kpi"><div class="kpi-lbl">Protection Ratio</div><div class="kpi-val gold">7.1×</div><div class="kpi-sub">Even with options OTM</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (no Phylax)</div><div class="kpi-val red">&minus;R 44.3m</div><div class="kpi-sub">&minus;8.9% of R500m</div></div>
+    <div class="kpi"><div class="kpi-lbl">Portfolio Loss (with Phylax)</div><div class="kpi-val plat">&minus;R 42.4m</div><div class="kpi-sub">&minus;8.5% of R500m</div></div>
+  </div>
+
+  <div class="compare">
+    <div class="ccard bad">
+      <div class="cc-lbl bad">Without Phylax</div>
+      <div class="cc-val bad">R 455.7m</div>
+      <div class="cc-delta" style="color:var(--red)">&minus;R 44.3m &nbsp;/&nbsp; &minus;8.86%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Starting portfolio</span><span class="cc-rv">R 500.0m</span></div>
+        <div class="cc-row"><span class="cc-rk">Full equity loss (−8.9%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 44.3m</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--red)">&minus;8.86%</span></div>
+      </div>
+    </div>
+    <div class="ccard good">
+      <div class="cc-lbl good">With Phylax (5% carve-out)</div>
+      <div class="cc-val good">R 457.6m</div>
+      <div class="cc-delta" style="color:var(--teal2)">&minus;R 42.4m &nbsp;/&nbsp; &minus;8.48%</div>
+      <div class="cc-rows">
+        <div class="cc-row"><span class="cc-rk">Equity book (R475m × −8.9%)</span><span class="cc-rv" style="color:var(--red)">&minus;R 42.1m</span></div>
+        <div class="cc-row"><span class="cc-rk">Phylax sleeve: R25m → </span><span class="cc-rv" style="color:var(--amber)">R 24.7m</span></div>
+        <div class="cc-row"><span class="cc-rk">Options payout (expired OTM)</span><span class="cc-rv" style="color:var(--muted)">R 0</span></div>
+        <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" style="color:var(--teal2)">&minus;8.48%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="sh c-gold">Option Mechanics</div>
+    <div class="mech-grid">
+      <div class="mech"><div class="mech-lbl">ALSI at Entry</div><div class="mech-val">74 500 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Strike (10% OTM)</div><div class="mech-val">67 050 pts</div></div>
+      <div class="mech"><div class="mech-lbl">JIBAR</div><div class="mech-val">4.50%</div></div>
+      <div class="mech"><div class="mech-lbl">Implied Vol (entry)</div><div class="mech-val">16.0%</div></div>
+      <div class="mech"><div class="mech-lbl">Put Premium</div><div class="mech-val">228 pts = R2 282</div></div>
+      <div class="mech"><div class="mech-lbl">Option Budget</div><div class="mech-val">R 274 353</div></div>
+      <div class="mech"><div class="mech-lbl">Contracts Purchased</div><div class="mech-val">120</div></div>
+      <div class="mech"><div class="mech-lbl">Cash Core (JIBAR note)</div><div class="mech-val">R 24.73m</div></div>
+      <div class="mech"><div class="mech-lbl">ALSI at Expiry</div><div class="mech-val">67 900 pts</div></div>
+      <div class="mech"><div class="mech-lbl">Intrinsic Value</div><div class="mech-val">0 pts (OTM)</div></div>
+      <div class="mech"><div class="mech-lbl">Total Payout</div><div class="mech-val">R 0</div></div>
+      <div class="mech"><div class="mech-lbl">Fund NAV at Exit</div><div class="mech-val">R 24.73m</div></div>
+    </div>
+  </div>
+  <div class="note"><strong>This is the "cost" scenario — and it is the most important one to show DFMs.</strong> The ALSI fell 8.9%, ending 850 pts above the strike. Options expired worthless. The fund returned −1.1% (just the foregone JIBAR yield on the option budget = R274k). But the portfolio was still R1.94m better off than an unhedged portfolio, because the 5% carve-out capital was not exposed to equity market decline. The maximum cost of Macro Protector in a year where nothing triggers is the JIBAR yield on the option budget — not the full allocation. This is the asymmetric cost structure that makes the strategy compelling.</div>
+  <div class="disc">Hypothetical backtest. Past modelled performance does not guarantee future results. Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524 &nbsp;·&nbsp; For professional investors only.</div>
+</div>
+
+</div><!-- /page -->
+<script>
+function showTab(id){
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active')});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+  var map={'t911':0,'tgfc':1,'tcov':2,'t22':3};
+  document.querySelectorAll('.tab-btn')[map[id]].classList.add('active');
+}
+</script>
+</body>
+</html>
