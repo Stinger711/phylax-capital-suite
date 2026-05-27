@@ -581,6 +581,29 @@ input[type=range]::-moz-range-thumb{
 ::-webkit-scrollbar-track{background:rgba(0,0,0,.2)}
 ::-webkit-scrollbar-thumb{background:rgba(0,196,212,.3);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(0,196,212,.5)}
+
+/* ── MOBILE RESPONSIVE ────────────────────────────── */
+
+@media(max-width:900px){
+  body{flex-direction:column!important}
+  .sidebar,.controls{width:100%!important;max-height:none!important;overflow-y:visible!important}
+  .main,.results{flex:none!important}
+}
+@media(max-width:640px){
+  .g2,.g3,.g4,.card-grid{grid-template-columns:1fr!important}
+  .hero-strip,.kpi-strip{grid-template-columns:repeat(2,1fr)!important}
+  .panel,.card{padding:14px!important}
+  .page{padding:10px!important}
+  table{font-size:10px}
+  canvas{max-width:100%!important}
+  .topbar{flex-wrap:wrap;gap:8px}
+  input[type=range]::-webkit-slider-thumb{width:22px!important;height:22px!important}
+}
+@media(max-width:480px){
+  .kpi-strip{grid-template-columns:repeat(2,1fr)!important}
+  .mech-grid,.mech{grid-template-columns:repeat(2,1fr)!important}
+}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>

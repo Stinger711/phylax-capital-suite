@@ -56,6 +56,23 @@ tr:hover td{background:rgba(0,196,212,.07)}
 .pitch strong{color:var(--teal2)}
 .pitch em{color:var(--gold2);font-style:normal;font-weight:600}
 .disc{font-size:9px;color:rgba(74,104,120,.4);line-height:1.7;border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
+
+/* ── MOBILE RESPONSIVE ────────────────────────────── */
+
+@media(max-width:900px){
+  .stat-grid{grid-template-columns:repeat(3,1fr)!important}
+  .panel > div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;display:block!important}
+}
+@media(max-width:640px){
+  .stat-grid{grid-template-columns:repeat(2,1fr)!important}
+  .page{padding:10px!important}
+  .panel{padding:14px!important}
+  .topbar{flex-wrap:wrap;gap:8px}
+  table{font-size:10px}
+  .stat-val{font-size:24px!important}
+  .pitch p{font-size:12px!important}
+}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>

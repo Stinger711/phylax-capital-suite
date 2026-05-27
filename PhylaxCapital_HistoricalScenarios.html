@@ -110,6 +110,23 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;mi
 .sh.c-teal{color:var(--teal)} .sh.c-gold{color:var(--gold2)}
 
 .disc{font-size:9px;color:rgba(74,104,120,.4);line-height:1.7;border-top:1px solid var(--border);padding-top:14px;margin-top:6px}
+
+/* ── MOBILE RESPONSIVE ────────────────────────────── */
+
+@media(max-width:900px){
+  .kpi-strip{grid-template-columns:repeat(3,1fr)!important}
+  .compare,.comparison,.outcome-grid{grid-template-columns:1fr!important}
+  .mech-grid{grid-template-columns:repeat(2,1fr)!important}
+  .ev-header{flex-direction:column!important}
+  .ev-drop{text-align:left!important}
+}
+@media(max-width:640px){
+  .kpi-strip{grid-template-columns:repeat(2,1fr)!important}
+  .page{padding:10px!important}
+  .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .tab-btn{white-space:nowrap;flex-shrink:0;padding:7px 12px!important}
+  .topbar{flex-wrap:wrap;gap:8px}
+}
 </style>
 </head>
 <body>

@@ -130,6 +130,23 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
 .disc{font-size:9px;color:rgba(90,120,136,.4);line-height:1.7;border-top:1px solid var(--border);padding-top:14px;margin-top:8px}
 
 .gold2{color:var(--amber)}
+
+/* ── MOBILE RESPONSIVE ────────────────────────────── */
+
+@media(max-width:900px){
+  .g3,.g4,.g5{grid-template-columns:repeat(2,1fr)!important}
+  .hero-g{grid-template-columns:1fr!important}
+  .compare-grid,.cmp-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:640px){
+  .g3,.g4,.g5,.g2{grid-template-columns:1fr!important}
+  .page{padding:10px!important}
+  .panel,.card{padding:14px!important}
+  .topbar{flex-wrap:wrap;gap:8px}
+  table{font-size:10px}
+  .mc-v{font-size:20px!important}
+}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>
@@ -358,8 +375,8 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
   <div style="width:1px;background:rgba(255,167,38,.25);align-self:stretch;margin:0 24px"></div>
   <div class="sv-right">
     <div class="ratio-lbl">Protection-to-Cost Ratio</div>
-    <div class="ratio-val">23.7&#10005;</div>
-    <div style="font-size:10px;color:var(--muted);margin-top:4px">R10.99m saved &#247; R462,840 options cost</div>
+    <div class="ratio-val">13.6&#10005;</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px">R6.16m saved &#247; R462,840 options cost</div>
   </div>
 </div>
 
@@ -397,7 +414,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
       </div>
       <div class="hero-row">
         <span class="hr-k">Phylax return on allocation</span>
-        <span class="hr-v" style="color:var(--teal2)">+32.3%</span>
+        <span class="hr-v" style="color:var(--teal2)">+11.7%</span>
       </div>
       <div class="hero-row" style="background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.22)">
         <span class="hr-k" style="font-weight:600;color:var(--white)">Ending value</span>
@@ -410,8 +427,8 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
 <!-- KEY METRICS -->
 <div class="sh teal">Key Performance Metrics — March 2026</div>
 <div class="g4" style="margin-bottom:22px">
-  <div class="mc"><div class="mc-l">Phylax Fund Return</div><div class="mc-v" style="color:var(--teal2)">+32.3%</div><div class="mc-s">vs ALSI: &#8209;12.97%</div></div>
-  <div class="mc g"><div class="mc-l">Capital Saved</div><div class="mc-v" style="color:var(--green)">R 10.99m</div><div class="mc-s">Portfolio loss reduced by 16.9%</div></div>
+  <div class="mc"><div class="mc-l">Phylax Fund Return</div><div class="mc-v" style="color:var(--teal2)">+11.7%</div><div class="mc-s">vs ALSI: &#8209;12.97%</div></div>
+  <div class="mc g"><div class="mc-l">Capital Saved</div><div class="mc-v" style="color:var(--green)">R 6.16m</div><div class="mc-s">Portfolio loss reduced by 16.9%</div></div>
   <div class="mc a"><div class="mc-l">Protection Cost</div><div class="mc-v" style="color:var(--amber)">R 462,840</div><div class="mc-s">Funded entirely from JIBAR yield — zero capital at risk</div></div>
   <div class="mc p"><div class="mc-l">Portfolio Return</div><div class="mc-v" style="color:var(--plat)">&#8209;10.77%</div><div class="mc-s">vs &#8209;12.97% without Phylax</div></div>
 </div>
@@ -443,7 +460,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
 
 <!-- IMPORTANT CONTEXT NOTE -->
 <div class="note g">
-  <strong style="color:var(--green)">Why the Phylax return of +32.3% is credible in this scenario:</strong> The fund purchased put options deeply out of the money (10% below the index). When the ALSI fell 12.97%, the puts moved from deeply OTM to 3,550 points in the money. The delta-gamma-vega effect means the payout is non-linear — a 13% index fall translates to a large multiple on the small premium paid. This is exactly how tail-risk protection is designed to work: inexpensive to hold (funded by yield), explosive when needed. The 23.7&times; protection-to-cost ratio confirms the structural logic.
+  <strong style="color:var(--green)">Why the Phylax return of +11.7% is credible in this scenario:</strong> The fund purchased put options deeply out of the money (10% below the index). When the ALSI fell 12.97%, the puts moved from deeply OTM to 3,550 points in the money. The delta-gamma-vega effect means the payout is non-linear — a 13% index fall translates to a large multiple on the small premium paid. This is exactly how tail-risk protection is designed to work: inexpensive to hold (funded by yield), explosive when needed. The 13.6&times; protection-to-cost ratio confirms the structural logic.
 </div>
 
 <div class="note t" style="margin-bottom:8px">

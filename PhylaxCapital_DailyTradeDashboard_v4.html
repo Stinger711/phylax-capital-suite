@@ -259,6 +259,34 @@ textarea:focus{border-color:var(--teal2)}
 .disc{font-size:8.5px;color:rgba(90,120,136,.4);line-height:1.6;border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
 .override-badge{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.1em;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.25);padding:2px 7px;border-radius:2px}
 .warn-note{font-size:9px;color:var(--amber);margin-top:4px;font-family:'Rajdhani',sans-serif}
+
+/* ── MOBILE RESPONSIVE ────────────────────────────── */
+
+@media(max-width:900px){
+  .main-layout{flex-direction:column!important}
+  .sidebar{width:100%!important;max-height:none!important;overflow-y:visible!important;
+    border-right:none!important;border-bottom:1px solid var(--border)}
+  .content-area{padding:16px!important}
+}
+@media(max-width:640px){
+  body{padding:0!important}
+  .g2,.g3,.g4,.g5{grid-template-columns:1fr!important}
+  .nav-banner{flex-direction:column;gap:8px!important}
+  input[type=range]::-webkit-slider-thumb{width:22px!important;height:22px!important}
+  input[type=range]::-moz-range-thumb{width:22px!important;height:22px!important}
+  .topbar{flex-wrap:wrap;gap:8px}
+  .page,.content-area{padding:10px!important}
+  table{font-size:10px}
+  .eod-break{grid-template-columns:1fr!important}
+  .panel{padding:14px!important}
+  .section-title{font-size:10px!important}
+}
+@media(max-width:480px){
+  .kpi-grid,.kpi-strip,.hero-strip{grid-template-columns:repeat(2,1fr)!important}
+  .mech-grid{grid-template-columns:repeat(2,1fr)!important}
+  .formatted-input{min-width:80px!important;font-size:14px!important}
+}
+.tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 </style>
 </head>
 <body>

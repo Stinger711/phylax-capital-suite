@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Phylax Capital — Macro Protector Fund Overview</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#101b2a;
+  --teal:#00c4d4;--teal2:#00e5ff;
+  --plat:#b8c8d4;--plat2:#dce8f0;
+  --gold:#c8a84a;--gold2:#e8c870;
+  --red2:#ff6060;--green2:#60e8a0;--amber:#e8a020;
+  --muted:#4a6878;--border:rgba(0,196,212,.12);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
+  line-height:1.7;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 60% 40% at 90% 5%,rgba(0,196,212,.06) 0%,transparent 60%),
+    linear-gradient(rgba(0,196,212,.01) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.01) 1px,transparent 1px);
+  background-size:100%,52px 52px,52px 52px;}
+
+/* NAV */
+.sticky-nav{position:sticky;top:0;z-index:100;background:rgba(8,13,20,.96);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+  padding:0 5vw;display:flex;align-items:center;justify-content:space-between;
+  height:54px;gap:16px}
+.nav-brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.nav-brand-name{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;
+  color:var(--plat2);letter-spacing:.08em;text-transform:uppercase}
+.nav-links{display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-links a{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
+  text-decoration:none;padding:0 14px;height:54px;display:flex;align-items:center;
+  transition:color .15s;white-space:nowrap;border-bottom:2px solid transparent}
+.nav-links a:hover{color:var(--plat2)}
+.nav-links a.active{color:var(--teal2);border-bottom-color:var(--teal2)}
+
+/* LAYOUT */
+.wrap{max-width:900px;margin:0 auto;padding:0 20px}
+
+/* HERO */
+.hero{padding:80px 5vw 60px;text-align:center;
+  border-bottom:1px solid var(--border);position:relative}
+.hero-eyebrow{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.2em;color:var(--teal);margin-bottom:16px}
+.hero-title{font-family:'Rajdhani',sans-serif;font-size:clamp(28px,5vw,52px);
+  font-weight:700;color:var(--plat2);letter-spacing:.06em;margin-bottom:12px;
+  line-height:1.1}
+.hero-sub{font-size:clamp(13px,2vw,16px);color:var(--plat);max-width:600px;
+  margin:0 auto 32px;line-height:1.7}
+.hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.badge{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;padding:6px 14px;border-radius:20px;
+  border:1px solid var(--border2);color:var(--teal);background:var(--card)}
+
+/* SUMMARY STRIP */
+.summary-strip{display:grid;grid-template-columns:repeat(5,1fr);
+  border-bottom:1px solid var(--border)}
+.ss-item{padding:22px 20px;border-right:1px solid var(--border);text-align:center}
+.ss-item:last-child{border-right:none}
+.ss-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.ss-val{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--plat2)}
+.ss-sub{font-size:9px;color:var(--muted);margin-top:3px}
+
+/* SECTIONS */
+.section{padding:56px 5vw;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none}
+.section-inner{max-width:860px;margin:0 auto}
+.s-eyebrow{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.18em;color:var(--teal);margin-bottom:8px}
+.s-title{font-family:'Rajdhani',sans-serif;font-size:clamp(20px,3vw,28px);
+  font-weight:700;color:var(--plat2);margin-bottom:18px;letter-spacing:.04em}
+.s-body{font-size:14px;color:var(--plat);line-height:1.75;margin-bottom:16px}
+.s-body strong{color:var(--plat2)}
+.s-rule{height:1px;background:var(--border);margin:28px 0}
+
+/* CALLOUT */
+.callout{background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));
+  border:1px solid rgba(0,196,212,.25);border-radius:12px;padding:22px 26px;
+  margin-bottom:22px}
+.callout-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--teal);margin-bottom:8px}
+.callout p{font-size:14px;color:var(--plat);line-height:1.7}
+.callout p strong{color:var(--teal2)}
+
+/* BULLET LIST */
+.blist{margin:0 0 18px 0;padding:0;list-style:none}
+.blist li{position:relative;padding-left:18px;font-size:14px;color:var(--plat);
+  line-height:1.7;margin-bottom:8px}
+.blist li::before{content:'\2022';position:absolute;left:0;color:var(--teal);
+  font-size:16px;line-height:1.4}
+.blist li strong{color:var(--plat2)}
+
+/* FORMULA BOX */
+.formula{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:18px 22px;margin:18px 0;font-family:'DM Mono',monospace;font-size:13px;
+  color:var(--plat2);line-height:1.9}
+.formula .f-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--teal);margin-bottom:8px}
+
+/* SCENARIO CARDS */
+.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
+.sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:18px;transition:border-color .2s}
+.sc-card:hover{border-color:var(--border2)}
+.sc-period{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.sc-event{font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;
+  color:var(--plat2);margin-bottom:12px}
+.sc-drop{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;
+  color:var(--red2);margin-bottom:8px}
+.sc-rows{border-top:1px solid var(--border);padding-top:10px}
+.sc-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
+.sc-rk{color:var(--muted)}.sc-rv{font-family:'DM Mono',monospace}
+.sc-rv.gc{color:var(--green2)}.sc-rv.tc{color:var(--teal2)}
+.sc-rv.ac{color:var(--amber)}
+
+/* DATA TABLE */
+.dtbl{width:100%;border-collapse:separate;border-spacing:0 3px;margin-bottom:18px}
+.dtbl th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  padding:5px 12px;text-align:right;font-weight:600;font-family:'Rajdhani',sans-serif}
+.dtbl th:first-child{text-align:left}
+.dtbl td{padding:10px 12px;font-family:'DM Mono',monospace;font-size:12px;
+  background:var(--card);text-align:right}
+.dtbl td:first-child{text-align:left;border-radius:8px 0 0 8px;color:var(--muted);
+  font-family:'DM Sans',sans-serif;font-size:13px}
+.dtbl td:last-child{border-radius:0 8px 8px 0}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* 2-COL */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:18px}
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
+.info-card h4{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px}
+.info-card p,.info-card li{font-size:13px;color:var(--plat);line-height:1.65}
+
+/* COST TABLE */
+.cost-table{width:100%;border-collapse:collapse;margin-bottom:18px}
+.cost-table th,.cost-table td{padding:10px 14px;border-bottom:1px solid var(--border);
+  font-size:13px;text-align:left}
+.cost-table th{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.cost-table tr:nth-child(even) td{background:var(--card)}
+.cost-table td:not(:first-child){font-family:'DM Mono',monospace;text-align:right;font-size:12px}
+
+/* RISK CARDS */
+.risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.risk-card{background:rgba(232,64,64,.04);border:1px solid rgba(232,64,64,.18);
+  border-radius:10px;padding:16px}
+.risk-card h5{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--red2);margin-bottom:6px}
+.risk-card p{font-size:12px;color:var(--plat);line-height:1.6}
+
+/* FOOTER */
+.foot{background:var(--bg2);border-top:1px solid var(--border);
+  padding:32px 5vw;text-align:center}
+.foot-disc{font-size:10px;color:var(--muted);line-height:1.7;max-width:800px;margin:0 auto}
+
+/* MOBILE */
+@media(max-width:900px){
+  .summary-strip{grid-template-columns:repeat(3,1fr)}
+  .ss-item:nth-child(4),.ss-item:nth-child(5){border-top:1px solid var(--border)}
+  .scenario-grid{grid-template-columns:repeat(2,1fr)}
+  .two-col{grid-template-columns:1fr}
+  .risk-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .sticky-nav{padding:0 14px}
+  .nav-links{display:none}
+  .hero{padding:48px 14px 40px}
+  .section{padding:36px 14px}
+  .summary-strip{grid-template-columns:repeat(2,1fr)}
+  .ss-item:nth-child(5){border-top:1px solid var(--border)}
+  .scenario-grid{grid-template-columns:1fr}
+  .hero-title{font-size:26px}
+  .s-title{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- STICKY NAV -->
+<nav class="sticky-nav">
+  <div class="nav-brand">
+    <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
+      <defs>
+        <linearGradient id="np" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="ni" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E0FFFF"/>
+          <stop offset="50%" stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="ng"><feGaussianBlur stdDeviation="2" result="b"/>
+          <feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
+      </defs>
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23" fill="none" stroke="url(#np)" stroke-width="2.0" stroke-linejoin="round"/>
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5" fill="none" stroke="url(#np)" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="40" y1="6" x2="40" y2="23" stroke="url(#np)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5" stroke="url(#np)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5" stroke="url(#np)" stroke-width="1.5"/>
+      <line x1="40" y1="74" x2="40" y2="57" stroke="url(#np)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5" stroke="url(#np)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5" stroke="url(#np)" stroke-width="1.5"/>
+      <line x1="40" y1="6" x2="69.4" y2="57" stroke="url(#np)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="6" x2="10.6" y2="57" stroke="url(#np)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="69.4" y2="23" stroke="url(#np)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="10.6" y2="23" stroke="url(#np)" stroke-width="0.6" opacity="0.4"/>
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05" fill="url(#ni)" filter="url(#ng)"/>
+    </svg>
+    <span class="nav-brand-name">Phylax Capital</span>
+  </div>
+  <nav class="nav-links">
+    <a href="#problem">The Problem</a>
+    <a href="#solution">The Solution</a>
+    <a href="#mechanics">How It Works</a>
+    <a href="#maths">The Maths</a>
+    <a href="#performance">Performance</a>
+    <a href="#cost">Cost</a>
+    <a href="#structure">Structure</a>
+  </nav>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Fund Overview &nbsp;·&nbsp; For Professional Investors</div>
+  <h1 class="hero-title">Macro Protector Fund</h1>
+  <p class="hero-sub">Systematic ALSI downside protection for South African DFM portfolios. Capital guaranteed. Daily liquidity. Designed to pay out multiples in the exact quarters that matter most.</p>
+  <div class="hero-badges">
+    <span class="badge">RIHF — BN90/CISCA</span>
+    <span class="badge">Daily Liquidity T+1</span>
+    <span class="badge">Capital Guaranteed</span>
+    <span class="badge">SAFEX-Listed Options</span>
+    <span class="badge">FSP 46524</span>
+  </div>
+</div>
+
+<!-- SUMMARY STRIP -->
+<div class="summary-strip">
+  <div class="ss-item">
+    <div class="ss-label">Strategy</div>
+    <div class="ss-val">90/10</div>
+    <div class="ss-sub">JIBAR + SAFEX Puts</div>
+  </div>
+  <div class="ss-item">
+    <div class="ss-label">Min. Return</div>
+    <div class="ss-val">0%</div>
+    <div class="ss-sub">Nominal, before fees</div>
+  </div>
+  <div class="ss-item">
+    <div class="ss-label">Target Allocation</div>
+    <div class="ss-val">3–7%</div>
+    <div class="ss-sub">Of DFM portfolio</div>
+  </div>
+  <div class="ss-item">
+    <div class="ss-label">Option Tenor</div>
+    <div class="ss-val">3–12m</div>
+    <div class="ss-sub">Rolled before theta cliff</div>
+  </div>
+  <div class="ss-item">
+    <div class="ss-label">Liquidity</div>
+    <div class="ss-val">T+1</div>
+    <div class="ss-sub">Daily dealing</div>
+  </div>
+</div>
+
+<!-- 1. THE PROBLEM -->
+<div class="section" id="problem">
+<div class="section-inner">
+  <div class="s-eyebrow">01 — The Problem</div>
+  <h2 class="s-title">Sharp Drawdowns Are Not Rare — They Are Scheduled</h2>
+  <p class="s-body">Analysis of 20 years of JSE All Share monthly return data (2005–2024, 240 months) reveals a pattern that most investors underestimate: large, sudden drawdowns occur with far greater frequency than traditional risk models suggest.</p>
+
+  <div class="callout">
+    <div class="callout-title">20-Year ALSI Crash Frequency</div>
+    <p><strong>15 rolling 3-month windows</strong> exceeded a 10% decline — one every <strong>16 months</strong> on average. Six distinct crash events in 20 years gives an average gap of <strong>3.3 years</strong> between major events. A DFM on a 5-year mandate will statistically encounter <strong>at least two</strong> qualifying crash periods.</p>
+  </div>
+
+  <p class="s-body">The critical insight is not just frequency — it is <strong>timing</strong>. The COVID-19 crash arrived when the SAVI implied volatility index was at a multi-year low of 16.5%. Markets had priced almost zero tail risk. By the time volatility spiked above 50%, buying the same protection had become four times more expensive and the crash had already occurred. <strong>Waiting for a signal to hedge is not a strategy — it is a guarantee of buying protection at exactly the wrong time.</strong></p>
+
+  <div class="tbl-wrap">
+  <table class="dtbl">
+    <thead><tr>
+      <th style="text-align:left">Crash Period</th>
+      <th>ALSI Drop</th><th>Entry Vol (SAVI)</th><th>Recovery Time</th><th>Portfolio Loss (R500m)</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>9/11 — Sep 2001</td><td style="color:var(--red2)">−15.7%</td><td>19%</td><td>~18 months</td><td style="color:var(--red2)">R 78m</td></tr>
+      <tr><td>GFC — Q4 2008</td><td style="color:var(--red2)">−33.1%</td><td>24%</td><td>~30 months</td><td style="color:var(--red2)">R 165m</td></tr>
+      <tr><td>COVID — Q1 2020</td><td style="color:var(--red2)">−35.6%</td><td style="color:var(--green2)">16.5% ← cheapest</td><td>~6 months</td><td style="color:var(--red2)">R 178m</td></tr>
+      <tr><td>2022 Q2 Rate Shock</td><td style="color:var(--amber)">−8.9%</td><td>16%</td><td>~6 months</td><td style="color:var(--amber)">R 44m</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<!-- 2. THE SOLUTION -->
+<div class="section" id="solution">
+<div class="section-inner">
+  <div class="s-eyebrow">02 — The Solution</div>
+  <h2 class="s-title">Permanent, Unconditional Protection With No Timing Risk</h2>
+  <p class="s-body">Macro Protector is structured as a permanent 3–7% carve-out from a DFM's equity allocation. It operates identically to the Universa Investments approach deployed for US institutional investors — a small, systematically managed sleeve that converts crash events into capital windfalls while protecting the rest of the portfolio.</p>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h4>What It Is</h4>
+      <ul class="blist" style="margin-top:4px">
+        <li><strong>Capital guaranteed:</strong> worst case is 0% nominal (before fees) at every quarterly exit</li>
+        <li><strong>Asymmetric payoff:</strong> modest cost in quiet markets, multiples of cost in crashes</li>
+        <li><strong>Systematic rolling:</strong> no timing decisions — protection always in place</li>
+        <li><strong>Exchange traded:</strong> SAFEX-listed ALSI options, centrally cleared</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>What It Is Not</h4>
+      <ul class="blist" style="margin-top:4px">
+        <li><strong>Not a market hedge:</strong> gradual bear markets may not trigger payouts</li>
+        <li><strong>Not a volatility fund:</strong> it buys protection, not volatility exposure</li>
+        <li><strong>Not leveraged:</strong> cannot return less than 0% (before fees) at quarterly exit</li>
+        <li><strong>Not discretionary:</strong> no tactical positioning or market timing</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="s-body">The fund is modelled on Universa Investments' proposition, which demonstrated a <strong>3.3% allocation reducing COVID portfolio drawdown from −35% to −10%</strong> for institutional clients. Macro Protector delivers the same structural concept within the South African RIHF regulatory framework using SAFEX-listed instruments.</p>
+</div>
+</div>
+
+<!-- 3. MECHANICS -->
+<div class="section" id="mechanics">
+<div class="section-inner">
+  <div class="s-eyebrow">03 — How It Works</div>
+  <h2 class="s-title">The 90/10 Capital Guarantee Structure</h2>
+
+  <p class="s-body">Every quarter, the fund sizes a JIBAR-linked fixed rate note to mature at exactly NAV at the quarterly exit date. The interest earned in advance on that note — not the principal — funds the purchase of out-of-the-money put options. This means the option sleeve costs <em>nothing beyond foregone yield</em>.</p>
+
+  <div class="formula">
+    <div class="f-label">Capital Guarantee Sizing</div>
+    Cash Core  =  NAV ÷ (1 + JIBAR × T)<br>
+    Option Budget  =  NAV − Cash Core  =  JIBAR interest earned in advance<br>
+    <br>
+    Worst case: options expire worthless → Cash Core matures to NAV → return = 0% nominal
+  </div>
+
+  <div class="formula">
+    <div class="f-label">Option Budget Example (JIBAR 7.5%, NAV R25m, T = 90/365)</div>
+    Cash Core   =  R25,000,000 ÷ 1.018495  =  R24,546,066<br>
+    Option Budget  =  R453,934  (the JIBAR interest, ~1.8% of NAV per quarter)<br>
+    Strike  =  ALSI × 90%  (10% out of the money at entry)
+  </div>
+
+  <div class="s-rule"></div>
+  <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:12px">Rolling Before the Theta Cliff</h3>
+  <p class="s-body">Options are not held to expiry. Each position is sold before the <strong>theta cliff</strong> — the point where daily time-value decay accelerates beyond 0.5% of option value per day. For a 90-day put, this typically occurs at 40–50 days before expiry; for longer-dated puts, the cliff is proportionally later.</p>
+  <ul class="blist">
+    <li><strong>Buy:</strong> puts with 90 days to the quarterly SAFEX expiry, 10% OTM</li>
+    <li><strong>Roll:</strong> sell at market price (intrinsic + time value + vol spike premium) before cliff</li>
+    <li><strong>Replace:</strong> buy fresh puts for the next quarterly expiry, resetting the clock</li>
+  </ul>
+  <p class="s-body">Selling before expiry captures more value in a crash because implied volatility spikes during market dislocations — the BS market price at T−45 days includes both intrinsic value and the elevated time value caused by the vol spike. Historical scenario payouts in this document use intrinsic-at-expiry as a conservative floor.</p>
+</div>
+</div>
+
+<!-- 4. MATHS -->
+<div class="section" id="maths">
+<div class="section-inner">
+  <div class="s-eyebrow">04 — The Mathematics</div>
+  <h2 class="s-title">Black-Scholes with Dividend Yield Correction</h2>
+  <p class="s-body">All option pricing uses the Merton (1973) modification of Black-Scholes incorporating the ALSI continuous dividend yield (q = 3.8% p.a.). Omitting the dividend yield overstates the number of contracts purchasable by approximately 25% — a critical error that would misrepresent both cost and payout.</p>
+
+  <div class="formula">
+    <div class="f-label">Black-Scholes Put Price (Merton 1973)</div>
+    d₁  =  [ ln(S/K) + (r − q + σ²/2) × T ] ÷ (σ × √T)<br>
+    d₂  =  d₁ − σ × √T<br>
+    <br>
+    Put (pts)  =  K × e^(−rT) × N(−d₂)  −  S × e^(−qT) × N(−d₁)<br>
+    Put (R/contract)  =  Put(pts) × R10<br>
+    <br>
+    Variables: S = ALSI spot · K = strike (10% OTM) · r = JIBAR · σ = IV (SAVI)<br>
+               T = 90/365 years · q = 3.8% ALSI div yield · N(x) = normal CDF
+  </div>
+
+  <div class="formula">
+    <div class="f-label">Verified Test Case (Python/scipy)</div>
+    S=113 000 · K=101 700 · r=7.5% · σ=18% · T=0.2466yr · q=3.8%<br>
+    → d₁=1.3256 · d₂=1.2362 · Put=447.7 pts = R4 477/contract<br>
+    → Delta=−0.0924 · Contracts at R25m budget = 413
+  </div>
+</div>
+</div>
+
+<!-- 5. PERFORMANCE -->
+<div class="section" id="performance">
+<div class="section-inner">
+  <div class="s-eyebrow">05 — Historical Performance</div>
+  <h2 class="s-title">Five Crash Scenarios — scipy Verified</h2>
+  <p class="s-body">Hypothetical reconstructions assuming a R500m DFM portfolio with 5% Macro Protector allocation (R25m sleeve). Payout calculated as intrinsic value at quarterly expiry — a conservative floor that excludes time value and vol spike premium captured by early rolling.</p>
+
+  <div class="scenario-grid">
+    <div class="sc-card">
+      <div class="sc-period">September 2001</div>
+      <div class="sc-event">9/11 Terror Attacks</div>
+      <div class="sc-drop">−15.7%</div>
+      <div class="sc-rows">
+        <div class="sc-row"><span class="sc-rk">Fund Return</span><span class="sc-rv gc">+31.3%</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital Saved</span><span class="sc-rv tc">R 11.73m</span></div>
+        <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">19.0×</span></div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-period">Q4 2008</div>
+      <div class="sc-event">Global Financial Crisis</div>
+      <div class="sc-drop">−33.1%</div>
+      <div class="sc-rows">
+        <div class="sc-row"><span class="sc-rk">Fund Return</span><span class="sc-rv gc">+81.5%</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital Saved</span><span class="sc-rv tc">R 28.65m</span></div>
+        <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">38.3×</span></div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-period">Q1 2020</div>
+      <div class="sc-event">COVID-19 Pandemic</div>
+      <div class="sc-drop">−35.6%</div>
+      <div class="sc-rows">
+        <div class="sc-row"><span class="sc-rk">Fund Return</span><span class="sc-rv gc">+139.2%</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital Saved</span><span class="sc-rv tc">R 43.71m</span></div>
+        <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">106.8×</span></div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-period">Q2 2022</div>
+      <div class="sc-event">Ukraine / Rate Shock</div>
+      <div class="sc-drop">−8.9%</div>
+      <div class="sc-rows">
+        <div class="sc-row"><span class="sc-rk">Fund Return</span><span class="sc-rv" style="color:var(--amber)">−1.1% (OTM)</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital Saved</span><span class="sc-rv tc">R 1.94m (floor)</span></div>
+        <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">7.1×</span></div>
+      </div>
+    </div>
+    <div class="sc-card">
+      <div class="sc-period">March 2026</div>
+      <div class="sc-event">US-Israeli Iran Strikes</div>
+      <div class="sc-drop">−12.97%</div>
+      <div class="sc-rows">
+        <div class="sc-row"><span class="sc-rk">Fund Return</span><span class="sc-rv gc">+11.7%</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital Saved</span><span class="sc-rv tc">R 6.16m</span></div>
+        <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">13.6×</span></div>
+      </div>
+    </div>
+    <div class="sc-card" style="border-color:rgba(0,196,212,.2);background:rgba(0,196,212,.04)">
+      <div class="sc-period">The 2022 Lesson</div>
+      <div class="sc-event" style="color:var(--teal)">What Happens When Nothing Triggers</div>
+      <div class="sc-drop" style="color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:8px">Options expired OTM.<br>Fund returned −1.1%.</div>
+      <div class="sc-rows">
+        <div class="sc-row"><span class="sc-rk">Max annual cost</span><span class="sc-rv" style="color:var(--teal2)">&lt;0.15% of portfolio</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital still safe</span><span class="sc-rv gc">0% floor held</span></div>
+        <div class="sc-row"><span class="sc-rk">Carve-out benefit</span><span class="sc-rv tc">R 1.94m saved</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">The COVID Lesson — Buy When It Is Cheap</div>
+    <p>In Q1 2020 the option budget was just <strong>R409,284</strong> — 1.6% of the R25m sleeve — because implied volatility was at a multi-year low of 16.5%. That budget funded puts that paid out <strong>R35.2m</strong>. Had the same position been entered in March 2020 after volatility spiked above 50%, the identical budget would have bought fewer than 30 contracts. <strong>Systematic unconditional quarterly rolling is the only mechanism that ensures you are positioned before the crash arrives.</strong></p>
+  </div>
+</div>
+</div>
+
+<!-- 6. COST -->
+<div class="section" id="cost">
+<div class="section-inner">
+  <div class="s-eyebrow">06 — Cost Structure</div>
+  <h2 class="s-title">Less Than 0.15% of Total Portfolio Per Annum</h2>
+  <p class="s-body">The cost of Macro Protector in a year where no crash occurs is the foregone JIBAR yield on the option budget — not a management fee charged on the full allocation. This scales with JIBAR and is always a small fraction of the protection it provides.</p>
+
+  <div class="tbl-wrap">
+  <table class="cost-table">
+    <thead><tr>
+      <th>JIBAR Rate</th><th>Option Budget (R25m)</th><th>Annual Cost</th><th>As % of R500m Portfolio</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>4.5%</td><td>R274k / quarter</td><td>~R274k</td><td style="color:var(--green2)">0.055%</td></tr>
+      <tr><td>7.5%</td><td>R454k / quarter</td><td>~R454k</td><td style="color:var(--green2)">0.091%</td></tr>
+      <tr><td>10.0%</td><td>R596k / quarter</td><td>~R596k</td><td style="color:var(--green2)">0.119%</td></tr>
+      <tr><td>12.5%</td><td>R747k / quarter</td><td>~R747k</td><td style="color:var(--amber)">0.149%</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="s-body" style="font-size:12px;color:var(--muted)">Annual cost shown for a single quarterly position. In years where the ALSI does not breach the 10% OTM strike, options expire worthless and the full cost is this foregone yield. In crash years, this cost is dwarfed by payouts of 7–107× the annual cost. Total TER including CAEP, Prescient platform, and management fee is available in the Fund Economics model.</p>
+</div>
+</div>
+
+<!-- 7. STRUCTURE -->
+<div class="section" id="structure">
+<div class="section-inner">
+  <div class="s-eyebrow">07 — Fund Structure</div>
+  <h2 class="s-title">Regulatory Framework and Operational Structure</h2>
+
+  <div class="two-col">
+    <div class="info-card">
+      <h4>Regulatory</h4>
+      <ul class="blist" style="margin-top:4px">
+        <li>Retail Investor Hedge Fund (RIHF)</li>
+        <li>Registered under CISCA / Board Notice 90</li>
+        <li>Manager: Quattro Investment Brokers (Pty) Ltd — FSP 46524</li>
+        <li>Platform: Prescient (Category 2A)</li>
+        <li>Trustee: Nedbank</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h4>Operational</h4>
+      <ul class="blist" style="margin-top:4px">
+        <li>Daily NAV calculation</li>
+        <li>T+1 redemptions (same-day notice)</li>
+        <li>SAFEX-listed ALSI options (exchange-traded, centrally cleared)</li>
+        <li>JIBAR-linked fixed rate notes — no leverage</li>
+        <li>Target allocation: 3–7% of DFM portfolio AUM</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="s-rule"></div>
+  <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:16px">Key Risks</h3>
+  <div class="risk-grid">
+    <div class="risk-card">
+      <h5>Options Expire OTM</h5>
+      <p>If ALSI does not breach the strike at roll date, payout is zero. Fund returns capital at 0% nominal (before fees). This occurred in 2022.</p>
+    </div>
+    <div class="risk-card">
+      <h5>High Entry Volatility</h5>
+      <p>Elevated SAVI at entry reduces contracts purchasable for the same budget, reducing potential payout in a subsequent crash.</p>
+    </div>
+    <div class="risk-card">
+      <h5>Intra-Quarter Crash Recovery</h5>
+      <p>A crash that occurs and recovers entirely before the roll date may not trigger a meaningful payout.</p>
+    </div>
+    <div class="risk-card">
+      <h5>SAFEX Execution</h5>
+      <p>Bid/offer spreads on deep OTM ALSI puts may result in execution above BS theoretical mid-market. Bid haircut tiers apply.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- FOOTER -->
+<footer class="foot">
+  <div class="foot-disc">
+    This document is prepared for professional and institutional investors only and does not constitute investment advice or a solicitation to invest.
+    All historical scenario calculations are hypothetical reconstructions — the fund was not operational during the periods illustrated.
+    Past modelled performance does not guarantee future results. Capital guarantee applies at quarterly exit windows, before fees.
+    Black-Scholes calculations verified using Python/scipy with ALSI dividend yield q=3.8%.<br><br>
+    <strong style="color:var(--plat)">Phylax Capital &nbsp;·&nbsp; Quattro Investment Brokers (Pty) Ltd &nbsp;·&nbsp; FSP 46524</strong><br>
+    Prescient Fund Platform &nbsp;·&nbsp; CAEP Asset Managers (Pty) Ltd, FSP 33933
+  </div>
+</footer>
+
+<script>
+// Active section highlighting
+var sections=['problem','solution','mechanics','maths','performance','cost','structure'];
+var links=document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll',function(){
+  var pos=window.scrollY+80;
+  sections.forEach(function(id,i){
+    var el=document.getElementById(id);
+    if(!el)return;
+    if(el.offsetTop<=pos&&(sections[i+1]?document.getElementById(sections[i+1]).offsetTop>pos:true)){
+      links.forEach(function(l){l.classList.remove('active')});
+      if(links[i])links[i].classList.add('active');
+    }
+  });
+},{passive:true});
+</script>
+</body>
+</html>
