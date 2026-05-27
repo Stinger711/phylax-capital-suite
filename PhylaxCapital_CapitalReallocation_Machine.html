@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phylax Capital - Capital Reallocation Machine v7.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #060b11;
+            --bg-card: #0c1420;
+            --bg-input: #121f30;
+            --border-glow: #00c4d4;
+            --text-primary: #dce8f0;
+            --text-secondary: #8da2b5;
+            --accent-teal: #00e8f8;
+            --accent-platinum: #b8c8d4;
+            --accent-amber: #ffb800;
+            --accent-red: #ff4a5a;
+            --accent-green: #00f5a0;
+            --font-head: 'Rajdhani', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'DM Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 1100px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: linear-gradient(90deg, #0c1420 0%, #121f30 100%);
+            border-left: 4px solid var(--border-glow);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .logo-area { display: flex; align-items: center; gap: 16px; }
+        .logo-text h1 { font-family: var(--font-head); font-size: 28px; font-weight: 700; letter-spacing: 0.05em; color: #fff; line-height: 1; }
+        .logo-text p { font-family: var(--font-head); font-size: 14px; font-weight: 500; letter-spacing: 0.15em; color: var(--accent-teal); margin-top: 4px; text-transform: uppercase; }
+
+        .badges { display: flex; gap: 12px; }
+        .badge {
+            font-family: var(--font-head);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            padding: 6px 12px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            border: 1px solid rgba(0,196,212,0.3);
+            background: rgba(12,20,32,0.6);
+        }
+        .badge.active { color: var(--accent-teal); border-color: var(--accent-teal); }
+
+        .panel {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(141,162,181,0.12);
+            border-radius: 6px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-self: start;
+        }
+
+        .panel-title {
+            font-family: var(--font-head);
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--accent-platinum);
+            border-bottom: 1px solid rgba(141,162,181,0.12);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .input-label { font-family: var(--font-head); font-size: 14px; font-weight: 500; letter-spacing: 0.03em; color: var(--text-secondary); text-transform: uppercase; }
+        .input-val-box { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--accent-teal); background: var(--bg-input); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(0,196,212,0.15); min-width: 75px; text-align: right; }
+        
+        .slider-wrapper { position: relative; display: flex; align-items: center; }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: var(--bg-input); height: 5px; border-radius: 3px; outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-teal); cursor: pointer; box-shadow: 0 0 8px var(--border-glow); transition: 0.1s; }
+
+        .pitch-banner {
+            background: rgba(0,232,248,0.04);
+            border: 1px dashed rgba(0,232,248,0.2);
+            border-radius: 4px;
+            padding: 14px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .pitch-banner strong { color: var(--accent-teal); font-weight: 600; }
+
+        .dashboard-grid { display: flex; flex-direction: column; gap: 24px; }
+        
+        .kpi-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        @media (max-width: 760px) { .kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+
+        .kpi-card {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(141,162,181,0.1);
+            border-radius: 4px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            position: relative;
+        }
+        .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--border-glow); }
+        .kpi-card.amber::before { background: var(--accent-amber); }
+        .kpi-card.green::before { background: var(--accent-green); }
+        
+        .kpi-label { font-family: var(--font-head); font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.02em; }
+        .kpi-val { font-family: var(--font-mono); font-size: 18px; color: #fff; font-weight: 500; }
+        
+        .comparison-zone {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 760px) { .comparison-zone { grid-template-columns: 1fr; } }
+
+        .comp-card {
+            background: linear-gradient(145deg, #0c1420 0%, #080d14 100%);
+            border: 1px solid rgba(141,162,181,0.12);
+            border-radius: 6px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .comp-card.highlight { border-color: rgba(0,245,160,0.25); box-shadow: 0 0 20px rgba(0,245,160,0.02); }
+        .comp-title { font-family: var(--font-head); font-size: 16px; font-weight: 600; text-transform: uppercase; margin-bottom: 16px; display: flex; justify-content: space-between; letter-spacing: 0.02em; padding-bottom: 8px; border-bottom: 1px solid rgba(141,162,181,0.08); }
+        
+        .row-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(141,162,181,0.06); font-size: 14px; }
+        .row-item:last-child { border-bottom: none; font-weight: 700; font-size: 15px; padding-top: 12px; color: #fff; }
+        .lbl { color: var(--text-secondary); text-align: left; }
+        .val { font-family: var(--font-mono); color: #fff; text-align: right; }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(141,162,181,0.12);
+            border-radius: 6px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .svg-chart-wrapper {
+            width: 100%;
+            background: #080d14;
+            border: 1px solid rgba(141,162,181,0.08);
+            border-radius: 4px;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        .legend-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-family: var(--font-head);
+            font-size: 13px;
+            text-transform: uppercase;
+            margin-top: 4px;
+            padding-top: 8px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+        .note-box {
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            background: rgba(12,20,32,0.4);
+            padding: 14px 16px;
+            border-radius: 4px;
+            border-left: 2px solid var(--accent-teal);
+        }
+
+        .compounding-table-wrapper {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(141,162,181,0.1);
+            overflow-x: auto;
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: 900px; }
+        th { font-family: var(--font-head); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); padding: 12px 8px; border-bottom: 1px solid rgba(141,162,181,0.2); }
+        td { padding: 12px 8px; border-bottom: 1px solid rgba(141,162,181,0.06); font-family: var(--font-mono); font-size: 13px; }
+        tr:hover td { background: rgba(141,162,181,0.02); }
+        .sub-header { background: rgba(141,162,181,0.03); font-weight: 500; font-family: var(--font-head); font-size: 11px; letter-spacing: 0.02em; color: var(--accent-platinum); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <header>
+            <div class="logo-area">
+                <svg width="44" height="44" viewBox="0 0 100 100" style="display:block;">
+                    <defs>
+                        <linearGradient id="platGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#b8c8d4" />
+                            <stop offset="100%" stop-color="#dce8f0" />
+                        </linearGradient>
+                        <linearGradient id="gemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#E0FFFF" />
+                            <stop offset="50%" stop-color="#00E5FF" />
+                            <stop offset="100%" stop-color="#008B8B" />
+                        </linearGradient>
+                    </defs>
+                    <polygon points="50,5 89,27.5 89,72.5 50,95 11,72.5 11,27.5" fill="none" stroke="url(#platGrad)" stroke-width="2"/>
+                    <polygon points="50,20 76,35 76,65 50,80 24,65 24,35" fill="none" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="50" y1="5" x2="50" y2="20" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="89" y1="27.5" x2="76" y2="35" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="89" y1="72.5" x2="76" y2="65" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="50" y1="95" x2="50" y2="80" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="11" y1="72.5" x2="24" y2="65" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="11" y1="27.5" x2="24" y2="35" stroke="url(#platGrad)" stroke-width="1.5"/>
+                    <line x1="11" y1="27.5" x2="89" y2="72.5" stroke="url(#platGrad)" stroke-width="1" opacity="0.3"/>
+                    <line x1="11" y1="72.5" x2="89" y2="27.5" stroke="url(#platGrad)" stroke-width="1" opacity="0.3"/>
+                    <polygon points="50,38 60.4,44 60.4,56 50,62 39.6,56 39.6,44" fill="url(#gemGrad)"/>
+                </svg>
+                <div class="logo-text">
+                    <h1>PHYLAX CAPITAL</h1>
+                    <p>Macro Protector Fund</p>
+                </div>
+            </div>
+            <div class="badges">
+                <div class="badge active">RIHF REGISTERED</div>
+                <div class="badge">DAILY LIQUIDITY</div>
+            </div>
+        </header>
+
+        <div class="panel">
+            <div class="panel-title">Tactical Allocator Engine</div>
+            
+            <div class="input-group">
+                <div class="input-label-row">
+                    <span class="input-label">Portfolio Sizing</span>
+                    <span class="input-val-box" id="val_portfolio">R100m</span>
+                </div>
+                <div class="slider-wrapper"><input type="range" id="slide_portfolio" min="50000000" max="2000000000" step="50000000" value="1000000000"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-label-row">
+                    <span class="input-label">Phylax Weight</span>
+                    <span class="input-val-box" id="val_alloc">5.0%</span>
+                </div>
+                <div class="slider-wrapper"><input type="range" id="slide_alloc" min="0.0" max="15.0" step="0.5" value="5.0"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-label-row">
+                    <span class="input-label">Crash Severity</span>
+                    <span class="input-val-box" id="val_crash">-30.0%</span>
+                </div>
+                <div class="slider-wrapper"><input type="range" id="slide_crash" min="0" max="50" step="5" value="30"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-label-row">
+                    <span class="input-label">Dry Powder Reallocated %</span>
+                    <span class="input-val-box" id="val_realloc">100%</span>
+                </div>
+                <div class="slider-wrapper"><input type="range" id="slide_realloc" min="0" max="100" step="10" value="100"></div>
+            </div>
+
+            <div class="input-group">
+                <div class="input-label-row">
+                    <span class="input-label">Restocking Wait Window</span>
+                    <span class="input-val-box" id="val_months">12 Mo</span>
+                </div>
+                <div class="slider-wrapper"><input type="range" id="slide_months" min="0" max="36" step="3" value="12"></div>
+                <div style="font-size:11px; color:var(--text-secondary); margin-top:2px;">
+                    Number of months *after* the crash deployment before the insurance top-up engine begins.
+                </div>
+            </div>
+
+            <div class="pitch-banner">
+                <span id="pitch_text">Rebalancing into bottom wreckage accelerates compounding vectors.</span>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <div class="kpi-strip">
+                <div class="kpi-card green">
+                    <div class="kpi-label">Options Cash Windfall</div>
+                    <div class="kpi-val" id="kpi_windfall">R0</div>
+                </div>
+                <div class="kpi-card amber">
+                    <div class="kpi-label">Crystallized Perf Fee</div>
+                    <div class="kpi-val" id="kpi_fee">R0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Immediate Redeployment</div>
+                    <div class="kpi-val" id="kpi_realloc_r">R0</div>
+                </div>
+                <div class="kpi-card green">
+                    <div class="kpi-label">25-Yr Alpha Gained</div>
+                    <div class="kpi-val" id="kpi_alpha">R0</div>
+                </div>
+            </div>
+
+            <div class="comparison-zone">
+                <div class="comp-card">
+                    <div class="comp-title"><span>Unhedged Core Book (1-Year)</span><span style="color:var(--accent-red);" id="hdr_ret_unhedged">-30.0%</span></div>
+                    <div class="row-item"><span class="lbl">Pre-Crash Equity Base</span><span class="val" id="unh_base">R1 000m</span></div>
+                    <div class="row-item"><span class="lbl">Crash Drawdown Value</span><span class="val" style="color:var(--accent-red);" id="unh_draw">-R300m</span></div>
+                    <div class="row-item"><span class="lbl">Emergency Rebalancing Cash</span><span class="val">R0</span></div>
+                    <div class="row-item"><span class="lbl">Post-Crash Market Value</span><span class="val" id="unh_end">R700m</span></div>
+                </div>
+                <div class="comp-card highlight">
+                    <div class="comp-title"><span>Phylax Protected Book (1-Year Horizon)</span><span style="color:var(--accent-green);" id="phy_title_pct">-11.2%</span></div>
+                    <div class="row-item"><span class="lbl">Hedged Market Equities</span><span class="val" id="phy_eq_base">R950m</span></div>
+                    <div class="row-item"><span class="lbl">Net Monetized Option Payout</span><span class="val" style="color:var(--accent-green);" id="phy_opt_pay">+R45.2m</span></div>
+                    <div class="row-item"><span class="lbl">Restocking Matrix Delay</span><span class="val" style="color:var(--accent-amber);" id="phy_restock_lbl">Active</span></div>
+                    <div class="row-item"><span class="lbl">Total Liquid Valuation</span><span class="val" style="color:var(--accent-green);" id="phy_end">R888m</span></div>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="panel-title">25-Year Multi-Horizon Compounding Simulation (Crashes: Yr 7 & Yr 17)</div>
+                <div class="svg-chart-wrapper">
+                    <svg id="vector_graph" width="100%" height="320" viewBox="0 0 1000 320" style="overflow:visible; display:block;"></svg>
+                </div>
+                <div class="legend-strip">
+                    <div class="legend-item"><div class="legend-dot" style="background:#ffb800;"></div><span>Hedged Master Portfolio View</span></div>
+                    <div class="legend-item"><div class="legend-dot" style="background:#8da2b5;"></div><span>Unhedged Portfolio Baseline</span></div>
+                </div>
+                <div class="note-box">
+                    <strong>Tactical Rebalancing Execution:</strong> Day 1 after a crash, the DFM cashes out up to <span id="note_realloc_pct">100%</span> of the liquid windfall to immediately capture asset volume discounts. Fresh put protection restocking is systematically delayed by <span id="note_months">12</span> months to give the recovery engine un-dragged runway before rebuilding the defensive matrix.
+                </div>
+                
+                <div class="compounding-table-wrapper">
+                    <div class="panel-title" style="margin-bottom:12px; font-size: 16px;">Multi-Horizon Compounding Alpha Architecture</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="width: 22%; border-bottom: 2px solid rgba(141,162,181,0.2);">Horizon Milestone</th>
+                                <th colspan="3" style="text-align: center; background: rgba(141,162,181,0.05); border-bottom: 1px solid rgba(141,162,181,0.2);">Unhedged Baseline Book</th>
+                                <th colspan="3" style="text-align: center; background: rgba(255,184,0,0.03); border-bottom: 1px solid rgba(255,184,0,0.2); color: var(--accent-amber);">Hedged Master Portfolio</th>
+                                <th rowspan="2" style="text-align: right; color: var(--accent-green); border-bottom: 2px solid rgba(141,162,181,0.2);">Net Wealth Alpha</th>
+                            </tr>
+                            <tr class="sub-header">
+                                <th style="text-align: right;">Valuation</th>
+                                <th style="text-align: right;">Total Return</th>
+                                <th style="text-align: right;">Ann. IRR</th>
+                                <th style="text-align: right; color: var(--accent-platinum);">Valuation</th>
+                                <th style="text-align: right; color: var(--accent-platinum);">Total Return</th>
+                                <th style="text-align: right; color: var(--accent-platinum);">Ann. IRR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 500;">Year 10 <span style="color: var(--text-secondary); font-size:11px;">(Post-Crash 1)</span></td>
+                                <td style="text-align: right;" id="u_v_10">R0</td>
+                                <td style="text-align: right;" id="u_tr_10">0.0%</td>
+                                <td style="text-align: right;" id="u_irr_10">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-amber); font-weight: 500;" id="p_v_10">R0</td>
+                                <td style="text-align: right; color: var(--accent-amber);" id="p_tr_10">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-amber);" id="p_irr_10">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-green); font-weight: 700;" id="a_net_10">+R0</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 500;">Year 20 <span style="color: var(--text-secondary); font-size:11px;">(Post-Crash 2)</span></td>
+                                <td style="text-align: right;" id="u_v_20">R0</td>
+                                <td style="text-align: right;" id="u_tr_20">0.0%</td>
+                                <td style="text-align: right;" id="u_irr_20">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-amber); font-weight: 500;" id="p_v_20">R0</td>
+                                <td style="text-align: right; color: var(--accent-amber);" id="p_tr_20">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-amber);" id="p_irr_20">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-green); font-weight: 700;" id="a_net_20">+R0</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 500; color: #fff;">Year 25 <span style="color: var(--text-secondary); font-size:11px;">(Terminal Target)</span></td>
+                                <td style="text-align: right; color: #fff;" id="u_v_25">R0</td>
+                                <td style="text-align: right; color: #fff;" id="u_tr_25">0.0%</td>
+                                <td style="text-align: right; color: #fff;" id="u_irr_25">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-amber); font-weight: 700;" id="p_v_25">R0</td>
+                                <td style="text-align: right; color: var(--accent-amber);" id="p_tr_25">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-amber);" id="p_irr_25">0.0%</td>
+                                <td style="text-align: right; color: var(--accent-green); font-weight: 700; font-size: 14px;" id="a_net_25">+R0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function fmtM(v) { return 'R' + Math.round(v / 1000000).toLocaleString('en-ZA') + 'm'; }
+        function fmtMFull(v) { return 'R ' + Math.round(v).toLocaleString('en-ZA').replace(/,/g, ' '); }
+        function fmtPct(v) { return (v * 100).toFixed(1) + '%'; }
+
+        function normCDF(x) {
+            let t = 1 / (1 + 0.2316419 * Math.abs(x));
+            let d = 0.39894228 * Math.exp(-x * x / 2);
+            return x >= 0 ? 1 - d * t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429)))) : d * t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+        }
+
+        function bsPut(S, K, r, q, v, T) {
+            if (v <= 0 || T <= 0) return 0;
+            let d1 = (Math.log(S / K) + (r - q + (v * v) / 2) * T) / (v * Math.sqrt(T));
+            let d2 = d1 - v * Math.sqrt(T);
+            return K * Math.exp(-r * T) * normCDF(-d2) - S * Math.exp(-q * T) * normCDF(-d1);
+        }
+
+        const JIBAR = 0.075, q = 0.038, IV = 0.18, T_BUY = 90/365, T_ROLL = 45/365;
+
+        const s_port = document.getElementById('slide_portfolio');
+        const s_alloc = document.getElementById('slide_alloc');
+        const s_crash = document.getElementById('slide_crash');
+        const s_realloc = document.getElementById('slide_realloc');
+        const s_months = document.getElementById('slide_months');
+
+        function computeSimulation() {
+            let port = parseFloat(s_port.value);
+            let alloc = parseFloat(s_alloc.value) / 100;
+            let crash = parseFloat(s_crash.value) / 100;
+            let reallocPct = parseFloat(s_realloc.value) / 100;
+            let waitWindow = parseFloat(s_months.value); 
+
+            // Label Sync
+            document.getElementById('val_portfolio').innerText = fmtM(port);
+            document.getElementById('val_alloc').innerText = (alloc * 100).toFixed(1) + '%';
+            document.getElementById('val_crash').innerText = crash === 0 ? '0.0%' : '-' + (crash * 100).toFixed(0) + '%';
+            document.getElementById('val_realloc').innerText = (reallocPct * 100).toFixed(0) + '%';
+            document.getElementById('val_months').innerText = waitWindow === 0 ? 'Immediate' : waitWindow + ' Mo';
+            document.getElementById('note_realloc_pct').innerText = (reallocPct * 100).toFixed(0) + '%';
+            document.getElementById('note_months').innerText = waitWindow;
+
+            let phyNAV = port * alloc;
+            let eqBook = port - phyNAV;
+            let K = 113000 * 0.90;
+            let S_cr = 113000 * (1 - crash);
+            let vol_sp = IV + (crash * 0.4);
+
+            let p_init = bsPut(113000, K, JIBAR, q, IV, T_BUY);
+            let p_roll = bsPut(S_cr, K, JIBAR, q, vol_sp, T_ROLL);
+
+            let budget = (phyNAV * JIBAR * (90/365)) - (phyNAV * 0.01 * (90/365));
+            let contracts = p_init > 0 ? budget / (p_init * 10) : 0;
+            let gross_pay = contracts * (p_roll * 10);
+
+            let hurdle = phyNAV + budget;
+            let fee = (phyNAV + gross_pay) > hurdle ? ((phyNAV + gross_pay) - hurdle) * 0.20 : 0;
+            let net_pay = gross_pay - fee;
+
+            let unh_loss = port * crash;
+            let unh_end_v = port - unh_loss;
+            let phy_eq_loss = eqBook * crash;
+            
+            let cash_redeemed = (phyNAV + net_pay) * reallocPct;
+            let total_liquid_val = (eqBook - phy_eq_loss) + (phyNAV + net_pay); 
+
+            document.getElementById('kpi_windfall').innerText = fmtM(gross_pay);
+            document.getElementById('kpi_fee').innerText = fmtM(fee);
+            document.getElementById('kpi_realloc_r').innerText = fmtM(cash_redeemed);
+
+            document.getElementById('unh_base').innerText = fmtMFull(port);
+            document.getElementById('unh_draw').innerText = crash === 0 ? 'R 0' : '-' + fmtMFull(unh_loss);
+            document.getElementById('unh_end').innerText = fmtMFull(unh_end_v);
+            document.getElementById('hdr_ret_unhedged').innerText = crash === 0 ? '0.0%' : '-' + (crash * 100).toFixed(1) + '%';
+
+            document.getElementById('phy_eq_base').innerText = fmtMFull(eqBook);
+            document.getElementById('phy_opt_pay').innerText = '+' + fmtMFull(net_pay);
+            document.getElementById('phy_end').innerText = fmtMFull(total_liquid_val);
+            document.getElementById('phy_title_pct').innerText = ((total_liquid_val - port)/port * 100).toFixed(1) + '%';
+            document.getElementById('phy_restock_lbl').innerText = alloc > 0 ? `Wait +${waitWindow}m` : 'Disabled';
+
+            document.getElementById('pitch_text').innerHTML = alloc === 0 ? 'System running on 100% unhedged parameters.' : `A <strong>${(alloc * 100).toFixed(1)}% sleeve</strong> captures <strong>${fmtM(gross_pay)}</strong> in protective capital, allowing you to redeploy <strong>${fmtM(cash_redeemed)}</strong> directly into the market bottom.`;
+
+            generateTrajectoryGraph(port, alloc, crash, reallocPct, alloc, waitWindow);
+        }
+
+        function generateTrajectoryGraph(port, alloc, crash, reallocPct, restockPct, waitWindow) {
+            let unhedged_series = [port];
+            let master_series = [port];
+
+            let unh_curr = port;
+            let phy_curr = port * alloc;
+            let eq_curr = port * (1 - alloc);
+
+            let restock_countdown = 0;
+
+            for (let yr = 1; yr <= 25; yr++) {
+                let isCrashYr = (yr === 7 || yr === 17);
+                
+                if (isCrashYr && crash > 0) {
+                    unh_curr *= (1 - crash);
+                    
+                    let budget = (phy_curr * JIBAR) - (phy_curr * 0.01);
+                    let p_init = bsPut(113000, 113000 * 0.90, JIBAR, q, IV, T_BUY);
+                    let p_roll = bsPut(113000 * (1 - crash), 113000 * 0.90, JIBAR, q, IV + (crash * 0.4), T_ROLL);
+                    let contracts = p_init > 0 ? (budget / 4) / (p_init * 10) : 0; 
+                    let gross_payout = contracts * (p_roll * 10) * 4; 
+                    let net_payout = gross_payout - (gross_payout * 0.20);
+
+                    let total_fund_pool = phy_curr + net_payout;
+                    let pulled_cash = total_fund_pool * reallocPct;
+                    
+                    phy_curr = total_fund_pool - pulled_cash;
+                    
+                    let standard_crashed_equity = eq_curr * (1 - crash);
+                    let tactical_reallocated_equity = pulled_cash * (1 / (1 - crash)); 
+                    
+                    eq_curr = standard_crashed_equity + tactical_reallocated_equity;
+                    restock_countdown = waitWindow;
+                } else {
+                    unh_curr *= 1.12;
+                    eq_curr *= 1.12;
+
+                    for(let m=1; m<=12; m++) {
+                        if (phy_curr > 0) {
+                            phy_curr = phy_curr + (phy_curr * (JIBAR / 12)) - ((phy_curr * JIBAR) / 12) - ((phy_curr * 0.01) / 12);
+                        }
+
+                        if (restock_countdown > 0) {
+                            restock_countdown--;
+                        } else if (restockPct > 0) {
+                            let total_master_now = phy_curr + eq_curr;
+                            let current_bucket_weight = phy_curr / total_master_now;
+                            
+                            if (current_bucket_weight < restockPct) {
+                                let target_cash_sleeve = total_master_now * restockPct;
+                                let shortfall = target_cash_sleeve - phy_curr;
+                                let monthly_skim = shortfall / 12; 
+                                
+                                if (eq_curr > monthly_skim && monthly_skim > 0) {
+                                    eq_curr -= monthly_skim;
+                                    phy_curr += monthly_skim;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                unhedged_series.push(unh_curr);
+                master_series.push(phy_curr + eq_curr);
+            }
+
+            document.getElementById('kpi_alpha').innerText = fmtM(master_series[25] - unhedged_series[25]);
+
+            // V7.0 CORE MATH ENGINE: Calculate distinct Total Return and true Geometric Annualized IRR columns
+            function populateMilestoneRow(years) {
+                let unhVal = unhedged_series[years];
+                let phyVal = master_series[years];
+                
+                let unhTR = (unhVal - port) / port;
+                let phyTR = (phyVal - port) / port;
+                
+                let unhIRR = Math.pow((unhVal / port), (1 / years)) - 1;
+                let phyIRR = Math.pow((phyVal / port), (1 / years)) - 1;
+                
+                let netAlpha = phyVal - unhVal;
+
+                document.getElementById(`u_v_${years}`).innerText = fmtM(unhVal);
+                document.getElementById(`u_tr_${years}`).innerText = fmtPct(unhTR);
+                document.getElementById(`u_irr_${years}`).innerText = fmtPct(unhIRR);
+                
+                document.getElementById(`p_v_${years}`).innerText = fmtM(phyVal);
+                document.getElementById(`p_tr_${years}`).innerText = fmtPct(phyTR);
+                document.getElementById(`p_irr_${years}`).innerText = fmtPct(phyIRR);
+                
+                document.getElementById(`a_net_${years}`).innerText = (netAlpha >= 0 ? '+' : '') + fmtM(netAlpha);
+            }
+
+            populateMilestoneRow(10);
+            populateMilestoneRow(20);
+            populateMilestoneRow(25);
+
+            const svg = document.getElementById('vector_graph');
+            svg.innerHTML = '';
+
+            let minVal = Math.min(...master_series, ...unhedged_series) * 0.90;
+            let maxScale = Math.max(...master_series, ...unhedged_series) * 1.02;
+            let valueRange = maxScale - minVal;
+            
+            function getX(index) { return 60 + (index * (900 / 25)); }
+            function getY(val) { return 290 - ((val - minVal) / valueRange) * 260; }
+
+            for (let i = 0; i <= 5; i++) {
+                let yVal = minVal + (valueRange / 5) * i;
+                let yPos = getY(yVal);
+                svg.innerHTML += `<line x1="60" y1="${yPos}" x2="960" y2="${yPos}" stroke="rgba(141,162,181,0.05)" stroke-width="1"/>`;
+                svg.innerHTML += `<text x="15" y="${yPos+4}" font-family="DM Mono" font-size="10" fill="#8da2b5">${fmtM(yVal)}</text>`;
+            }
+            [0, 5, 10, 15, 20, 25].forEach(yr => {
+                let xPos = getX(yr);
+                svg.innerHTML += `<line x1="${xPos}" y1="20" x2="${xPos}" y2="290" stroke="rgba(141,162,181,0.05)" stroke-width="1"/>`;
+                svg.innerHTML += `<text x="${xPos-8}" y="310" font-family="Rajdhani" font-size="12" font-weight="600" fill="#8da2b5">YR ${yr}</text>`;
+            });
+
+            function buildPath(data, strokeColor, width) {
+                let dStr = `M ${getX(0)} ${getY(data[0])}`;
+                for(let i=1; i<data.length; i++) { dStr += ` L ${getX(i)} ${getY(data[i])}`; }
+                return `<path d="${dStr}" fill="none" stroke="${strokeColor}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+            }
+
+            // CRITICAL Z-ORDER LAYER MANIPULATION: Solid thick silver baseline sits directly on top to seamlessly eclipse the gold line at 0% asset exposure
+            svg.innerHTML += buildPath(master_series, '#ffb800', 3);
+            svg.innerHTML += buildPath(unhedged_series, '#8da2b5', 2.5); 
+
+            if (crash > 0) {
+                [7, 17].forEach(cYr => {
+                    svg.innerHTML += `<circle cx="${getX(cYr)}" cy="${getY(master_series[cYr])}" r="5" fill="#ffb800" stroke="#060b11" stroke-width="1.5"/>`;
+                    svg.innerHTML += `<circle cx="${getX(cYr)}" cy="${getY(unhedged_series[cYr])}" r="4" fill="#ff4a5a"/>`;
+                });
+            }
+        }
+
+        [s_port, s_alloc, s_crash, s_realloc, s_months].forEach(slide => {
+            slide.addEventListener('input', computeSimulation);
+        });
+
+        window.onload = computeSimulation;
+    </script>
+</body>
+</html>
