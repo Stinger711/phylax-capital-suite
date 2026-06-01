@@ -660,7 +660,7 @@ input[type=range]::-moz-range-thumb{
   <div class="topbar-right">
     <div class="period-badge">2005 — 2024 &nbsp;·&nbsp; 20 Years</div>
     <div style="font-size:8.5px;color:var(--muted);text-align:right;line-height:1.5">
-      Quattro Investment Brokers (Pty) Ltd<br>FSP 46524 &nbsp;·&nbsp; QFM Managers
+      Phylax Capital &nbsp;·&nbsp; Macro Protector Fund
     </div>
   </div>
 </div>
@@ -1240,7 +1240,7 @@ input[type=range]::-moz-range-thumb{
     </div><!-- /report-content -->
 
     <div class="disc">
-      Phylax Capital / QFM Managers — Quattro Investment Brokers (Pty) Ltd · FSP 46524 &nbsp;·&nbsp;
+      Phylax Capital · Macro Protector Fund &nbsp;·&nbsp;
       All strategy returns based on annual Black-Scholes put pricing. FI leg sized to return exactly 100% of capital at year-end (Capital ÷ (1+JIBAR) PV calculation). Option budget = residual JIBAR interest. Put payoffs are theoretical modelled values using year-end ALSI levels; actual SAFEX execution, slippage, and rolling costs may vary. JIBAR rates: SARB/Bloomberg historical. Realised volatility: 20-day rolling annualised. Past performance does not guarantee future results. This analysis is for professional and institutional investors only. Not a guarantee of capital return; the capital guarantee is structural (FI leg sizing), not legally underwritten.
     </div>
 
@@ -2056,7 +2056,7 @@ function exportPDF(){
       pdf.text('Mode: '+(state.mode==='ladder'?state.tranches+'-Tranche Rolling Ladder':'Single Annual Put')+' · OTM: '+state.otm+'% · Capital: R'+fmtInt(state.capital)+' · Period: '+state.startYear+'–'+state.endYear,margin,margin+12);
       pdf.setDrawColor(64,200,128);pdf.setLineWidth(0.5);pdf.line(margin,margin+14,210-margin,margin+14);
       pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',margin,margin+18,imgW,Math.min(297-margin*3,imgH));
-      pdf.setFontSize(7);pdf.setTextColor(90,120,136);pdf.text('Quattro Investment Brokers (Pty) Ltd · FSP 46524 · QFM Managers · BN90/CISCA RIHF',margin,297-4);
+      pdf.setFontSize(7);pdf.setTextColor(90,120,136);pdf.text('Phylax Capital · Macro Protector Fund · BN90/CISCA RIHF',margin,297-4);
       pdf.save('PhylaxCapital_LadderBacktest_'+state.otm+'pct_'+new Date().toISOString().slice(0,10)+'.pdf');
       status.textContent='PDF downloaded ✓';setTimeout(function(){status.className='pdf-status';},3000);
     }).catch(function(){status.textContent='Failed — export CSV instead';setTimeout(function(){status.className='pdf-status';},4000);});
