@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Phylax Capital — Equity Portfolio Protector</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080d14;--bg2:#0c1420;--bg3:#0a1520;--bg4:#101b2a;
+  --teal:#00c4d4;--teal2:#00e5ff;--teal3:rgba(0,196,212,.1);
+  --plat:#b8c8d4;--plat2:#dce8f0;
+  --gold:#c8a84a;--gold2:#e8c870;
+  --red:#e84040;--red2:#ff6060;
+  --green:#40c880;--green2:#60e8a0;
+  --amber:#e8a020;--muted:#4a6878;--muted2:#2a3a45;
+  --border:rgba(0,196,212,.12);--border2:rgba(0,196,212,.22);
+  --card:rgba(0,196,212,.04);
+}
+html{font-size:13px;-webkit-text-size-adjust:100%;overflow-x:hidden!important;max-width:100vw}
+body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
+  min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  background-image:radial-gradient(ellipse 55% 40% at 85% 5%,rgba(0,196,212,.07) 0%,transparent 60%),
+    radial-gradient(ellipse 40% 30% at 10% 90%,rgba(200,168,74,.04) 0%,transparent 55%),
+    linear-gradient(rgba(0,196,212,.013) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,196,212,.013) 1px,transparent 1px);
+  background-size:100%,100%,52px 52px,52px 52px;}
+*{box-sizing:border-box;min-width:0}
+img,svg,canvas{max-width:100%;height:auto}
+.page{max-width:1320px;margin:0 auto;padding:16px 16px 60px}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:14px;border-bottom:2px solid var(--teal);margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-name{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;
+  color:var(--plat2);letter-spacing:.1em;text-transform:uppercase;line-height:1.2}
+.brand-tag{font-size:8px;color:var(--teal);text-transform:uppercase;letter-spacing:.14em;margin-top:2px}
+.topbar-right{text-align:right;flex-shrink:0}
+.tl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.tv{font-family:'DM Mono',monospace;font-size:10px;color:var(--plat)}
+
+/* TABS */
+.tabs{display:flex;gap:6px;margin-bottom:18px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{height:3px}.tabs::-webkit-scrollbar-thumb{background:var(--border)}
+.tab-btn{padding:8px 18px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--card);color:var(--muted);font-size:10px;font-weight:700;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.08em;
+  font-family:'Rajdhani',sans-serif;white-space:nowrap;flex-shrink:0}
+.tab-btn:hover{background:rgba(0,196,212,.1);color:var(--plat2)}
+.tab-btn.active{background:linear-gradient(135deg,var(--teal),#006878);
+  color:var(--bg);border-color:transparent}
+.tab-pane{display:none}.tab-pane.active{display:block}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+
+/* INPUT PANEL */
+.input-panel{background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:18px;position:sticky;top:16px}
+.phead{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.16em;color:var(--teal);
+  display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.phead::after{content:'';flex:1;height:1px;background:var(--border)}
+.sl-g{margin-bottom:16px}
+.sl-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.sl-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.sl-val{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:600;color:var(--gold2);line-height:1}
+.sl-val.tc{color:var(--teal2)}.sl-val.rc{color:var(--red2)}
+/* CUSTOM SLIDER — thumb-only touch target, track is non-interactive */
+.csl-wrap{position:relative;width:100%;height:24px;cursor:pointer;user-select:none}
+.csl-track{position:absolute;top:50%;left:0;right:0;height:4px;
+  border-radius:2px;background:rgba(255,255,255,.08);transform:translateY(-50%);pointer-events:none}
+.csl-fill{position:absolute;top:0;left:0;height:100%;border-radius:2px;
+  background:var(--teal);pointer-events:none;transition:width .05s}
+.csl-thumb{position:absolute;top:50%;width:22px;height:22px;border-radius:50%;
+  background:var(--gold);box-shadow:0 0 8px rgba(200,168,74,.6);
+  border:2.5px solid var(--bg);transform:translate(-50%,-50%);
+  cursor:grab;touch-action:none;z-index:2;transition:box-shadow .15s}
+.csl-thumb:active{cursor:grabbing;box-shadow:0 0 14px rgba(200,168,74,.9)}
+.sl-ticks{display:flex;justify-content:space-between;margin-top:3px}
+.sl-tick{font-size:8px;color:rgba(74,104,120,.4)}
+.divider{height:1px;background:var(--border);margin:4px 0 14px}
+.sc-row{display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap}
+.sc-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border2);
+  background:var(--card);color:var(--muted);font-size:9px;font-weight:600;
+  cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em;
+  font-family:'Rajdhani',sans-serif}
+.sc-btn:hover{background:rgba(0,196,212,.1);color:var(--plat2)}
+.sc-btn.active{background:rgba(232,64,64,.14);border-color:rgba(232,64,64,.4);color:var(--red2)}
+
+/* CLIFF INDICATOR */
+.cliff-box{margin-top:6px;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg3);font-size:9px;line-height:1.5}
+.cliff-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.cliff-safe{color:var(--green2)}.cliff-warn{color:var(--amber)}.cliff-danger{color:var(--red2)}
+.cliff-bar{height:3px;border-radius:2px;background:rgba(255,255,255,.06);margin-top:5px;position:relative}
+.cliff-fill{height:100%;border-radius:2px;transition:width .3s}
+.cliff-marker{position:absolute;top:-3px;width:2px;height:9px;border-radius:1px;background:var(--red2)}
+
+/* FEE BOX */
+.fee-box{margin-top:10px;padding:10px 12px;border-radius:8px;
+  border:1px solid rgba(232,160,32,.2);background:rgba(232,160,32,.04);font-size:8.5px}
+.fee-title{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.fee-row{display:flex;justify-content:space-between;margin-bottom:3px;color:var(--muted)}
+.fee-total{display:flex;justify-content:space-between;font-weight:600;
+  color:var(--plat2);border-top:1px solid rgba(232,160,32,.2);margin-top:5px;padding-top:5px}
+
+/* RESULTS */
+.pitch{background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));
+  border:1px solid rgba(0,196,212,.25);border-radius:10px;padding:14px 18px;margin-bottom:14px;
+  font-size:13px;color:var(--plat2);line-height:1.6;text-align:center}
+.pitch strong{color:var(--teal2)}
+.pitch-big{display:block;margin-top:6px;font-family:'Rajdhani',sans-serif;
+  font-size:18px;font-weight:700;color:var(--gold2)}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:13px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.kpi.hl{background:rgba(0,196,212,.07);border-color:var(--border2)}
+.kpi-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:5px}
+.kpi-val{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;line-height:1}
+.kpi-val.tc{color:var(--teal2)}.kpi-val.gc{color:var(--green2)}.kpi-val.rc{color:var(--red2)}
+.kpi-val.gd{color:var(--gold2)}.kpi-val.ac{color:var(--amber)}
+.kpi-sub{font-size:8px;color:var(--muted);margin-top:3px}
+.kpi-net{font-size:8.5px;color:var(--amber);margin-top:2px;font-family:'DM Mono',monospace}
+
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px}
+.cc{background:var(--bg2);border-radius:10px;padding:14px}
+.cc.bad{border:1px solid rgba(232,64,64,.25);background:rgba(232,64,64,.04)}
+.cc.good{border:1px solid rgba(0,196,212,.25);background:rgba(0,196,212,.04)}
+.cc-lbl{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px}
+.cc-lbl.bad{color:var(--red)}.cc-lbl.good{color:var(--teal)}
+.cc-val{font-family:'Rajdhani',sans-serif;font-size:24px;font-weight:700;line-height:1;margin-bottom:3px}
+.cc-val.bad{color:var(--red2)}.cc-val.good{color:var(--teal2)}
+.cc-delta{font-family:'DM Mono',monospace;font-size:9px;margin-bottom:8px}
+.cc-rows{border-top:1px solid var(--border);padding-top:8px}
+.cc-row{display:flex;justify-content:space-between;margin-bottom:4px}
+.cc-rk{font-size:9px;color:var(--muted)}.cc-rv{font-family:'DM Mono',monospace;font-size:9px}
+
+.fm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:13px}
+.fm{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 11px}
+.fm-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.fm-val{font-family:'DM Mono',monospace;font-size:11px}
+.fm-val.tc{color:var(--teal2)}.fm-val.gc{color:var(--green2)}.fm-val.ac{color:var(--amber)}
+
+/* SENSITIVITY TABLE */
+.sens-wrap{background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:18px}
+.sh{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.14em;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sh::after{content:'';flex:1;height:1px;background:var(--border)}
+.sh.tc{color:var(--teal)}.sh.gc{color:var(--green)}.sh.ac{color:var(--amber)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:separate;border-spacing:0 3px;min-width:500px}
+th{font-size:8px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+  padding:4px 9px;text-align:right;font-weight:600}
+th:first-child{text-align:left}
+td{padding:7px 9px;text-align:right;font-family:'DM Mono',monospace;font-size:10px;
+  background:var(--card);transition:background .15s}
+td:first-child{text-align:left;border-radius:7px 0 0 7px;color:var(--muted)}
+td:last-child{border-radius:0 7px 7px 0}
+tr.ar td{background:rgba(0,196,212,.1);border-top:1px solid rgba(0,196,212,.2);
+  border-bottom:1px solid rgba(0,196,212,.2)}
+tr.ar td:first-child{border-left:1px solid rgba(0,196,212,.2);color:var(--teal2)}
+tr.ar td:last-child{border-right:1px solid rgba(0,196,212,.2)}
+tr:hover td{background:rgba(0,196,212,.07);cursor:pointer}
+
+/* COMPOUNDING ENGINE */
+.ce-layout{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start}
+.ce-chart-wrap{background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:18px;margin-bottom:13px}
+.chart-svg-box{background:var(--bg3);border-radius:8px;padding:12px;overflow:hidden}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted)}
+.leg-dot{width:12px;height:3px;border-radius:2px}
+.note-box{background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.15);
+  border-radius:8px;padding:12px 14px;font-size:9px;color:var(--muted);
+  line-height:1.6;margin-bottom:13px}
+.note-box strong{color:var(--plat2)}
+.fee-toggle{display:flex;align-items:center;gap:8px;margin-bottom:14px;cursor:pointer}
+.toggle-sw{width:36px;height:20px;background:var(--muted2);border-radius:10px;
+  position:relative;transition:background .2s;cursor:pointer;flex-shrink:0}
+.toggle-sw.on{background:var(--teal)}
+.toggle-sw::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;
+  background:white;top:3px;left:3px;transition:left .2s}
+.toggle-sw.on::after{left:19px}
+.toggle-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+  font-family:'Rajdhani',sans-serif;font-weight:700}
+
+/* MILESTONE TABLE */
+.ms-wrap{background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:18px}
+.ms-table{min-width:500px}
+.ms-table th{font-size:8px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);padding:5px 8px;text-align:right}
+.ms-table th:first-child{text-align:left}
+.ms-table td{padding:9px 8px;font-family:'DM Mono',monospace;font-size:10px;
+  background:var(--card);text-align:right;border-spacing:0 3px}
+.ms-table td:first-child{text-align:left;border-radius:7px 0 0 7px;color:var(--plat2)}
+.ms-table td:last-child{border-radius:0 7px 7px 0}
+.ms-table tr.yr25 td{background:rgba(0,196,212,.08);font-weight:700}
+
+/* HISTORICAL GUIDANCE PANEL */
+.hist-panel{background:var(--bg2);border:1px solid rgba(232,160,32,.2);
+  border-radius:12px;padding:16px;margin-bottom:14px}
+.hist-title{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.14em;color:var(--amber);
+  display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.hist-title::after{content:'';flex:1;height:1px;background:rgba(232,160,32,.2)}
+.hist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.hist-stat{background:rgba(232,160,32,.05);border:1px solid rgba(232,160,32,.15);
+  border-radius:8px;padding:8px 10px}
+.hist-stat-val{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;
+  color:var(--gold2);line-height:1;margin-bottom:2px}
+.hist-stat-lbl{font-size:8px;color:var(--muted);line-height:1.3}
+.hist-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.preset-btn{padding:5px 12px;border-radius:6px;border:1px solid rgba(232,160,32,.3);
+  background:rgba(232,160,32,.06);color:var(--gold2);font-size:9px;font-weight:600;
+  cursor:pointer;transition:all .15s;font-family:'Rajdhani',sans-serif;text-transform:uppercase}
+.preset-btn:hover{background:rgba(232,160,32,.14);border-color:rgba(232,160,32,.5)}
+.hist-events{font-size:8.5px;color:var(--muted);line-height:1.7}
+.hist-events span{color:var(--plat);font-family:'DM Mono',monospace}
+
+.disc{font-size:8px;color:rgba(74,104,120,.4);line-height:1.6;
+  border-top:1px solid var(--border);padding-top:12px;margin-top:6px}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .input-panel{position:static}
+  .ce-layout{grid-template-columns:1fr}
+  .hist-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:640px){
+  .page{padding:10px 10px 50px}
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .cmp-grid{grid-template-columns:1fr}
+  .fm-grid{grid-template-columns:repeat(2,1fr)}
+  .topbar{flex-direction:column;align-items:flex-start}
+  .topbar-right{text-align:left}
+  .tab-btn{padding:7px 13px;font-size:9px}
+  .sl-val{font-size:17px}
+  .kpi-val{font-size:17px}
+  .cc-val{font-size:20px}
+  .pitch{font-size:12px;padding:12px 14px}
+  .hist-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:380px){
+  .brand-name{font-size:14px}
+  .kpi-strip{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <svg width="40" height="40" viewBox="0 0 80 80" fill="none">
+      <defs>
+        <linearGradient id="dlp" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="50%" stop-color="#B0B5B9"/>
+          <stop offset="100%" stop-color="#8A9196"/>
+        </linearGradient>
+        <linearGradient id="dli" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E0FFFF"/>
+          <stop offset="50%" stop-color="#00E5FF"/>
+          <stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="dlg"><feGaussianBlur stdDeviation="2" result="b"/>
+          <feComposite in="SourceGraphic" in2="b" operator="over"/></filter>
+      </defs>
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23"
+               fill="none" stroke="url(#dlp)" stroke-width="2.0" stroke-linejoin="round"/>
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5"
+               fill="none" stroke="url(#dlp)" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="40" y1="6"  x2="40"    y2="23"   stroke="url(#dlp)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5" stroke="url(#dlp)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5" stroke="url(#dlp)" stroke-width="1.5"/>
+      <line x1="40" y1="74" x2="40"    y2="57"   stroke="url(#dlp)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5" stroke="url(#dlp)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5" stroke="url(#dlp)" stroke-width="1.5"/>
+      <line x1="40" y1="6"  x2="69.4" y2="57"  stroke="url(#dlp)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="6"  x2="10.6" y2="57"  stroke="url(#dlp)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="69.4" y2="23"  stroke="url(#dlp)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="10.6" y2="23"  stroke="url(#dlp)" stroke-width="0.6" opacity="0.4"/>
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05"
+               fill="url(#dli)" filter="url(#dlg)"/>
+    </svg>
+    <div>
+      <div class="brand-name">Phylax Capital &nbsp;·&nbsp; Macro Protector Fund</div>
+      <div class="brand-tag">Equity Portfolio Protection Model &nbsp;·&nbsp; For Professional Investors Only</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="tl">ALSI &nbsp;·&nbsp; JIBAR &nbsp;·&nbsp; SAVI Entry / Crash</div>
+    <div class="tv" id="mkt-params">113 000 pts &nbsp;·&nbsp; 7.50% &nbsp;·&nbsp; 18.0% / 32.0%</div>
+  </div>
+</div>
+
+<!-- TABS: Analysis | Compounding Engine | Sensitivity -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('ta')">&#9632; Single Event Analysis</button>
+  <button class="tab-btn" onclick="showTab('tc')">&#9632; Compounding Engine</button>
+  <button class="tab-btn" onclick="showTab('ts')">&#9632; Sensitivity Table</button>
+</div>
+
+<!-- ═══════════════ TAB 1: SINGLE EVENT ════════════════ -->
+<div class="tab-pane active" id="ta">
+<div class="layout">
+
+  <!-- LEFT: INPUTS -->
+  <div class="input-panel">
+    <div class="phead">Portfolio Parameters</div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Portfolio Size</span></div>
+      <div class="sl-val tc" id="v-port">R 500m</div>
+      <div class="csl-wrap" id="s-port" data-min="50" data-max="5000" data-step="50" data-val="500" data-key="port" data-lbl="v-port">
+        <div class="csl-track"><div class="csl-fill" style="width:9.09%"></div></div>
+        <div class="csl-thumb" style="left:9.09%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">R50m</span><span class="sl-tick">R2.5bn</span><span class="sl-tick">R5bn</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Phylax Allocation</span></div>
+      <div class="sl-val" id="v-alloc">5.0%</div>
+      <div class="csl-wrap" id="s-alloc" data-min="0" data-max="15" data-step="0.5" data-val="5" data-key="alloc" data-lbl="v-alloc">
+        <div class="csl-track"><div class="csl-fill" style="width:33.33%"></div></div>
+        <div class="csl-thumb" style="left:33.33%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">0%</span><span class="sl-tick">7.5%</span><span class="sl-tick">15%</span></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="phead">Crash Scenario</div>
+    <div class="sc-row">
+      <button class="sc-btn" onclick="setDrop(8)">&minus;8%</button>
+      <button class="sc-btn active" onclick="setDrop(20)">&minus;20%</button>
+      <button class="sc-btn" onclick="setDrop(30)">&minus;30%</button>
+      <button class="sc-btn" onclick="setDrop(40)">&minus;40%</button>
+      <button class="sc-btn" onclick="setDrop(50)">&minus;50%</button>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">ALSI Market Drop</span></div>
+      <div class="sl-val rc" id="v-drop">&minus;20%</div>
+      <div class="csl-wrap" id="s-drop" data-min="0" data-max="60" data-step="1" data-val="20" data-key="drop" data-lbl="v-drop">
+        <div class="csl-track"><div class="csl-fill" style="width:33.33%"></div></div>
+        <div class="csl-thumb" style="left:33.33%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">0%</span><span class="sl-tick">&minus;30%</span><span class="sl-tick">&minus;60%</span></div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="phead">Market Parameters</div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">ALSI Level</span></div>
+      <div class="sl-val" id="v-alsi">113 000</div>
+      <div class="csl-wrap" id="s-alsi" data-min="60000" data-max="200000" data-step="1000" data-val="113000" data-key="alsi" data-lbl="v-alsi">
+        <div class="csl-track"><div class="csl-fill" style="width:37.86%"></div></div>
+        <div class="csl-thumb" style="left:37.86%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">60k</span><span class="sl-tick">130k</span><span class="sl-tick">200k</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">JIBAR Rate</span></div>
+      <div class="sl-val" id="v-jibar">7.50%</div>
+      <div class="csl-wrap" id="s-jibar" data-min="5" data-max="12" data-step="0.25" data-val="7.5" data-key="jibar" data-lbl="v-jibar">
+        <div class="csl-track"><div class="csl-fill" style="width:35.71%"></div></div>
+        <div class="csl-thumb" style="left:35.71%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">5%</span><span class="sl-tick">8.5%</span><span class="sl-tick">12%</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">ALSI Div Yield (q)</span></div>
+      <div class="sl-val" id="v-dY">3.80%</div>
+      <div class="csl-wrap" id="s-dY" data-min="0" data-max="8" data-step="0.1" data-val="3.8" data-key="dY" data-lbl="v-dY">
+        <div class="csl-track"><div class="csl-fill" style="width:47.5%"></div></div>
+        <div class="csl-thumb" style="left:47.5%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">0%</span><span class="sl-tick">4%</span><span class="sl-tick">8%</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">SAVI at Entry (purchase vol)</span></div>
+      <div class="sl-val" id="v-iv">18.0%</div>
+      <div class="csl-wrap" id="s-iv" data-min="10" data-max="45" data-step="0.5" data-val="18" data-key="iv" data-lbl="v-iv">
+        <div class="csl-track"><div class="csl-fill" style="width:22.86%"></div></div>
+        <div class="csl-thumb" style="left:22.86%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">10%</span><span class="sl-tick">27%</span><span class="sl-tick">45%</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">SAVI at Crash (sale vol)</span>
+        <span style="font-size:8px;color:var(--teal);font-family:'DM Mono',monospace" id="v-iv-auto-lbl">auto</span>
+      </div>
+      <div class="sl-val" id="v-iv-crash">32.0%</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:8.5px;color:var(--muted);cursor:pointer">
+          <input type="checkbox" id="iv-crash-auto" checked onchange="toggleIVAuto()"
+            style="accent-color:var(--teal);width:13px;height:13px;cursor:pointer"/>
+          Auto (historically calibrated)
+        </label>
+      </div>
+      <div class="csl-wrap" id="s-iv-crash" data-min="10" data-max="80" data-step="0.5" data-val="32" data-key="iv_crash" data-lbl="v-iv-crash" style="opacity:0.4;pointer-events:none">
+        <div class="csl-track"><div class="csl-fill" style="width:31.43%"></div></div>
+        <div class="csl-thumb" style="left:31.43%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">10%</span><span class="sl-tick">45%</span><span class="sl-tick">80%</span></div>
+      <div style="margin-top:4px;font-size:8px;color:var(--muted);line-height:1.5" id="iv-crash-ref">
+        Historical: <span style="color:var(--plat)">GFC −38%→55% · COVID −33%→65% · EM selloff −20%→35%</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="phead">Roll Strategy</div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Roll at T&minus;X days before expiry</span></div>
+      <div class="sl-val" id="v-roll">45 days</div>
+      <div class="csl-wrap" id="s-roll" data-min="7" data-max="89" data-step="1" data-val="45" data-key="roll" data-lbl="v-roll">
+        <div class="csl-track"><div class="csl-fill" style="width:46.34%"></div></div>
+        <div class="csl-thumb" style="left:46.34%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">T&minus;7</span><span class="sl-tick">T&minus;45</span><span class="sl-tick">T&minus;89</span></div>
+    </div>
+    <div class="cliff-box" id="cliff-box">
+      <div class="cliff-label" id="cliff-label">Theta Cliff</div>
+      <div id="cliff-text" style="color:var(--muted)">Calculating...</div>
+      <div class="cliff-bar">
+        <div class="cliff-fill" id="cliff-fill" style="width:50%"></div>
+        <div class="cliff-marker" id="cliff-marker" style="left:60%"></div>
+      </div>
+    </div>
+    <div class="fee-box" id="fee-box">
+      <div class="fee-title">Fee Structure (quarterly)</div>
+      <div class="fee-row"><span>CAEP (R35k/mo + 20bps)</span><span id="fee-caep">—</span></div>
+      <div class="fee-row"><span>Prescient (20bps, min R18k/mo)</span><span id="fee-pres">—</span></div>
+      <div class="fee-row"><span>Management (1.0% p.a.)</span><span id="fee-mgmt">—</span></div>
+      <div class="fee-row"><span>Performance fee (20% above JIBAR)</span><span id="fee-perf">—</span></div>
+      <div class="fee-total"><span>Net TER (ann.)</span><span id="fee-ter">—</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div>
+    <div id="otm-warn" style="margin-bottom:8px;min-height:16px;font-size:10px"></div>
+    <div class="pitch" id="pitch-box">
+      A <strong id="p-alloc">5%</strong> allocation on a <strong id="p-port">R 500m</strong> portfolio
+      reduces a <strong id="p-drop">&minus;20%</strong> crash from
+      <strong id="p-wo" style="color:var(--red2)">R 100m loss</strong> to
+      <strong id="p-with" style="color:var(--teal2)">R 87m loss</strong>
+      <span class="pitch-big" id="p-ratio">Protection-to-cost: 23.4×</span>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="kpi-lbl">Fund Return (Gross)</div>
+        <div class="kpi-val gc" id="k-rtn-gross">+31.3%</div>
+        <div class="kpi-sub">On Phylax sleeve</div>
+      </div>
+      <div class="kpi hl">
+        <div class="kpi-lbl">Fund Return (Net)</div>
+        <div class="kpi-val tc" id="k-rtn-net">+28.1%</div>
+        <div class="kpi-net" id="k-net-detail">After all fees</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-lbl">Capital Saved</div>
+        <div class="kpi-val gc" id="k-saved">R 13.0m</div>
+        <div class="kpi-sub" id="k-saved-pct">2.6% of portfolio</div>
+      </div>
+      <div class="kpi hl">
+        <div class="kpi-lbl">Protection / Cost Ratio</div>
+        <div class="kpi-val gd" id="k-ratio">23.4×</div>
+        <div class="kpi-sub">Capital saved ÷ annual cost</div>
+      </div>
+    </div>
+
+    <div class="cmp-grid">
+      <div class="cc bad">
+        <div class="cc-lbl bad">Without Phylax</div>
+        <div class="cc-val bad" id="o-wo">R 400.0m</div>
+        <div class="cc-delta" id="o-wo-d" style="color:var(--red)">&minus;R 100.0m / &minus;20.00%</div>
+        <div class="cc-rows">
+          <div class="cc-row"><span class="cc-rk">Starting portfolio</span><span class="cc-rv" id="o-start">R 500.0m</span></div>
+          <div class="cc-row"><span class="cc-rk">Equity loss</span><span class="cc-rv" id="o-eqloss" style="color:var(--red)">&minus;R 100.0m</span></div>
+          <div class="cc-row"><span class="cc-rk">Portfolio return</span><span class="cc-rv" id="o-wo-pct" style="color:var(--red)">&minus;20.00%</span></div>
+        </div>
+      </div>
+      <div class="cc good">
+        <div class="cc-lbl good" id="o-with-lbl">With Phylax (5% carve-out)</div>
+        <div class="cc-val good" id="o-with">R 413.0m</div>
+        <div class="cc-delta" id="o-with-d" style="color:var(--teal2)">&minus;R 87.0m / &minus;17.40%</div>
+        <div class="cc-rows">
+          <div class="cc-row"><span class="cc-rk">Equity book</span><span class="cc-rv" id="o-eqbook">R 475.0m</span></div>
+          <div class="cc-row"><span class="cc-rk">Equity loss</span><span class="cc-rv" id="o-eqloss2" style="color:var(--red)">&minus;R 95.0m</span></div>
+          <div class="cc-row"><span class="cc-rk">Phylax sleeve &rarr;</span><span class="cc-rv" id="o-phylax-val" style="color:var(--teal2)">R 38.7m</span></div>
+          <div class="cc-row"><span class="cc-rk">Net option payout</span><span class="cc-rv" id="o-payout" style="color:var(--green2)">+R 15.0m</span></div>
+          <div class="cc-row"><span class="cc-rk">Portfolio return (gross)</span><span class="cc-rv" id="o-with-pct" style="color:var(--teal2)">&minus;17.40%</span></div>
+          <div class="cc-row"><span class="cc-rk">Portfolio return (net fees)</span><span class="cc-rv" id="o-with-pct-net" style="color:var(--amber)">&minus;17.80%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fm-grid">
+      <div class="fm"><div class="fm-lbl">Option Budget</div><div class="fm-val ac" id="fm-budget">—</div></div>
+      <div class="fm"><div class="fm-lbl">Contracts</div><div class="fm-val tc" id="fm-contracts">—</div></div>
+      <div class="fm"><div class="fm-lbl">Put Price (×10 mult)</div><div class="fm-val" id="fm-put">—</div></div>
+      <div class="fm"><div class="fm-lbl">Cash Core</div><div class="fm-val" id="fm-cash">—</div></div>
+      <div class="fm"><div class="fm-lbl">Payout @ Roll (Gross)</div><div class="fm-val gc" id="fm-payout-gross">—</div></div>
+      <div class="fm"><div class="fm-lbl">Performance Fee</div><div class="fm-val ac" id="fm-perf-fee">—</div></div>
+      <div class="fm"><div class="fm-lbl">Payout @ Roll (Net)</div><div class="fm-val gc" id="fm-payout-net">—</div></div>
+      <div class="fm"><div class="fm-lbl">Vol: Entry → Crash</div><div class="fm-val" id="fm-vol-spike">—</div></div>
+    </div>
+
+    <div class="disc">
+      ALSI entry <span id="disc-alsi">113 000</span> pts · Strike 10% OTM · Options purchased at SAVI entry vol; payout priced at SAVI crash vol (auto: convex formula calibrated to SA historical events). Roll T&minus;<span id="disc-roll">45</span> days · Fees: Prescient platform, CAEP Cat2A, 1% p.a. management, 20% performance above JIBAR hurdle. For professional investors only.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════ TAB 2: COMPOUNDING ENGINE ════════ -->
+<div class="tab-pane" id="tc">
+
+<!-- Historical Guidance Panel -->
+<div class="hist-panel">
+  <div class="hist-title">&#9432; Real-World ALSI Crash Guidance — Use These as Input Reference</div>
+  <div class="hist-grid">
+    <div class="hist-stat">
+      <div class="hist-stat-val">3.3 yrs</div>
+      <div class="hist-stat-lbl">Average crash frequency (2000–2024)</div>
+    </div>
+    <div class="hist-stat">
+      <div class="hist-stat-val">−22%</div>
+      <div class="hist-stat-lbl">Average peak-to-trough depth (significant events)</div>
+    </div>
+    <div class="hist-stat">
+      <div class="hist-stat-val">−38%</div>
+      <div class="hist-stat-lbl">GFC 2008–09: worst ALSI drawdown on record</div>
+    </div>
+    <div class="hist-stat">
+      <div class="hist-stat-val">−33%</div>
+      <div class="hist-stat-lbl">COVID Mar 2020: 33% intra-quarter drop</div>
+    </div>
+  </div>
+  <div class="hist-presets">
+    <span style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;align-self:center;margin-right:4px">Quick-set:</span>
+    <button class="preset-btn" onclick="setPreset('hist_avg')">Historical Average</button>
+    <button class="preset-btn" onclick="setPreset('stress')">Stress Test (GFC-like)</button>
+    <button class="preset-btn" onclick="setPreset('mild')">Mild Scenario</button>
+    <button class="preset-btn" onclick="setPreset('no_crash')">No Crashes</button>
+  </div>
+  <div class="hist-events">
+    Key events: <span>2001–02</span> Dot-com/9-11 −24% · <span>2008–09</span> GFC −38% · <span>2011</span> Eurozone −18% · <span>2015–16</span> EM selloff −20% · <span>2018</span> Q4 correction −15% · <span>2020</span> COVID −33% · <span>2022</span> Rate shock −14% · Average recovery: <span>14 months</span>
+  </div>
+</div>
+
+<div class="ce-layout">
+
+  <!-- LEFT: CE INPUTS -->
+  <div class="input-panel">
+    <div class="phead">Simulation Parameters</div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Portfolio Size</span></div>
+      <div class="sl-val tc" id="cv-port">R 500m</div>
+      <div class="csl-wrap" id="cs-port" data-min="50" data-max="5000" data-step="50" data-val="500" data-key="c_port" data-lbl="cv-port" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:9.09%"></div></div>
+        <div class="csl-thumb" style="left:9.09%"></div>
+      </div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Phylax Allocation</span></div>
+      <div class="sl-val" id="cv-alloc">5.0%</div>
+      <div class="csl-wrap" id="cs-alloc" data-min="0" data-max="15" data-step="0.5" data-val="5" data-key="c_alloc" data-lbl="cv-alloc" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:33.33%"></div></div>
+        <div class="csl-thumb" style="left:33.33%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">0%</span><span class="sl-tick">7.5%</span><span class="sl-tick">15%</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Crash Severity</span></div>
+      <div class="sl-val rc" id="cv-crash">&minus;30%</div>
+      <div class="csl-wrap" id="cs-crash" data-min="0" data-max="50" data-step="5" data-val="30" data-key="c_crash" data-lbl="cv-crash" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:60%"></div></div>
+        <div class="csl-thumb" style="left:60%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">0%</span><span class="sl-tick">&minus;25%</span><span class="sl-tick">&minus;50%</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Crash Frequency</span></div>
+      <div class="sl-val" id="cv-freq">Every 7 yrs</div>
+      <div class="csl-wrap" id="cs-freq" data-min="0" data-max="25" data-step="0.5" data-val="7" data-key="c_freq" data-lbl="cv-freq" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:28%"></div></div>
+        <div class="csl-thumb" style="left:28%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">None</span><span class="sl-tick">~5yr</span><span class="sl-tick">~1yr</span></div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Graph Period</span></div>
+      <div class="sl-val" id="cv-period">25 years</div>
+      <div class="csl-wrap" id="cs-period" data-min="1" data-max="25" data-step="1" data-val="25" data-key="c_period" data-lbl="cv-period" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:100%"></div></div>
+        <div class="csl-thumb" style="left:100%"></div>
+      </div>
+      <div class="sl-ticks"><span class="sl-tick">1yr</span><span class="sl-tick">12yr</span><span class="sl-tick">25yr</span></div>
+    </div>
+    <div class="divider"></div>
+    <div class="phead">Assumptions</div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">Equity Growth p.a.</span></div>
+      <div class="sl-val" id="cv-growth">12.0%</div>
+      <div class="csl-wrap" id="cs-growth" data-min="6" data-max="18" data-step="0.5" data-val="12" data-key="c_growth" data-lbl="cv-growth" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:50%"></div></div>
+        <div class="csl-thumb" style="left:50%"></div>
+      </div>
+    </div>
+    <div class="sl-g">
+      <div class="sl-row"><span class="sl-label">ALSI Level (for option sizing)</span></div>
+      <div style="background:rgba(0,196,212,.05);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:8.5px;color:var(--muted);line-height:1.5;margin-top:2px">
+        <span style="color:var(--plat2);font-weight:600">Scale-invariant</span> — At higher ALSI levels fewer contracts are bought at higher prices; at lower levels more contracts at lower prices. The rand payout is the same regardless of absolute ALSI level. Use the <em>Analysis</em> tab to model a specific ALSI entry point.
+      </div>
+    </div>
+    <div class="sl-g" style="margin-bottom:0">
+      <div class="sl-row"><span class="sl-label">JIBAR (for fees &amp; options)</span></div>
+      <div class="sl-val" id="cv-jibar">7.50%</div>
+      <div class="csl-wrap" id="cs-jibar" data-min="4" data-max="12" data-step="0.25" data-val="7.5" data-key="c_jibar" data-lbl="cv-jibar" data-ce="1">
+        <div class="csl-track"><div class="csl-fill" style="width:43.75%"></div></div>
+        <div class="csl-thumb" style="left:43.75%"></div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="fee-toggle" onclick="toggleFees()" id="fee-toggle-wrap">
+        <div class="toggle-sw on" id="fee-toggle"></div>
+        <span class="toggle-lbl">Include All Fees</span>
+      </div>
+      <div style="font-size:8.5px;color:var(--muted);line-height:1.5">
+        Fees: CAEP R35k/mo + 20bps · Prescient 20bps · 1% mgmt p.a. · 20% performance fee above JIBAR hurdle (deducted from crash windfall). TER deducted from NAV annually.
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: CE RESULTS -->
+  <div>
+    <div class="ce-chart-wrap">
+      <div class="sh gc" id="ce-chart-title">Portfolio Compounding Simulation</div>
+      <div class="chart-svg-box">
+        <svg id="ce-chart" viewBox="0 0 800 280"
+          style="width:100%;display:block;overflow:visible"></svg>
+      </div>
+      <div class="legend">
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#e8c870"></div>
+          <span>Hedged portfolio (with Phylax)</span>
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#4a6878"></div>
+          <span>Unhedged baseline (drawn on top when equal)</span>
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#e84040;border-radius:50%;width:8px;height:8px"></div>
+          <span>Crash event (unhedged)</span>
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#e8c870;border-radius:50%;width:8px;height:8px"></div>
+          <span>Crash event (hedged — redeployment day+1)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="note-box" id="ce-note">
+      <strong>Redeployment mechanics:</strong> On crash day+1, the entire Phylax sleeve is liquidated and redeployed into crashed equities at the lower price. The portfolio is <strong style="color:var(--amber)">unprotected for ~90 days</strong>. At the next quarterly option roll, the PM restocks Phylax to the same % of current portfolio value and re-enters the put ladder. Fees modelled annually; the 90-day unprotected window is not fee-adjusted.
+    </div>
+
+    <div class="ms-wrap">
+      <div class="sh ac">Multi-Horizon Compounding Summary</div>
+      <div class="tbl-wrap">
+        <table class="ms-table">
+          <thead>
+            <tr>
+              <th style="text-align:left">Milestone</th>
+              <th>Unhedged Value</th>
+              <th>Unhedged Total Rtn</th>
+              <th>Hedged Value</th>
+              <th>Hedged Total Rtn</th>
+              <th style="color:var(--green2)">Alpha Gained</th>
+            </tr>
+          </thead>
+          <tbody id="ms-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="disc" style="margin-top:12px">
+      Simulation assumes fixed equity growth in non-crash years. At each crash: full Phylax sleeve redeployed at crashed prices on day+1; portfolio unprotected for ~90 days; Phylax restocked to target % at next quarterly roll. Fees modelled annually; TER and performance fees deducted when toggle is on. Past modelled performance does not guarantee future results. For professional investors only.
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════ TAB 3: SENSITIVITY ═══════════════ -->
+<div class="tab-pane" id="ts">
+<div class="sens-wrap">
+  <div class="sh tc">Protection Sensitivity at Current Parameters</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left">ALSI Drop</th>
+          <th>Portfolio Value<br><span style="opacity:.6;font-weight:400">No Phylax</span></th>
+          <th>Return<br><span style="opacity:.6;font-weight:400">No Phylax</span></th>
+          <th>Portfolio Value<br><span style="opacity:.6;font-weight:400">With Phylax</span></th>
+          <th>Return<br><span style="opacity:.6;font-weight:400">With Phylax (Net)</span></th>
+          <th>Difference<br><span style="opacity:.6;font-weight:400">Capital Saved</span></th>
+        </tr>
+      </thead>
+      <tbody id="sens-body"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+</div><!-- /page -->
+
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONSTANTS
+var OTM   = 0.10;
+var T_BUY = 90/365;
+var MULT  = 10;
+var RESTOCK_DAYS = 90; // one quarterly roll cycle
+var SENS_DROPS = [5,8,10,12,15,20,25,30,35,40,50,60];
+
+// STATE
+var ST = { port:500, alloc:5, drop:20, jibar:7.5, dY:3.8, iv:18, iv_crash:32, iv_crash_auto:true, roll:45, alsi:113000 };
+var CE = { c_port:500, c_alloc:5, c_crash:30, c_freq:7, c_period:25,
+           c_growth:12, c_jibar:7.5, c_alsi:113000 };
+var fees_on = true;
+
+// ══════════════════════════════════════════════════════════
+// MATH
+function normCDF(x){
+  if(x<-8)return 0; if(x>8)return 1;
+  var t=1/(1+0.2316419*Math.abs(x));
+  var d=0.3989423*Math.exp(-0.5*x*x);
+  var p=d*t*(0.3193815+t*(-0.3565638+t*(1.7814779+t*(-1.821256+t*1.3302744))));
+  return x>=0?1-p:p;
+}
+function bsPut(S,K,r,sigma,T,q){
+  if(T<=0||S<=0||sigma<=0)return Math.max(0,K-S);
+  var d1=(Math.log(S/K)+(r-q+0.5*sigma*sigma)*T)/(sigma*Math.sqrt(T));
+  var d2=d1-sigma*Math.sqrt(T);
+  return K*Math.exp(-r*T)*normCDF(-d2)-S*Math.exp(-q*T)*normCDF(-d1);
+}
+function cliffDaysRemaining(S,K,r,sigma,T_days,q,threshold){
+  threshold=threshold||0.005;
+  for(var d=T_days;d>=2;d--){
+    var p1=bsPut(S,K,r,sigma,d/365,q);
+    var p0=bsPut(S,K,r,sigma,(d-1)/365,q);
+    if(p1<=0)continue;
+    if((p1-p0)/p1>threshold) return d;
+  }
+  return 1;
+}
+
+// ══════════════════════════════════════════════════════════
+// FEES (single-event analysis)
+function calcFeesQ(phylax_nav, jibar, gross_payout, opt_budget){
+  var caep_fix = 35000*3;
+  var caep_var = phylax_nav*0.002/4;
+  var pres = Math.max(18000*3, phylax_nav*0.002/4);
+  var mgmt = phylax_nav*0.01/4;
+  var ops_total = caep_fix+caep_var+pres+mgmt;
+  var perf = Math.max(0, gross_payout - opt_budget) * 0.20;
+  var ter_ann = (ops_total*4)/phylax_nav;
+  return { caep:caep_fix+caep_var, pres:pres, mgmt:mgmt, perf:perf,
+           ops_total:ops_total, total:ops_total+perf, ter_ann:ter_ann };
+}
+
+// ══════════════════════════════════════════════════════════
+// MAIN SINGLE-EVENT CALCULATION
+// Convex vol spike formula calibrated to SA historical events:
+// GFC -38% → SAVI ~55 (+35); COVID -33% → SAVI ~65 (+49); EM -20% → SAVI ~35 (+17)
+// Formula: crash_vol = entry_vol + crash*1.2 + crash^2*0.8  (both as decimals)
+function calcCrashVol(iv_entry, drop_frac){
+  return iv_entry + drop_frac*1.2 + drop_frac*drop_frac*0.8;
+}
+
+function calcEvent(p){
+  var r_rate=p.jibar/100, sigma=p.iv/100, q=p.dY/100;
+  var port=p.port*1e6, alloc=p.alloc/100;
+  var phyNAV=port*alloc, eqBook=port-phyNAV;
+  var drop=p.drop/100, T_roll=p.roll/365;
+
+  // SAVI at crash: auto (convex formula) or manual override
+  var sigma_roll = p.iv_crash_auto
+    ? calcCrashVol(sigma, drop)
+    : p.iv_crash/100;
+
+  if(alloc===0){
+    var wo=port*(1-drop);
+    return {
+      port,alloc,phyNAV:0,eqBook:port,cashCore:0,optBudget:0,K:0,
+      putEntry:0,contracts:0,S_roll:p.alsi*(1-drop),sigma_roll:sigma_roll,putRoll:0,
+      grossPayout:0,fees:{caep:0,pres:0,mgmt:0,perf:0,ops_total:0,total:0,ter_ann:0},
+      netPayout:0,netFundNAV:0,
+      wo,eqAfter:wo,withGross:wo,withNet:wo,
+      saved_gross:0,saved_net:0,annCost:0,
+      fundRtn_gross:0,fundRtn_net:0,
+      portRtn_wo:-drop*100,portRtn_with_gross:-drop*100,portRtn_with_net:-drop*100,
+      ratio_gross:0,ratio_net:0,
+    };
+  }
+
+  var cashCore = phyNAV/(1+r_rate*T_BUY);
+  var optBudget = phyNAV-cashCore;
+  var S_entry = p.alsi;
+  var K = Math.round(S_entry*(1-OTM));
+  var putEntry = bsPut(S_entry, K, r_rate, sigma, T_BUY, q);
+  var contracts = putEntry>0 ? Math.floor(optBudget/(putEntry*MULT)) : 0;
+  var S_roll = S_entry*(1-drop);
+  var putRoll = bsPut(S_roll, K, r_rate, sigma_roll, Math.max(T_roll,1/365), q);
+  var grossPayout = putRoll*MULT*contracts;
+  var fees = calcFeesQ(phyNAV, r_rate, grossPayout, optBudget);
+  var netPayout = grossPayout - fees.perf;
+  var netFundNAV = cashCore + netPayout - fees.ops_total;
+  var wo = port*(1-drop);
+  var eqAfter = eqBook*(1-drop);
+  var withGross = eqAfter + cashCore + grossPayout;
+  var withNet   = eqAfter + netFundNAV;
+  var saved_gross = withGross-wo, saved_net = withNet-wo;
+  var annCost = optBudget*4;
+
+  return {
+    port,alloc,phyNAV,eqBook,cashCore,optBudget,K,
+    putEntry,contracts,S_roll,sigma_roll,putRoll,
+    grossPayout,fees,netPayout,netFundNAV,
+    wo,eqAfter,withGross,withNet,saved_gross,saved_net,annCost,
+    fundRtn_gross:(cashCore+grossPayout-phyNAV)/phyNAV*100,
+    fundRtn_net:(netFundNAV-phyNAV)/phyNAV*100,
+    portRtn_wo:-drop*100,
+    portRtn_with_gross:(withGross-port)/port*100,
+    portRtn_with_net:(withNet-port)/port*100,
+    ratio_gross:annCost>0?saved_gross/annCost:0,
+    ratio_net:annCost>0?saved_net/annCost:0,
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+// FORMAT HELPERS
+function fR(n){
+  var a=Math.abs(n);
+  if(a>=1e9) return 'R '+(n/1e9).toFixed(2)+'bn';
+  if(a>=1e6) return 'R '+(n/1e6).toFixed(1)+'m';
+  if(a>=1e3) return 'R '+(n/1e3).toFixed(0)+'k';
+  return 'R '+Math.round(n).toLocaleString('en-ZA');
+}
+function fP(v,d){return (v>=0?'+':'')+v.toFixed(d||1)+'%';}
+function set(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+function setH(id,v){var e=document.getElementById(id);if(e)e.innerHTML=v;}
+function sp(v,mn,mx){return Math.max(0,Math.min(100,((v-mn)/(mx-mn))*100));}
+
+// ══════════════════════════════════════════════════════════
+// UPDATE SINGLE EVENT DISPLAY
+function update(){
+  var p=ST, r=calcEvent(p);
+
+  // OTM/ITM indicator
+  if(p.alloc===0){
+    setH('otm-warn','<span style="color:var(--muted);font-size:10px">Set Phylax allocation above 0% to see protection analysis.</span>');
+  } else if(p.drop===0){
+    setH('otm-warn','<span style="color:var(--muted);font-size:10px">No crash scenario selected.</span>');
+  } else {
+    var itm = r.S_roll < r.K;
+    setH('otm-warn', itm
+      ? '<span style="color:var(--green2);font-size:10px"> &#10003; Options ITM at roll — intrinsic value locked in.</span>'
+      : '<span style="color:var(--amber);font-size:10px"> &#9888; Options OTM at roll — payout = time value only; requires roll execution.</span>');
+  }
+
+  set('p-alloc', p.alloc+'%');
+  set('p-port','R '+(p.port>=1000?(p.port/1000).toFixed(1)+'bn':p.port+'m'));
+  set('p-drop','−'+p.drop+'%');
+  document.getElementById('p-wo').textContent = fR(Math.abs(r.wo-r.port));
+  document.getElementById('p-with').textContent = fR(Math.abs(r.withNet-r.port));
+  set('p-ratio', p.alloc===0 ? '0% allocation — no protection' : 'Protection-to-cost: '+r.ratio_net.toFixed(1)+'×');
+
+  var rtnEl=document.getElementById('k-rtn-gross');
+  rtnEl.textContent=fP(r.fundRtn_gross,1);
+  rtnEl.className='kpi-val '+(r.fundRtn_gross>=0?'gc':'rc');
+  var rtnNEl=document.getElementById('k-rtn-net');
+  rtnNEl.textContent=fP(r.fundRtn_net,1);
+  rtnNEl.className='kpi-val '+(r.fundRtn_net>=0?'tc':'ac');
+  set('k-net-detail','After all fees ('+(r.fees.ter_ann*100).toFixed(1)+'% TER)');
+  document.getElementById('k-saved').textContent=fR(r.saved_net);
+  set('k-saved-pct',(r.port>0?(r.saved_net/r.port*100):0).toFixed(2)+'% of portfolio');
+  set('k-ratio',p.alloc===0?'—':r.ratio_net.toFixed(1)+'×');
+
+  set('o-wo',         fR(r.wo));
+  set('o-wo-d',       '−'+fR(Math.abs(r.wo-r.port))+'  /  '+r.portRtn_wo.toFixed(2)+'%');
+  set('o-start',      fR(r.port));
+  set('o-eqloss',     '−'+fR(r.port*(p.drop/100)));
+  set('o-wo-pct',     r.portRtn_wo.toFixed(2)+'%');
+  set('o-with',       fR(r.withNet));
+  set('o-with-d',     (r.withNet<r.port?'−':'+')+fR(Math.abs(r.withNet-r.port))+'  /  '+r.portRtn_with_net.toFixed(2)+'%');
+  set('o-with-lbl',   'With Phylax ('+p.alloc+'% carve-out)');
+  set('o-eqbook',     fR(r.eqBook)+' ('+(100-p.alloc)+'%)');
+  set('o-eqloss2',    '−'+fR(r.eqBook*(p.drop/100)));
+  set('o-phylax-val', fR(r.netFundNAV));
+  set('o-payout',     (r.netPayout>=0?'+':'')+fR(r.netPayout));
+  set('o-with-pct',   r.portRtn_with_gross.toFixed(2)+'%');
+  set('o-with-pct-net',r.portRtn_with_net.toFixed(2)+'%');
+
+  set('fm-budget',      fR(r.optBudget));
+  set('fm-contracts',   r.contracts.toString());
+  set('fm-put',         'R '+Math.round(r.putEntry*MULT).toLocaleString('en-ZA'));
+  set('fm-cash',        fR(r.cashCore));
+  set('fm-payout-gross',(r.grossPayout>=0?'+':'')+fR(r.grossPayout));
+  set('fm-perf-fee',    fR(r.fees.perf));
+  set('fm-payout-net',  (r.netPayout>=0?'+':'')+fR(r.netPayout));
+  var iv_sale = p.iv_crash_auto ? calcCrashVol(p.iv/100, p.drop/100)*100 : p.iv_crash;
+  set('fm-vol-spike', p.iv.toFixed(1)+'% → '+iv_sale.toFixed(1)+'%');
+  // Update auto label and sync manual slider display
+  var autoEl=document.getElementById('iv-crash-auto');
+  if(autoEl && p.iv_crash_auto){
+    ST.iv_crash=parseFloat(iv_sale.toFixed(1));
+    var wrapEl=document.getElementById('s-iv-crash');
+    var lblEl=document.getElementById('v-iv-crash');
+    if(lblEl) lblEl.textContent=iv_sale.toFixed(1)+'%';
+    if(wrapEl){
+      var pct2=Math.max(0,Math.min(100,(iv_sale-10)/(80-10)*100));
+      wrapEl.querySelector('.csl-thumb').style.left=pct2+'%';
+      wrapEl.querySelector('.csl-fill').style.width=pct2+'%';
+    }
+  }
+  set('disc-roll',      p.roll);
+  set('fee-caep',  fR(r.fees.caep)+'/qtr');
+  set('fee-pres',  fR(r.fees.pres)+'/qtr');
+  set('fee-mgmt',  fR(r.fees.mgmt)+'/qtr');
+  set('fee-perf',  fR(r.fees.perf)+' (this event)');
+  set('fee-ter',   (r.fees.ter_ann*100).toFixed(2)+'% p.a.');
+  var iv_sale2 = p.iv_crash_auto ? calcCrashVol(p.iv/100, p.drop/100)*100 : p.iv_crash;
+  set('mkt-params', Math.round(p.alsi).toLocaleString('en-ZA')+' pts  ·  JIBAR '+p.jibar.toFixed(2)+'%  ·  SAVI '+p.iv.toFixed(1)+'%/'+iv_sale2.toFixed(1)+'%');
+  set('disc-alsi', Math.round(p.alsi).toLocaleString('en-ZA'));
+
+  // Theta cliff
+  if(p.alloc>0){
+    var K2=Math.round(p.alsi*(1-OTM));
+    var cliff=cliffDaysRemaining(p.alsi,K2,p.jibar/100,p.iv/100,90,p.dY/100,0.005);
+    var roll=p.roll;
+    var cf=document.getElementById('cliff-fill'),cm=document.getElementById('cliff-marker');
+    var cl=document.getElementById('cliff-label'),ct=document.getElementById('cliff-text');
+    var cb=document.getElementById('cliff-box');
+    cm.style.left=sp(cliff,7,89)+'%';
+    var rp=sp(roll,7,89)+'%';
+    if(roll>=cliff){
+      cl.className='cliff-label cliff-safe';
+      ct.innerHTML='Rolling at T&minus;'+roll+' days &nbsp;<strong style="color:var(--green2)">&#10003; Before cliff (T&minus;'+cliff+')</strong>';
+      cf.style.width=rp;cf.style.background='var(--green2)';cb.style.borderColor='rgba(64,200,128,.3)';
+    } else if(roll>=cliff-10){
+      cl.className='cliff-label cliff-warn';
+      ct.innerHTML='Rolling at T&minus;'+roll+' days &nbsp;<strong style="color:var(--amber)">&#9888; Approaching cliff (T&minus;'+cliff+')</strong>';
+      cf.style.width=rp;cf.style.background='var(--amber)';cb.style.borderColor='rgba(232,160,32,.3)';
+    } else {
+      cl.className='cliff-label cliff-danger';
+      ct.innerHTML='Rolling at T&minus;'+roll+' days &nbsp;<strong style="color:var(--red2)">&#9888; PAST CLIFF (T&minus;'+cliff+')</strong>';
+      cf.style.width=rp;cf.style.background='var(--red2)';cb.style.borderColor='rgba(232,64,64,.3)';
+    }
+  }
+  buildSens();
+}
+
+// ══════════════════════════════════════════════════════════
+// SENSITIVITY TABLE
+function buildSens(){
+  var tbody=document.getElementById('sens-body'), html='';
+  SENS_DROPS.forEach(function(d){
+    var r=calcEvent(Object.assign({},ST,{drop:d}));
+    var isAct=d===ST.drop;
+    html+='<tr class="'+(isAct?'ar':'')+'" onclick="setDrop('+d+')">';
+    html+='<td>−'+d+'%</td>';
+    html+='<td style="color:var(--red2)">'+fR(r.wo)+'</td>';
+    html+='<td style="color:var(--red)">'+r.portRtn_wo.toFixed(1)+'%</td>';
+    html+='<td style="color:var(--teal2)">'+fR(r.withNet)+'</td>';
+    html+='<td style="color:'+(r.portRtn_with_net>r.portRtn_wo-2?'var(--teal2)':'var(--amber)')+'">'+r.portRtn_with_net.toFixed(1)+'%</td>';
+    html+='<td style="color:var(--green2);font-weight:600">'+fR(r.saved_net)+'</td>';
+    html+='</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+// COMPOUNDING ENGINE
+// Mechanics:
+//  Quiet year  : eq grows at 'growth'; phy earns ~0% net; annual restock from eq back
+//                to target alloc% of current total portfolio value.
+//  Crash year  : eq crashes; full phy sleeve liquidated & redeployed at crashed prices
+// MONTHLY-STEP SIMULATION ENGINE
+// Runs 12 steps per year for accurate intra-year timing:
+//   Crash      : occurs in month 6 of the crash year (mid-year)
+//                Equity crashes; full Phylax sleeve liquidated and redeployed
+//                at crashed prices on day+1. phy=0 for 3 months.
+//   Restock    : exactly 3 months (90 days / next quarterly roll) after crash,
+//                phy restocked to alloc% of current total.
+//   Buying dip : redeployed capital compounds at monthly growth rate for the
+//                remaining ~6 months of the year before the annual sample point.
+//   Quiet month: eq grows at monthly growth rate; phy accrues monthly fee drag;
+//                annual restock to alloc% applied at month 12 of each year.
+//   Unhedged   : 100% equity, crash applied at month 6 of crash year, no fees.
+function runSimulation(){
+  var p=CE, port=p.c_port*1e6, alloc=p.c_alloc/100;
+  var crash=p.c_crash/100, freq=p.c_freq;
+  var growth=p.c_growth/100, jibar=p.c_jibar/100;
+  var q_div=0.038, iv=0.18, T_roll=45/365;
+  var ALSI_BASE=p.c_alsi, horizon=p.c_period;
+  var MONTHS=horizon*12;
+  var freq_r=Math.max(1,Math.round(freq));
+
+  // Monthly rates
+  var mGrowth=Math.pow(1+growth,1/12)-1;
+  var ops_ann=fees_on?0.014:0;
+  var jibar_off=fees_on?Math.max(0,jibar-0.06)*0.15:0;
+  var phy_drag_ann=Math.max(0,ops_ann-jibar_off);
+  var mDrag=-(1-Math.pow(1-phy_drag_ann,1/12)); // monthly drag rate (negative return)
+
+  // ── UNHEDGED: monthly, crash at month 6 of crash year ─────────────────
+  var unh_m=[port];
+  var u_val=port;
+  for(var m=1;m<=MONTHS;m++){
+    var yr_m=Math.ceil(m/12), mo_m=((m-1)%12)+1;
+    var is_crash_m=(crash>0&&freq>0&&yr_m%freq_r===0&&mo_m===6);
+    u_val=is_crash_m?u_val*(1-crash):u_val*(1+mGrowth);
+    unh_m.push(u_val);
+  }
+
+  // ── EDGE CASES: no alloc, no crash, no freq ───────────────────────────
+  if(alloc===0||crash===0||freq===0){
+    var hed_nc=[port];
+    if(alloc===0||!fees_on){
+      for(var m2=1;m2<=MONTHS;m2++) hed_nc.push(unh_m[m2]);
+    } else {
+      var phyH=port*alloc, eqH=port*(1-alloc);
+      for(var m3=1;m3<=MONTHS;m3++){
+        var mo3=((m3-1)%12)+1;
+        eqH*=(1+mGrowth);
+        phyH*=(1+mDrag);
+        if(mo3===12){
+          var tH=phyH+eqH,tgH=tH*alloc;
+          if(tgH>phyH&&eqH>(tgH-phyH)){var dH=tgH-phyH;eqH-=dH;phyH+=dH;}
+        }
+        hed_nc.push(phyH+eqH);
+      }
+    }
+    var unh=[port],hed=[port];
+    for(var yr=1;yr<=horizon;yr++){unh.push(unh_m[yr*12]);hed.push(hed_nc[yr*12]);}
+    drawCEChart(unh,hed,freq,port,horizon);
+    buildMilestoneTable(unh,hed,port,horizon);
+    return;
+  }
+
+  // ── HEDGED: monthly simulation ────────────────────────────────────────
+  var phy=port*alloc, eq=port*(1-alloc);
+  var restock_cdown=-1; // months remaining until restock; -1=not pending
+  var alsi_now=ALSI_BASE; // ALSI tracks monthly growth for option sizing
+  var hed_m=[port];
+
+  for(var m=1;m<=MONTHS;m++){
+    var yr_m=Math.ceil(m/12), mo_m=((m-1)%12)+1;
+    var is_crash_m=(crash>0&&freq>0&&yr_m%freq_r===0&&mo_m===6);
+
+    // ALSI scales with equity growth each month
+    alsi_now*=(1+mGrowth);
+
+    if(is_crash_m){
+      // ── CRASH MONTH ──────────────────────────────────────────────────
+      // Option mechanics on the Phylax sleeve
+      var K=Math.round(alsi_now*0.90); // 10% OTM strike
+      // Convex vol spike: calibrated to SA historical SAVI spikes
+      var sigma_spike=calcCrashVol(iv, crash);
+      var cashCore_q=phy/(1+jibar*T_BUY);
+      var optBudget_q=phy-cashCore_q;
+      var putEntry=bsPut(alsi_now,K,jibar,iv,T_BUY,q_div);
+      var contracts=putEntry>0?Math.floor(optBudget_q/(putEntry*MULT)):0;
+      var S_crashed=alsi_now*(1-crash);
+      var putRoll_v=bsPut(S_crashed,K,jibar,sigma_spike,T_roll,q_div);
+      var grossPay=putRoll_v*MULT*contracts;
+
+      var perf_fee=0, ops_fee_q=0;
+      if(fees_on){
+        perf_fee=Math.max(0,grossPay-optBudget_q)*0.20;
+        var caep_q=35000*3+phy*0.002/4;
+        var pres_q=Math.max(18000*3,phy*0.002/4);
+        var mgmt_q=phy*0.01/4;
+        ops_fee_q=caep_q+pres_q+mgmt_q;
+      }
+      var netPay=grossPay-perf_fee;
+      var phylax_end=Math.max(0,cashCore_q+netPay-(fees_on?ops_fee_q:0));
+
+      // Full phy liquidated; payout + crashed equity redeployed on day+1
+      var eq_crashed=eq*(1-crash);
+      eq=eq_crashed+phylax_end; // all in equity at crashed prices
+      phy=0;
+      restock_cdown=3; // restock at next quarterly roll in 3 months
+
+    } else {
+      // ── NORMAL MONTH ─────────────────────────────────────────────────
+      // Restock countdown — fires when countdown reaches 0
+      if(restock_cdown>0){
+        restock_cdown--;
+        if(restock_cdown===0){
+          var tot_r=phy+eq, tgt_r=tot_r*alloc;
+          if(tgt_r>phy&&eq>(tgt_r-phy)){var dr=tgt_r-phy;eq-=dr;phy+=dr;}
+        }
+      }
+
+      // Monthly growth and fee drag
+      eq*=(1+mGrowth);
+      phy*=(1+mDrag);
+
+      // Annual restock at month 12 of each year: maintain target alloc%
+      if(mo_m===12){
+        var tot_a=phy+eq, tgt_a=tot_a*alloc;
+        if(tgt_a>phy&&eq>(tgt_a-phy)){var da=tgt_a-phy;eq-=da;phy+=da;}
+      }
+    }
+
+    hed_m.push(phy+eq);
+  }
+
+  // Sample at annual boundaries for chart and table
+  var unh=[port], hed=[port];
+  for(var yr=1;yr<=horizon;yr++){
+    unh.push(unh_m[yr*12]);
+    hed.push(hed_m[yr*12]);
+  }
+
+  drawCEChart(unh,hed,freq,port,horizon);
+  buildMilestoneTable(unh,hed,port,horizon);
+}
+
+function drawCEChart(unh,hed,freq,port,horizon){
+  var svg=document.getElementById('ce-chart');
+  if(!svg)return;
+  var W=800,H=280,PL=65,PR=20,PT=15,PB=35;
+  var cw=W-PL-PR, ch=H-PT-PB, N=horizon;
+
+  var all=[].concat(unh.slice(0,N+1),hed.slice(0,N+1));
+  var minV=Math.min.apply(null,all)*0.92;
+  var maxV=Math.max.apply(null,all)*1.06;
+  var rng=maxV-minV;
+  if(!rng||isNaN(rng)||rng<=0){svg.innerHTML='';return;}
+
+  function gx(i){return PL+(i/N)*cw;}
+  function gy(v){return PT+ch-((v-minV)/rng)*ch;}
+
+  // Build full SVG content as one string — never use innerHTML+=
+  var s='';
+
+  // Grid lines + Y labels
+  for(var gi=0;gi<=4;gi++){
+    var gv=minV+(rng/4)*gi, gyp=gy(gv);
+    s+='<line x1="'+PL+'" y1="'+gyp+'" x2="'+(PL+cw)+'" y2="'+gyp+'" stroke="rgba(184,200,212,.06)" stroke-width="1"/>';
+    var lab=gv>=1e9?'R'+(gv/1e9).toFixed(1)+'bn':gv>=1e6?'R'+(gv/1e6).toFixed(0)+'m':'R'+(gv/1e3).toFixed(0)+'k';
+    s+='<text x="'+(PL-5)+'" y="'+(gyp+4)+'" font-family="DM Mono,monospace" font-size="9" fill="#4a6878" text-anchor="end">'+lab+'</text>';
+  }
+
+  // X axis ticks + labels
+  var tickStep=N<=5?1:N<=10?2:N<=15?3:5;
+  for(var xi=0;xi<=N;xi+=tickStep){
+    var xp=gx(xi);
+    s+='<line x1="'+xp+'" y1="'+PT+'" x2="'+xp+'" y2="'+(PT+ch)+'" stroke="rgba(184,200,212,.04)" stroke-width="1"/>';
+    s+='<text x="'+xp+'" y="'+(PT+ch+18)+'" font-family="Rajdhani,sans-serif" font-size="11" font-weight="600" fill="#4a6878" text-anchor="middle">YR '+xi+'</text>';
+  }
+
+  // Crash marker lines
+  var showCrash=(freq>0&&CE.c_crash>0);
+  if(showCrash){
+    var fr=Math.max(1,Math.round(freq));
+    for(var ci=fr;ci<=N;ci+=fr){
+      s+='<line x1="'+gx(ci)+'" y1="'+PT+'" x2="'+gx(ci)+'" y2="'+(PT+ch)+'" stroke="rgba(232,64,64,.18)" stroke-width="1" stroke-dasharray="3,3"/>';
+    }
+  }
+
+  // Area fill under hedged line
+  var aD='M '+gx(0)+' '+(PT+ch);
+  for(var ai=0;ai<=N;ai++) aD+=' L '+gx(ai)+' '+gy(hed[ai]);
+  aD+=' L '+gx(N)+' '+(PT+ch)+' Z';
+  s+='<path d="'+aD+'" fill="rgba(232,200,112,.04)"/>';
+
+  // Lines: hedged (gold) then unhedged (grey) on top
+  function mkPath(data,color,width){
+    var d='M '+gx(0)+' '+gy(data[0]);
+    for(var pi=1;pi<=N;pi++) d+=' L '+gx(pi)+' '+gy(data[pi]);
+    return '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="'+width+'" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  s+=mkPath(hed,'#e8c870',2.5);
+  s+=mkPath(unh,'#4a6878',2);
+
+  // Crash event dots
+  if(showCrash){
+    var fr2=Math.max(1,Math.round(freq));
+    for(var di=fr2;di<=N;di+=fr2){
+      s+='<circle cx="'+gx(di)+'" cy="'+gy(unh[di])+'" r="4" fill="#e84040"/>';
+      s+='<circle cx="'+gx(di)+'" cy="'+gy(hed[di])+'" r="5" fill="#e8c870" stroke="#080d14" stroke-width="1.5"/>';
+    }
+  }
+
+  // Set entire SVG in one operation
+  svg.innerHTML=s;
+  set('ce-chart-title', N+'-Year Portfolio Compounding Simulation');
+}
+
+function buildMilestoneTable(unh,hed,port,horizon){
+  var tbody=document.getElementById('ms-body'), html='';
+  var seen={}, miles=[];
+  [5,10,15,20,25].forEach(function(y){if(y<=horizon){miles.push(y);seen[y]=true;}});
+  if(!seen[horizon]&&horizon>=1) miles.push(horizon);
+  miles.forEach(function(yr){
+    var u=unh[yr],h=hed[yr];
+    if(u===undefined||h===undefined)return;
+    var uTR=(u-port)/port*100, hTR=(h-port)/port*100;
+    var alpha=h-u, isFinal=(yr===miles[miles.length-1]);
+    html+='<tr'+(isFinal?' class="yr25"':'')+'>'; 
+    html+='<td>Year '+yr+'</td>';
+    html+='<td style="color:var(--plat)">'+fR(u)+'</td>';
+    html+='<td style="color:var(--plat)">'+uTR.toFixed(0)+'%</td>';
+    html+='<td style="color:var(--gold2)">'+fR(h)+'</td>';
+    html+='<td style="color:var(--gold2)">'+hTR.toFixed(0)+'%</td>';
+    html+='<td style="color:'+(alpha>=0?'var(--green2)':'var(--red2)')+';font-weight:700">'+(alpha>=0?'+':'')+fR(alpha)+'</td>';
+    html+='</tr>';
+  });
+  tbody.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+// CUSTOM SLIDER ENGINE
+// Only the thumb div is draggable — track is pointer-events:none
+// Prevents scroll hijacking on mobile
+function initSliders(){
+  document.querySelectorAll('.csl-wrap').forEach(function(wrap){
+    var mn=parseFloat(wrap.dataset.min);
+    var mx=parseFloat(wrap.dataset.max);
+    var st=parseFloat(wrap.dataset.step);
+    var val=parseFloat(wrap.dataset.val);
+    var key=wrap.dataset.key;
+    var lbl=wrap.dataset.lbl;
+    var isCE=!!wrap.dataset.ce;
+    var thumb=wrap.querySelector('.csl-thumb');
+    var fill=wrap.querySelector('.csl-fill');
+
+    function pctFromVal(v){ return Math.max(0,Math.min(100,((v-mn)/(mx-mn))*100)); }
+    function valFromPct(pct){
+      var raw=mn+(mx-mn)*pct/100;
+      var stepped=Math.round((raw-mn)/st)*st+mn;
+      return Math.max(mn,Math.min(mx, parseFloat(stepped.toFixed(10))));
+    }
+    function render(v){
+      var pct=pctFromVal(v);
+      thumb.style.left=pct+'%';
+      fill.style.width=pct+'%';
+    }
+    function dispatch(v){
+      if(isCE){
+        CE[key]=v;
+        var disp;
+        if(key==='c_port')   disp=v>=1000?'R '+(v/1000).toFixed(1)+'bn':'R '+v+'m';
+        else if(key==='c_alloc')  disp=v===0?'0% (no hedge)':v.toFixed(1)+'%';
+        else if(key==='c_crash')  disp=v===0?'0% (none)':'−'+v+'%';
+        else if(key==='c_freq')   disp=v===0?'No crashes':'Every '+v+' yrs';
+        else if(key==='c_period') disp=v+' years';
+        else if(key==='c_growth') disp=v.toFixed(1)+'%';
+        else if(key==='c_jibar')  disp=v.toFixed(2)+'%';
+        else if(key==='c_alsi')   disp=Math.round(v).toLocaleString('en-ZA');
+        document.getElementById(lbl).textContent=disp||v;
+        runSimulation();
+      } else {
+        ST[key]=v;
+        var disp2;
+        if(key==='port')  disp2=v>=1000?'R '+(v/1000).toFixed(1)+'bn':'R '+v+'m';
+        else if(key==='alloc') disp2=v.toFixed(1)+'%';
+        else if(key==='drop')  disp2=v===0?'0% (No crash)':'−'+v+'%';
+        else if(key==='jibar') disp2=v.toFixed(2)+'%';
+        else if(key==='dY')    disp2=v.toFixed(2)+'%';
+        else if(key==='iv')    disp2=v.toFixed(1)+'%';
+        else if(key==='iv_crash'){ disp2=v.toFixed(1)+'%'; ST.iv_crash_auto=false; }
+        else if(key==='roll')  disp2=v+' days';
+        else if(key==='alsi')  disp2=Math.round(v).toLocaleString('en-ZA');
+        document.getElementById(lbl).textContent=disp2||v;
+        if(key==='drop'){
+          document.querySelectorAll('.sc-btn').forEach(function(b){
+            b.classList.toggle('active',b.textContent.trim()==='−'+v+'%');
+          });
+        }
+        update();
+      }
+    }
+
+    // Pointer events on thumb only
+    thumb.addEventListener('pointerdown',function(e){
+      e.preventDefault();
+      thumb.setPointerCapture(e.pointerId);
+      var rect=wrap.getBoundingClientRect();
+      function onMove(ev){
+        var pct=Math.max(0,Math.min(100,(ev.clientX-rect.left)/rect.width*100));
+        var v=valFromPct(pct);
+        render(v); dispatch(v); val=v;
+      }
+      function onUp(){ 
+        thumb.removeEventListener('pointermove',onMove);
+        thumb.removeEventListener('pointerup',onUp);
+      }
+      thumb.addEventListener('pointermove',onMove);
+      thumb.addEventListener('pointerup',onUp);
+    });
+
+    render(val);
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// EXTERNAL SETTERS (preset buttons, setDrop)
+function setSlider(id, v){
+  var wrap=document.getElementById(id);
+  if(!wrap)return;
+  var mn=parseFloat(wrap.dataset.min),mx=parseFloat(wrap.dataset.max);
+  var thumb=wrap.querySelector('.csl-thumb'),fill=wrap.querySelector('.csl-fill');
+  var pct=Math.max(0,Math.min(100,((v-mn)/(mx-mn))*100));
+  thumb.style.left=pct+'%';
+  fill.style.width=pct+'%';
+  wrap.dataset.val=v;
+}
+
+function toggleIVAuto(){
+  var cb=document.getElementById('iv-crash-auto');
+  var wrap=document.getElementById('s-iv-crash');
+  ST.iv_crash_auto=cb.checked;
+  wrap.style.opacity=cb.checked?'0.4':'1';
+  wrap.style.pointerEvents=cb.checked?'none':'auto';
+  update();
+}
+
+function setDrop(d){
+  ST.drop=d;
+  setSlider('s-drop',d);
+  document.getElementById('v-drop').textContent=d===0?'0% (No crash)':'−'+d+'%';
+  document.querySelectorAll('.sc-btn').forEach(function(b){
+    b.classList.toggle('active',b.textContent.trim()==='−'+d+'%');
+  });
+  update();
+}
+
+function setPreset(name){
+  var vals={
+    hist_avg:{c_crash:20,c_freq:3.5},
+    stress:  {c_crash:35,c_freq:5},
+    mild:    {c_crash:15,c_freq:7},
+    no_crash:{c_crash:0, c_freq:0}
+  }[name];
+  if(!vals)return;
+  CE.c_crash=vals.c_crash; CE.c_freq=vals.c_freq;
+  setSlider('cs-crash',vals.c_crash);
+  setSlider('cs-freq',vals.c_freq);
+  document.getElementById('cv-crash').textContent=vals.c_crash===0?'0% (none)':'−'+vals.c_crash+'%';
+  document.getElementById('cv-freq').textContent=vals.c_freq===0?'No crashes':'Every '+vals.c_freq+' yrs';
+  runSimulation();
+}
+
+function toggleFees(){
+  fees_on=!fees_on;
+  document.getElementById('fee-toggle').classList.toggle('on',fees_on);
+  update(); runSimulation();
+}
+
+function showTab(id){
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  var map={ta:0,tc:1,ts:2};
+  document.querySelectorAll('.tab-btn')[map[id]].classList.add('active');
+  if(id==='ts') buildSens();
+  if(id==='tc') runSimulation();
+}
+
+// ══════════════════════════════════════════════════════════
+// INIT
+(function(){
+  initSliders();
+  update();
+})();
+</script>
+</body>
+</html>
