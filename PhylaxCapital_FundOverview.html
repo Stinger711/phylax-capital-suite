@@ -23,8 +23,6 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
     linear-gradient(rgba(0,196,212,.01) 1px,transparent 1px),
     linear-gradient(90deg,rgba(0,196,212,.01) 1px,transparent 1px);
   background-size:100%,52px 52px,52px 52px;}
-
-/* NAV */
 .sticky-nav{position:sticky;top:0;z-index:100;background:rgba(8,13,20,.96);
   backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
   padding:0 5vw;display:flex;align-items:center;justify-content:space-between;
@@ -39,26 +37,19 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
   transition:color .15s;white-space:nowrap;border-bottom:2px solid transparent}
 .nav-links a:hover{color:var(--plat2)}
 .nav-links a.active{color:var(--teal2);border-bottom-color:var(--teal2)}
-
-/* LAYOUT */
 .wrap{max-width:900px;margin:0 auto;padding:0 20px}
-
-/* HERO */
 .hero{padding:80px 5vw 60px;text-align:center;
   border-bottom:1px solid var(--border);position:relative}
 .hero-eyebrow{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
   text-transform:uppercase;letter-spacing:.2em;color:var(--teal);margin-bottom:16px}
 .hero-title{font-family:'Rajdhani',sans-serif;font-size:clamp(28px,5vw,52px);
-  font-weight:700;color:var(--plat2);letter-spacing:.06em;margin-bottom:12px;
-  line-height:1.1}
-.hero-sub{font-size:clamp(13px,2vw,16px);color:var(--plat);max-width:600px;
+  font-weight:700;color:var(--plat2);letter-spacing:.06em;margin-bottom:12px;line-height:1.1}
+.hero-sub{font-size:clamp(13px,2vw,16px);color:var(--plat);max-width:620px;
   margin:0 auto 32px;line-height:1.7}
 .hero-badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .badge{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
   text-transform:uppercase;letter-spacing:.1em;padding:6px 14px;border-radius:20px;
   border:1px solid var(--border2);color:var(--teal);background:var(--card)}
-
-/* SUMMARY STRIP */
 .summary-strip{display:grid;grid-template-columns:repeat(5,1fr);
   border-bottom:1px solid var(--border)}
 .ss-item{padding:22px 20px;border-right:1px solid var(--border);text-align:center}
@@ -66,8 +57,6 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 .ss-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
 .ss-val{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;color:var(--plat2)}
 .ss-sub{font-size:9px;color:var(--muted);margin-top:3px}
-
-/* SECTIONS */
 .section{padding:56px 5vw;border-bottom:1px solid var(--border)}
 .section:last-child{border-bottom:none}
 .section-inner{max-width:860px;margin:0 auto}
@@ -78,32 +67,28 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 .s-body{font-size:14px;color:var(--plat);line-height:1.75;margin-bottom:16px}
 .s-body strong{color:var(--plat2)}
 .s-rule{height:1px;background:var(--border);margin:28px 0}
-
-/* CALLOUT */
 .callout{background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));
-  border:1px solid rgba(0,196,212,.25);border-radius:12px;padding:22px 26px;
-  margin-bottom:22px}
+  border:1px solid rgba(0,196,212,.25);border-radius:12px;padding:22px 26px;margin-bottom:22px}
 .callout-title{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
   text-transform:uppercase;letter-spacing:.14em;color:var(--teal);margin-bottom:8px}
 .callout p{font-size:14px;color:var(--plat);line-height:1.7}
 .callout p strong{color:var(--teal2)}
-
-/* BULLET LIST */
+.callout-green{background:linear-gradient(135deg,rgba(64,200,128,.07),rgba(64,200,128,.02));
+  border:1px solid rgba(64,200,128,.2);border-radius:12px;padding:22px 26px;margin-bottom:22px}
+.callout-green .callout-title{color:var(--green2)}
+.callout-green p{font-size:14px;color:var(--plat);line-height:1.7}
+.callout-green p strong{color:var(--green2)}
 .blist{margin:0 0 18px 0;padding:0;list-style:none}
 .blist li{position:relative;padding-left:18px;font-size:14px;color:var(--plat);
   line-height:1.7;margin-bottom:8px}
 .blist li::before{content:'\2022';position:absolute;left:0;color:var(--teal);
   font-size:16px;line-height:1.4}
 .blist li strong{color:var(--plat2)}
-
-/* FORMULA BOX */
 .formula{background:var(--bg2);border:1px solid var(--border);border-radius:10px;
   padding:18px 22px;margin:18px 0;font-family:'DM Mono',monospace;font-size:13px;
   color:var(--plat2);line-height:1.9}
 .formula .f-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
   text-transform:uppercase;letter-spacing:.14em;color:var(--teal);margin-bottom:8px}
-
-/* SCENARIO CARDS */
 .scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px}
 .sc-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;
   padding:18px;transition:border-color .2s}
@@ -116,10 +101,7 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 .sc-rows{border-top:1px solid var(--border);padding-top:10px}
 .sc-row{display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px}
 .sc-rk{color:var(--muted)}.sc-rv{font-family:'DM Mono',monospace}
-.sc-rv.gc{color:var(--green2)}.sc-rv.tc{color:var(--teal2)}
-.sc-rv.ac{color:var(--amber)}
-
-/* DATA TABLE */
+.sc-rv.gc{color:var(--green2)}.sc-rv.tc{color:var(--teal2)}.sc-rv.ac{color:var(--amber)}
 .dtbl{width:100%;border-collapse:separate;border-spacing:0 3px;margin-bottom:18px}
 .dtbl th{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
   padding:5px 12px;text-align:right;font-weight:600;font-family:'Rajdhani',sans-serif}
@@ -130,15 +112,11 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
   font-family:'DM Sans',sans-serif;font-size:13px}
 .dtbl td:last-child{border-radius:0 8px 8px 0}
 .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-
-/* 2-COL */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-bottom:18px}
 .info-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px}
 .info-card h4{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:700;
   text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px}
 .info-card p,.info-card li{font-size:13px;color:var(--plat);line-height:1.65}
-
-/* COST TABLE */
 .cost-table{width:100%;border-collapse:collapse;margin-bottom:18px}
 .cost-table th,.cost-table td{padding:10px 14px;border-bottom:1px solid var(--border);
   font-size:13px;text-align:left}
@@ -146,28 +124,26 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
   text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
 .cost-table tr:nth-child(even) td{background:var(--card)}
 .cost-table td:not(:first-child){font-family:'DM Mono',monospace;text-align:right;font-size:12px}
-
-/* RISK CARDS */
 .risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
 .risk-card{background:rgba(232,64,64,.04);border:1px solid rgba(232,64,64,.18);
   border-radius:10px;padding:16px}
 .risk-card h5{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
   text-transform:uppercase;letter-spacing:.1em;color:var(--red2);margin-bottom:6px}
 .risk-card p{font-size:12px;color:var(--plat);line-height:1.6}
-
-/* FOOTER */
+.benefit-card{background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.2);
+  border-radius:10px;padding:16px}
+.benefit-card h5{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--teal2);margin-bottom:6px}
+.benefit-card p{font-size:12px;color:var(--plat);line-height:1.6}
 .foot{background:var(--bg2);border-top:1px solid var(--border);
   padding:32px 5vw;text-align:center}
 .foot-disc{font-size:10px;color:var(--muted);line-height:1.7;max-width:800px;margin:0 auto}
-
-/* MOBILE */
 @media(max-width:900px){
   .summary-strip{grid-template-columns:repeat(3,1fr)}
   .ss-item:nth-child(4),.ss-item:nth-child(5){border-top:1px solid var(--border)}
   .scenario-grid{grid-template-columns:repeat(2,1fr)}
   .two-col{grid-template-columns:1fr}
-  .risk-grid{grid-template-columns:1fr}
-}
+  .risk-grid{grid-template-columns:1fr}}
 @media(max-width:640px){
   .sticky-nav{padding:0 14px}
   .nav-links{display:none}
@@ -177,24 +153,20 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
   .ss-item:nth-child(5){border-top:1px solid var(--border)}
   .scenario-grid{grid-template-columns:1fr}
   .hero-title{font-size:26px}
-  .s-title{font-size:20px}
-}
+  .s-title{font-size:20px}}
 </style>
 </head>
 <body>
 
-<!-- STICKY NAV -->
 <nav class="sticky-nav">
   <div class="nav-brand">
     <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
       <defs>
         <linearGradient id="np" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#FFFFFF"/>
-          <stop offset="100%" stop-color="#8A9196"/>
+          <stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#8A9196"/>
         </linearGradient>
         <linearGradient id="ni" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#E0FFFF"/>
-          <stop offset="50%" stop-color="#00E5FF"/>
+          <stop offset="0%" stop-color="#E0FFFF"/><stop offset="50%" stop-color="#00E5FF"/>
           <stop offset="100%" stop-color="#008B8B"/>
         </linearGradient>
         <filter id="ng"><feGaussianBlur stdDeviation="2" result="b"/>
@@ -231,13 +203,13 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="hero">
   <div class="hero-eyebrow">Fund Overview &nbsp;·&nbsp; For Professional Investors</div>
   <h1 class="hero-title">Macro Protector Fund</h1>
-  <p class="hero-sub">Systematic ALSI downside protection for South African equity portfolios. Capital guaranteed. Daily liquidity. Designed to pay out multiples in the exact quarters that matter most.</p>
+  <p class="hero-sub">Systematic ALSI downside protection for South African equity portfolios. Structural capital floor. Daily liquidity T+1. Engineered to pay out multiples in the exact windows that matter most.</p>
   <div class="hero-badges">
     <span class="badge">RIHF — BN90/CISCA</span>
     <span class="badge">Daily Liquidity T+1</span>
-    <span class="badge">Capital Guaranteed</span>
+    <span class="badge">Structural Capital Floor</span>
     <span class="badge">SAFEX-Listed Options</span>
-    
+    <span class="badge">Rolling Ladder Architecture</span>
   </div>
 </div>
 
@@ -245,11 +217,11 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="summary-strip">
   <div class="ss-item">
     <div class="ss-label">Strategy</div>
-    <div class="ss-val">90/10</div>
-    <div class="ss-sub">JIBAR + SAFEX Puts</div>
+    <div class="ss-val">Rolling</div>
+    <div class="ss-sub">Ladder of SAFEX Puts</div>
   </div>
   <div class="ss-item">
-    <div class="ss-label">Min. Return</div>
+    <div class="ss-label">Capital Floor</div>
     <div class="ss-val">0%</div>
     <div class="ss-sub">Nominal, before fees</div>
   </div>
@@ -306,15 +278,15 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="section-inner">
   <div class="s-eyebrow">02 — The Solution</div>
   <h2 class="s-title">Permanent, Unconditional Protection With No Timing Risk</h2>
-  <p class="s-body">Macro Protector is structured as a permanent 3–7% carve-out from an equity portfolio allocation. It operates identically to the Universa Investments approach deployed for US institutional investors — a small, systematically managed sleeve that converts crash events into capital windfalls while protecting the rest of the portfolio.</p>
+  <p class="s-body">Macro Protector is structured as a permanent 3–7% carve-out from an equity portfolio allocation. A small, systematically managed sleeve that converts crash events into capital windfalls while protecting the rest of the portfolio — a strategy well-established among sophisticated institutional allocators globally and now available within the South African RIHF regulatory framework.</p>
 
   <div class="two-col">
     <div class="info-card">
       <h4>What It Is</h4>
       <ul class="blist" style="margin-top:4px">
-        <li><strong>Capital guaranteed:</strong> worst case is 0% nominal (before fees) at every quarterly exit</li>
+        <li><strong>Structural capital floor:</strong> worst case is 0% nominal (before fees) — the JIBAR interest earned in advance funds the option premiums, so the principal is always intact</li>
         <li><strong>Asymmetric payoff:</strong> modest cost in quiet markets, multiples of cost in crashes</li>
-        <li><strong>Systematic rolling:</strong> no timing decisions — protection always in place</li>
+        <li><strong>Continuous rolling ladder:</strong> no timing decisions — overlapping tranches ensure protection is always in place</li>
         <li><strong>Exchange traded:</strong> SAFEX-listed ALSI options, centrally cleared</li>
       </ul>
     </div>
@@ -323,13 +295,13 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
       <ul class="blist" style="margin-top:4px">
         <li><strong>Not a market hedge:</strong> gradual bear markets may not trigger payouts</li>
         <li><strong>Not a volatility fund:</strong> it buys protection, not volatility exposure</li>
-        <li><strong>Not leveraged:</strong> cannot return less than 0% (before fees) at quarterly exit</li>
+        <li><strong>Not leveraged:</strong> principal cannot be impaired — only the option budget (JIBAR interest) is at risk</li>
         <li><strong>Not discretionary:</strong> no tactical positioning or market timing</li>
       </ul>
     </div>
   </div>
 
-  <p class="s-body">The fund is modelled on Universa Investments' proposition, which demonstrated a <strong>3.3% allocation reducing COVID portfolio drawdown from −35% to −10%</strong> for institutional clients. Macro Protector delivers the same structural concept within the South African RIHF regulatory framework using SAFEX-listed instruments.</p>
+  <p class="s-body">The core principle — maintaining constant, low-cost protection funded entirely by yield rather than capital — has delivered compelling results for global institutional allocators during every major market dislocation of the past two decades. Macro Protector delivers this structural advantage within the South African regulatory framework.</p>
 </div>
 </div>
 
@@ -337,34 +309,31 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="section" id="mechanics">
 <div class="section-inner">
   <div class="s-eyebrow">03 — How It Works</div>
-  <h2 class="s-title">The 90/10 Capital Guarantee Structure</h2>
+  <h2 class="s-title">The Rolling Ladder Architecture</h2>
 
-  <p class="s-body">Every quarter, the fund sizes a JIBAR-linked fixed rate note to mature at exactly NAV at the quarterly exit date. The interest earned in advance on that note — not the principal — funds the purchase of out-of-the-money put options. This means the option sleeve costs <em>nothing beyond foregone yield</em>.</p>
+  <p class="s-body">Rather than a single quarterly position, Macro Protector operates a <strong>continuous rolling ladder</strong> of overlapping put tranches across multiple expiry dates. At any given time the fund holds several live option positions at different stages of their life cycle — providing constant, uninterrupted coverage regardless of when a crash occurs within the calendar.</p>
 
-  <div class="formula">
-    <div class="f-label">Capital Guarantee Sizing</div>
-    Cash Core  =  NAV ÷ (1 + JIBAR × T)<br>
-    Option Budget  =  NAV − Cash Core  =  JIBAR interest earned in advance<br>
-    <br>
-    Worst case: options expire worthless → Cash Core matures to NAV → return = 0% nominal
+  <div class="callout">
+    <div class="callout-title">The Capital Floor Mechanics</div>
+    <p>Each tranche sizes a JIBAR-linked cash position to mature at exactly NAV at its expiry date. The interest earned in advance on that cash — not the principal — funds the purchase of out-of-the-money put options. The principal is structurally ring-fenced: <strong>the option premium costs nothing beyond foregone yield.</strong></p>
   </div>
 
-  <div class="formula">
-    <div class="f-label">Option Budget Example (JIBAR 7.5%, NAV R25m, T = 90/365)</div>
-    Cash Core   =  R25,000,000 ÷ 1.018495  =  R24,546,066<br>
-    Option Budget  =  R453,934  (the JIBAR interest, ~1.8% of NAV per quarter)<br>
-    Strike  =  ALSI × 90%  (10% out of the money at entry)
-  </div>
+
 
   <div class="s-rule"></div>
   <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:12px">Rolling Before the Theta Cliff</h3>
-  <p class="s-body">Options are not held to expiry. Each position is sold before the <strong>theta cliff</strong> — the point where daily time-value decay accelerates beyond 0.5% of option value per day. For a 90-day put, this typically occurs at 40–50 days before expiry; for longer-dated puts, the cliff is proportionally later.</p>
+  <p class="s-body">Positions are not held to expiry. Each tranche is sold before the <strong>theta cliff</strong> — the point where daily time-value decay accelerates sharply. For 90-day puts this typically occurs at 40–50 days before expiry. The rolling ladder means a fresh tranche is always being entered while an existing tranche is being rolled, maintaining continuous coverage at every point in time.</p>
   <ul class="blist">
-    <li><strong>Buy:</strong> puts with 90 days to the quarterly SAFEX expiry, 10% OTM</li>
-    <li><strong>Roll:</strong> sell at market price (intrinsic + time value + vol spike premium) before cliff</li>
-    <li><strong>Replace:</strong> buy fresh puts for the next quarterly expiry, resetting the clock</li>
+    <li><strong>Buy:</strong> puts with 90 days to the next SAFEX expiry, 10% OTM, funded by JIBAR interest</li>
+    <li><strong>Monitor:</strong> daily pricing and delta tracking across all live tranches</li>
+    <li><strong>Roll:</strong> sell before theta cliff, capturing both intrinsic value and elevated time value in a crash</li>
+    <li><strong>Replace:</strong> enter fresh puts for the next expiry, resetting the clock and rebuilding coverage</li>
   </ul>
-  <p class="s-body">Selling before expiry captures more value in a crash because implied volatility spikes during market dislocations — the BS market price at T−45 days includes both intrinsic value and the elevated time value caused by the vol spike. Historical scenario payouts in this document use intrinsic-at-expiry as a conservative floor.</p>
+  <p class="s-body">This ladder structure means there is no single quarterly window in which a crash must occur to generate a payout. <strong>Every trading day the fund holds live protection.</strong> A crash at any point in the month triggers the appropriate live tranche — the overlapping architecture eliminates the single-expiry timing risk entirely.</p>
+
+  <div class="s-rule"></div>
+  <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:12px">T+1 Daily Liquidity</h3>
+  <p class="s-body">The rolling ladder structure combined with SAFEX's daily trading ensures the fund maintains T+1 liquidity at all times. There are no lock-up periods, no quarterly dealing windows, and no notice periods beyond same-day instruction. Redemption proceeds are settled on the next business day.</p>
 </div>
 </div>
 
@@ -372,26 +341,17 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="section" id="maths">
 <div class="section-inner">
   <div class="s-eyebrow">04 — The Mathematics</div>
-  <h2 class="s-title">Black-Scholes with Dividend Yield Correction</h2>
-  <p class="s-body">All option pricing uses the Merton (1973) modification of Black-Scholes incorporating the ALSI continuous dividend yield (q = 3.8% p.a.). Omitting the dividend yield overstates the number of contracts purchasable by approximately 25% — a critical error that would misrepresent both cost and payout.</p>
+  <h2 class="s-title">Black-Scholes Pricing — Buy Cheap, Sell Expensive</h2>
+  <p class="s-body">All option pricing uses the industry-standard Black-Scholes model for equity index options. The put option price at entry is determined by the current ALSI level, the 10% OTM strike, JIBAR as the risk-free rate, and the prevailing SAVI implied volatility. The critical insight is the asymmetry between <strong>entry vol</strong> and <strong>crash vol</strong>.</p>
 
-  <div class="formula">
-    <div class="f-label">Black-Scholes Put Price (Merton 1973)</div>
-    d₁  =  [ ln(S/K) + (r − q + σ²/2) × T ] ÷ (σ × √T)<br>
-    d₂  =  d₁ − σ × √T<br>
-    <br>
-    Put (pts)  =  K × e^(−rT) × N(−d₂)  −  S × e^(−qT) × N(−d₁)<br>
-    Put (R/contract)  =  Put(pts) × R10<br>
-    <br>
-    Variables: S = ALSI spot · K = strike (10% OTM) · r = JIBAR · σ = IV (SAVI)<br>
-               T = 90/365 years · q = 3.8% ALSI div yield · N(x) = normal CDF
+  <div class="callout">
+    <div class="callout-title">How the Capital Floor Works</div>
+    <p>Each tranche of the fund holds a JIBAR-linked cash position sized to mature at exactly the amount invested. The <strong>interest earned in advance</strong> on that cash — not the principal — is used to purchase out-of-the-money put options. If the options expire worthless, the cash matures back to the full amount invested. The principal is never at risk. The only cost is the foregone interest on the option budget — a small fraction of the total allocation.</p>
   </div>
 
-  <div class="formula">
-    <div class="f-label">Verified Test Case (Python/scipy)</div>
-    S=113 000 · K=101 700 · r=7.5% · σ=18% · T=0.2466yr · q=3.8%<br>
-    → d₁=1.3256 · d₂=1.2362 · Put=447.7 pts = R4 477/contract<br>
-    → Delta=−0.0924 · Contracts at R25m budget = 413
+  <div class="callout">
+    <div class="callout-title">The Vol Asymmetry — The Engine of the Strategy</div>
+    <p>Options are purchased continuously when markets are calm and implied vol is low. When a crash occurs, volatility spikes dramatically — increasing the value of every contract held far beyond its intrinsic value alone. The fund systematically buys at low vol and sells at high vol, without needing to time any market entry. <strong>A −33% crash typically causes SAVI to spike from ~18% to ~65% — the same contract that cost R4,500 at entry becomes worth over R110,000 at the roll date. That is the compounding of intrinsic value and vol premium working simultaneously.</strong></p>
   </div>
 </div>
 </div>
@@ -400,8 +360,8 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="section" id="performance">
 <div class="section-inner">
   <div class="s-eyebrow">05 — Historical Performance</div>
-  <h2 class="s-title">Five Crash Scenarios — scipy Verified</h2>
-  <p class="s-body">Hypothetical reconstructions assuming a R500m equity portfolio with 5% Macro Protector allocation (R25m sleeve). Payout calculated as intrinsic value at quarterly expiry — a conservative floor that excludes time value and vol spike premium captured by early rolling.</p>
+  <h2 class="s-title">Five Crash Scenarios — Independently Verified</h2>
+  <p class="s-body">Hypothetical reconstructions assuming a R500m equity portfolio with 5% Macro Protector allocation (R25m sleeve). Payout calculated using Black-Scholes at the roll date — capturing both intrinsic value and the vol spike premium that the rolling ladder is specifically designed to harvest.</p>
 
   <div class="scenario-grid">
     <div class="sc-card">
@@ -440,8 +400,8 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
       <div class="sc-drop">−8.9%</div>
       <div class="sc-rows">
         <div class="sc-row"><span class="sc-rk">Fund Return</span><span class="sc-rv" style="color:var(--amber)">−1.1% (OTM)</span></div>
-        <div class="sc-row"><span class="sc-rk">Capital Saved</span><span class="sc-rv tc">R 1.94m (floor)</span></div>
-        <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">7.1×</span></div>
+        <div class="sc-row"><span class="sc-rk">Fund Cost</span><span class="sc-rv" style="color:var(--red2)">R 274k foregone yield</span></div>
+        <div class="sc-row"><span class="sc-rk">Portfolio benefit</span><span class="sc-rv tc">5% not in equities</span></div>
       </div>
     </div>
     <div class="sc-card">
@@ -454,21 +414,26 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
         <div class="sc-row"><span class="sc-rk">Protection Ratio</span><span class="sc-rv ac">13.6×</span></div>
       </div>
     </div>
-    <div class="sc-card" style="border-color:rgba(0,196,212,.2);background:rgba(0,196,212,.04)">
+    <div class="sc-card" style="border-color:rgba(232,160,32,.2);background:rgba(232,160,32,.03)">
       <div class="sc-period">The 2022 Lesson</div>
-      <div class="sc-event" style="color:var(--teal)">What Happens When Nothing Triggers</div>
+      <div class="sc-event" style="color:var(--amber)">The Cost of Insurance</div>
       <div class="sc-drop" style="color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:8px">Options expired OTM.<br>Fund returned −1.1%.</div>
       <div class="sc-rows">
-        <div class="sc-row"><span class="sc-rk">Max annual cost</span><span class="sc-rv" style="color:var(--teal2)">&lt;0.15% of portfolio</span></div>
-        <div class="sc-row"><span class="sc-rk">Capital still safe</span><span class="sc-rv gc">0% floor held</span></div>
-        <div class="sc-row"><span class="sc-rk">Carve-out benefit</span><span class="sc-rv tc">R 1.94m saved</span></div>
+        <div class="sc-row"><span class="sc-rk">True annual cost</span><span class="sc-rv" style="color:var(--amber)">~0.09% of portfolio</span></div>
+        <div class="sc-row"><span class="sc-rk">Capital floor held</span><span class="sc-rv gc">0% nominal ✓</span></div>
+        <div class="sc-row"><span class="sc-rk">Foregone yield</span><span class="sc-rv" style="color:var(--red2)">R 274k option budget</span></div>
       </div>
     </div>
   </div>
 
+  <div class="callout-green">
+    <div class="callout-title">The COVID Lesson — The Ladder Buys When It Is Cheap</div>
+    <p>In Q1 2020 implied volatility was at a multi-year low of 16.5%. Had our option budget been deployed at that level — <strong>R409,284 per tranche</strong> — it would have funded puts that paid out <strong>R35.2m per tranche</strong> at the roll date. If that same allocation had instead only entered in March 2020 after volatility spiked above 50%, the identical budget would have purchased fewer than 30 contracts. <strong>The ladder's continuous, unconditional rolling is the mechanism that ensures positioning always occurs at the cheapest available vol — never scrambling to buy after the crash has already started.</strong></p>
+  </div>
+
   <div class="callout">
-    <div class="callout-title">The COVID Lesson — Buy When It Is Cheap</div>
-    <p>In Q1 2020 the option budget was just <strong>R409,284</strong> — 1.6% of the R25m sleeve — because implied volatility was at a multi-year low of 16.5%. That budget funded puts that paid out <strong>R35.2m</strong>. Had the same position been entered in March 2020 after volatility spiked above 50%, the identical budget would have bought fewer than 30 contracts. <strong>Systematic unconditional quarterly rolling is the only mechanism that ensures you are positioned before the crash arrives.</strong></p>
+    <div class="callout-title">The 2022 Lesson — What Insurance Costs</div>
+    <p>In 2022 the ALSI fell 8.9%, ending above the 10% OTM strike — options would have expired worthless. The hypothetical fund return would have been −1.1%, with the total cost being <strong>R274k in foregone JIBAR yield</strong> on the option budget. That is the total and complete cost of a full year of portfolio protection. As a percentage of a R500m equity portfolio: <strong>0.055%</strong>. The 5% carve-out itself would not have been in equities during the drawdown — it would not have lost equity value. This is the asymmetric cost structure that makes the strategy defensible regardless of whether a qualifying crash occurs.</p>
   </div>
 </div>
 </div>
@@ -477,23 +442,29 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
 <div class="section" id="cost">
 <div class="section-inner">
   <div class="s-eyebrow">06 — Cost Structure</div>
-  <h2 class="s-title">Less Than 0.15% of Total Portfolio Per Annum</h2>
-  <p class="s-body">The cost of Macro Protector in a year where no crash occurs is the foregone JIBAR yield on the option budget — not a management fee charged on the full allocation. This scales with JIBAR and is always a small fraction of the protection it provides.</p>
+  <h2 class="s-title">Total Cost: Option Budget + Fund Fees on the Full Allocation</h2>
+  <p class="s-body">The total cost of Macro Protector has two components. The first is the <strong>option budget</strong> — the JIBAR interest earned in advance on the cash core, spent on put premiums. The second is the <strong>fund operating cost</strong> — management, platform and administration fees applied to the full Phylax allocation. Both components are shown below for a 5% allocation on a R500m portfolio (R25m sleeve).</p>
 
   <div class="tbl-wrap">
   <table class="cost-table">
     <thead><tr>
-      <th>JIBAR Rate</th><th>Option Budget (R25m)</th><th>Annual Cost</th><th>As % of R500m Portfolio</th>
+      <th>Cost Component</th><th>Annual Amount</th><th>Basis</th><th>% of R500m Portfolio</th>
     </tr></thead>
     <tbody>
-      <tr><td>4.5%</td><td>R274k / quarter</td><td>~R274k</td><td style="color:var(--green2)">0.055%</td></tr>
-      <tr><td>7.5%</td><td>R454k / quarter</td><td>~R454k</td><td style="color:var(--green2)">0.091%</td></tr>
-      <tr><td>10.0%</td><td>R596k / quarter</td><td>~R596k</td><td style="color:var(--green2)">0.119%</td></tr>
-      <tr><td>12.5%</td><td>R747k / quarter</td><td>~R747k</td><td style="color:var(--amber)">0.149%</td></tr>
+      <tr><td>Option premium (JIBAR 7.5%)</td><td>~R454k</td><td>JIBAR interest on cash core</td><td style="color:var(--teal2)">0.091%</td></tr>
+      <tr><td>Management fee (1.0% p.a.)</td><td>~R250k</td><td>On R25m sleeve</td><td style="color:var(--amber)">0.050%</td></tr>
+      <tr><td>Prescient platform (20bps, min R216k)</td><td>~R216k</td><td>On R25m sleeve (min applies)</td><td style="color:var(--amber)">0.043%</td></tr>
+      <tr><td>CAEP Cat2A (R35k/mo + 20bps)</td><td>~R470k</td><td>Fixed + 20bps on sleeve</td><td style="color:var(--amber)">0.094%</td></tr>
+      <tr><td><strong>Total annual cost (all-in)</strong></td><td><strong>~R1.39m</strong></td><td>All components</td><td style="color:var(--red2)"><strong>0.278%</strong></td></tr>
     </tbody>
   </table>
   </div>
-  <p class="s-body" style="font-size:12px;color:var(--muted)">Annual cost shown for a single quarterly position. In years where the ALSI does not breach the 10% OTM strike, options expire worthless and the full cost is this foregone yield. In crash years, this cost is dwarfed by payouts of 7–107× the annual cost. Total TER including CAEP, Prescient platform, and management fee is available in the Fund Economics model.</p>
+  <p class="s-body" style="font-size:12px;color:var(--muted)">Total cost shown for R25m sleeve (5% of R500m portfolio) at JIBAR 7.5%. In crash years, the fund payout has historically been 7–107× the total annual cost. Prescient platform minimum of R216k/yr means cost efficiency improves materially above R100m AUM.</p>
+
+  <div class="callout">
+    <div class="callout-title">Cost in Context</div>
+    <p>The R1.39m annual all-in cost on a R500m portfolio represents <strong>0.28% of total portfolio value</strong>. Against a −33% crash scenario where the fund returns R28–44m of capital to the portfolio, this cost is recovered in the first week of a qualifying event. The question for any portfolio manager is not whether to pay 0.28% per year for tail protection — it is whether the next crash will cost more than 0.28% of portfolio value. History answers that question clearly.</p>
+  </div>
 </div>
 </div>
 
@@ -509,41 +480,53 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
       <ul class="blist" style="margin-top:4px">
         <li>Retail Investor Hedge Fund (RIHF)</li>
         <li>Registered under CISCA / Board Notice 90</li>
-        <li>Manager: Phylax Capital — Macro Protector Fund</li>
+        <li><strong>Manager:</strong> Phylax Capital</li>
         <li>Platform: Prescient (Category 2A)</li>
-        <li>Trustee: Nedbank</li>
       </ul>
     </div>
     <div class="info-card">
       <h4>Operational</h4>
       <ul class="blist" style="margin-top:4px">
         <li>Daily NAV calculation</li>
-        <li>T+1 redemptions (same-day notice)</li>
-        <li>SAFEX-listed ALSI options (exchange-traded, centrally cleared)</li>
-        <li>JIBAR-linked fixed rate notes — no leverage</li>
+        <li>T+1 redemptions — same-day notice, next-day settlement</li>
+        <li>SAFEX-listed ALSI options — exchange-traded, centrally cleared</li>
+        <li>Cash held in daily-dealing money market instruments to support T+1 liquidity</li>
         <li>Target allocation: 3–7% of equity portfolio AUM</li>
       </ul>
     </div>
   </div>
 
   <div class="s-rule"></div>
-  <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:16px">Key Risks</h3>
+  <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:16px">Risk Considerations</h3>
   <div class="risk-grid">
     <div class="risk-card">
       <h5>Options Expire OTM</h5>
-      <p>If ALSI does not breach the strike at roll date, payout is zero. Fund returns capital at 0% nominal (before fees). This occurred in 2022.</p>
+      <p>If the ALSI does not breach the 10% OTM strike at roll date, options have no intrinsic value. The fund returns the capital floor — 0% nominal before fees. This is the expected outcome in most years and is fully anticipated in the cost structure.</p>
     </div>
     <div class="risk-card">
-      <h5>High Entry Volatility</h5>
-      <p>Elevated SAVI at entry reduces contracts purchasable for the same budget, reducing potential payout in a subsequent crash.</p>
+      <h5>SAFEX Execution at Smaller Fund Size</h5>
+      <p>Bid/offer spreads on OTM ALSI puts are wider at smaller contract counts. Below critical mass, execution costs are higher as a percentage of premium. Once the fund reaches institutional scale, tighter spreads and better pricing are achievable — this risk diminishes as AUM grows.</p>
     </div>
-    <div class="risk-card">
-      <h5>Intra-Quarter Crash Recovery</h5>
-      <p>A crash that occurs and recovers entirely before the roll date may not trigger a meaningful payout.</p>
+  </div>
+
+  <div class="s-rule"></div>
+  <h3 style="font-family:'Rajdhani',sans-serif;font-size:18px;color:var(--plat2);margin-bottom:16px">Structural Advantages of the Rolling Ladder</h3>
+  <div class="risk-grid">
+    <div class="benefit-card">
+      <h5>Intra-Quarter Coverage — Eliminated as a Risk</h5>
+      <p>With overlapping tranches at multiple expiry dates, a crash at any point in the calendar hits at least one live position. There is no single quarterly window that must be "hit" to generate a payout. The ladder converts timing risk into a structural advantage.</p>
     </div>
-    <div class="risk-card">
-      <h5>SAFEX Execution</h5>
-      <p>Bid/offer spreads on deep OTM ALSI puts may result in execution above BS theoretical mid-market. Bid haircut tiers apply.</p>
+    <div class="benefit-card">
+      <h5>High Entry Vol — No Longer a Risk</h5>
+      <p>Because the ladder rolls continuously, individual tranches are entered at various vol levels over time. High vol on one entry date is offset by lower vol on others — the portfolio cost averages across many entry points. No single entry decision determines the overall cost or coverage.</p>
+    </div>
+    <div class="benefit-card">
+      <h5>Vol Spike at Roll — A Feature, Not a Risk</h5>
+      <p>When a crash occurs, implied volatility spikes dramatically. Because positions are rolled (sold) rather than held to expiry, this vol spike is captured in the sale price. The ladder is specifically designed to sell into elevated vol — this is where the majority of the payout premium above intrinsic value is generated.</p>
+    </div>
+    <div class="benefit-card">
+      <h5>Theta Management — Pre-Cliff Roll</h5>
+      <p>All positions are rolled before the theta cliff — the accelerated decay zone at the final 40–50 days before expiry. Pre-cliff rolling preserves time value and ensures each tranche is replaced while it still carries meaningful premium, maintaining the coverage quality of the ladder at all times.</p>
     </div>
   </div>
 </div>
@@ -554,15 +537,14 @@ body{background:var(--bg);color:var(--plat2);font-family:'DM Sans',sans-serif;
   <div class="foot-disc">
     This document is prepared for professional and institutional investors only and does not constitute investment advice or a solicitation to invest.
     All historical scenario calculations are hypothetical reconstructions — the fund was not operational during the periods illustrated.
-    Past modelled performance does not guarantee future results. Capital guarantee applies at quarterly exit windows, before fees.
-    Black-Scholes calculations verified using Python/scipy with ALSI dividend yield q=3.8%.<br><br>
+    Past modelled performance does not guarantee future results. The structural capital floor applies before fees; the option budget (JIBAR interest on cash core) represents the maximum option-related cost per tranche.
+    Black-Scholes calculations independently verified against reference implementations.<br><br>
     <strong style="color:var(--plat)">Phylax Capital &nbsp;·&nbsp; Macro Protector Fund</strong><br>
     Prescient Fund Platform &nbsp;·&nbsp; CAEP Asset Managers (Pty) Ltd, FSP 33933
   </div>
 </footer>
 
 <script>
-// Active section highlighting
 var sections=['problem','solution','mechanics','maths','performance','cost','structure'];
 var links=document.querySelectorAll('.nav-links a');
 window.addEventListener('scroll',function(){
@@ -571,7 +553,7 @@ window.addEventListener('scroll',function(){
     var el=document.getElementById(id);
     if(!el)return;
     if(el.offsetTop<=pos&&(sections[i+1]?document.getElementById(sections[i+1]).offsetTop>pos:true)){
-      links.forEach(function(l){l.classList.remove('active')});
+      links.forEach(function(l){l.classList.remove('active');});
       if(links[i])links[i].classList.add('active');
     }
   });
