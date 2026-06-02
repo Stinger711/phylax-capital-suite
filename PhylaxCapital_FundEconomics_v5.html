@@ -35,7 +35,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
 .spr{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:#f07070}
 .spb{background:rgba(64,144,216,.1);border:1px solid rgba(64,144,216,.3);color:var(--blue2)}
 .spt{background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.22);color:var(--teal2)}
-.tab-bar{display:flex;margin-bottom:22px;border-bottom:1px solid var(--border)}
+.tab-bar{display:flex;margin-bottom:22px;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch}
 .tab{padding:10px 20px;font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;margin-bottom:-1px;transition:all .2s}
 .tab.on{color:var(--teal2);border-bottom-color:var(--teal2)}
 .tab:hover{color:var(--plat)}
@@ -50,7 +50,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
 .g6{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
 .sl-l{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .sl-v{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--teal2);margin-bottom:6px}
-input[type=range]{-webkit-appearance:none;width:100%;height:2px;border-radius:1px;outline:none;cursor:pointer}
+input[type=range]{-webkit-appearance:none;touch-action:pan-y;width:100%;height:2px;border-radius:1px;outline:none;cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:2px;background:var(--teal2);box-shadow:0 0 8px rgba(0,196,212,.6);border:1px solid var(--bg)}
 .ticks{display:flex;justify-content:space-between;margin-top:4px}
 .tick{font-size:9px;color:var(--muted2)}
@@ -130,15 +130,31 @@ td:last-child{border-radius:0 2px 2px 0}
 @media(max-width:900px){
   .layout,.main-layout,.two-col{grid-template-columns:1fr!important;display:block!important}
   .sidebar,.left-panel{width:100%!important;position:static!important;margin-bottom:16px}
+  .g5{grid-template-columns:repeat(3,1fr)!important}
+  .g6{grid-template-columns:repeat(3,1fr)!important}
+  .be-box{grid-template-columns:1fr 1fr!important}
 }
 @media(max-width:640px){
-  body{padding:10px!important}
-  .g2,.g3,.g4{grid-template-columns:1fr!important}
+  body{padding:10px!important;overflow-x:hidden!important}
+  .g2,.g3,.g4,.g5,.g6{grid-template-columns:1fr 1fr!important}
   .kpi-strip,.hero-strip{grid-template-columns:repeat(2,1fr)!important}
+  .be-box{grid-template-columns:1fr 1fr!important}
   .topbar{flex-wrap:wrap;gap:8px}
-  .panel{padding:14px!important}
+  .panel{padding:12px!important}
+  .tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  .tab{padding:9px 12px;font-size:10px;white-space:nowrap;flex-shrink:0}
   input[type=range]::-webkit-slider-thumb{width:22px!important;height:22px!important}
   table{font-size:10px}
+  /* Waterfall row — stack on mobile */
+  .wr{flex-wrap:wrap;gap:4px 8px}
+  .wf-amt{min-width:70px!important;font-size:11px!important}
+  .wf-pct{min-width:50px!important;font-size:10px!important}
+  .wf-body{flex:1 1 160px;min-width:0}
+  .wf-src{flex-shrink:0}
+}
+@media(max-width:420px){
+  .g2,.g3,.g4,.g5,.g6{grid-template-columns:1fr!important}
+  .be-box{grid-template-columns:1fr!important}
 }
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 </style>
@@ -321,7 +337,7 @@ td:last-child{border-radius:0 2px 2px 0}
 </div>
 
 <div id="tab-ter" class="hidden">
-  <div class="note nt" style="margin-bottom:18px"><strong style="color:var(--teal2)">Total Expense Ratio (TER)</strong> is what investors pay as a percentage of AUM per year — all costs charged to the fund including Phylax fees. Performance fees excluded from base TER. The Prescient platform minimum of R216,000/year means R100m+ AUM is the commercially viable threshold for equity portfolio manager distribution.</div>
+  <div class="note nt" style="margin-bottom:18px"><strong style="color:var(--teal2)">Total Expense Ratio (TER)</strong> is what investors pay as a percentage of AUM per year — all costs charged to the fund including Phylax fees. Performance fees excluded from base TER. The Prescient platform minimum of R216,000/year means R100m+ AUM is the commercially viable threshold for DFM distribution.</div>
   <div class="g4" style="margin-bottom:22px" id="ter-cards"></div>
   <div class="panel">
     <div class="sh">TER Dilution — Fixed Costs vs AUM</div>
@@ -331,10 +347,10 @@ td:last-child{border-radius:0 2px 2px 0}
 </div>
 
 <div class="disc">
-  Prescient costs: Prescient Fund Platform and Administration Services proposal for Phylax Capital, March 2026.
+  Prescient costs: Prescient Fund Platform and Administration Services proposal for Phylax Capital (formerly MyQ Asset Management), March 2026.
   CAEP fees: CAEP Cat2a fee table, March 2026 (Nicky Oates, CAEP Asset Managers Pty Ltd, FSP 33933). Option 1 confirmed R60,000–R80,000/month fixed, no AUM fee. Option 2 confirmed R35,000/month fixed + 0.20% AUM sliding scale p.a. + R50,000 once-off onboarding (excluded from annual model). CAEP does not participate in performance fees under either option.
   All fees exclude VAT. Prescient minimums escalate CPI+2% annually. For internal planning purposes only.
-  Phylax Capital — Macro Protector Fund. For professional and institutional investors only.
+  Phylax Capital — Macro Protector Fund. Quattro Investment Brokers (Pty) Ltd — FSP 46524.
 </div>
 </div>
 
