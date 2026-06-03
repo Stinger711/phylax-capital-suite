@@ -17,7 +17,7 @@
   --card:rgba(0,196,212,.04);
 }
 html{font-size:13px}
-body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;
+body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;max-width:100vw;
   background-image:radial-gradient(ellipse 60% 35% at 80% 0%,rgba(0,196,212,.05) 0%,transparent 55%),
     linear-gradient(rgba(0,196,212,.012) 1px,transparent 1px),
     linear-gradient(90deg,rgba(0,196,212,.012) 1px,transparent 1px);
@@ -36,7 +36,7 @@ input,button,textarea,select{font-family:inherit}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 4px var(--teal2)}50%{opacity:.3}}
 
 /* PERFORMANCE SUMMARY WIDGET */
-.perf-summary{display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:2px;padding:0;overflow:hidden;flex-shrink:0}
+.perf-summary{display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.3);border:1px solid var(--border2);border-radius:2px;padding:0;overflow-x:auto;overflow-y:hidden;flex-shrink:1;max-width:100%}
 .ps-item{padding:6px 14px;text-align:center;border-right:1px solid var(--border)}
 .ps-item:last-child{border-right:none}
 .ps-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
@@ -262,29 +262,65 @@ textarea:focus{border-color:var(--teal2)}
 
 /* ── MOBILE RESPONSIVE ────────────────────────────── */
 
+/* ── RESPONSIVE BREAKPOINTS ─────────────────────────────── */
+@media(max-width:1100px){
+  .main-grid{grid-template-columns:280px 1fr!important}
+}
 @media(max-width:900px){
+  /* Stack the main left/right split */
+  .main-grid{grid-template-columns:1fr!important}
   .main-layout{flex-direction:column!important}
   .sidebar{width:100%!important;max-height:none!important;overflow-y:visible!important;
     border-right:none!important;border-bottom:1px solid var(--border)}
   .content-area{padding:16px!important}
+  /* Multi-column grids collapse to 2 cols */
+  .perf-stats{grid-template-columns:repeat(3,1fr)!important}
+  .dnav-grid{grid-template-columns:repeat(3,1fr)!important}
+  .lstress-grid{grid-template-columns:repeat(2,1fr)!important}
+  .eod-breakdown{grid-template-columns:repeat(3,1fr)!important}
+  .g5{grid-template-columns:repeat(3,1fr)!important}
+  /* Nav banner stacks */
+  .nav-banner{grid-template-columns:1fr 1fr!important;gap:0}
+  .nb-cell{border-bottom:1px solid rgba(0,196,212,.1)}
+  /* Zaronia strip wraps */
+  .zaronia-strip{flex-wrap:wrap!important;gap:8px!important}
 }
 @media(max-width:640px){
-  body{padding:0!important}
-  .g2,.g3,.g4,.g5{grid-template-columns:1fr!important}
-  .nav-banner{flex-direction:column;gap:8px!important}
+  body{padding:0!important;overflow-x:hidden!important;max-width:100vw}
+  .page{padding:10px 10px 60px!important;overflow-x:hidden}
+  /* All multi-col grids collapse to 2 cols */
+  .g2{grid-template-columns:1fr 1fr!important}
+  .g3,.g4,.g5{grid-template-columns:1fr 1fr!important}
+  .perf-stats{grid-template-columns:repeat(2,1fr)!important}
+  .dnav-grid{grid-template-columns:repeat(2,1fr)!important}
+  .lstress-grid{grid-template-columns:1fr 1fr!important}
+  .eod-breakdown{grid-template-columns:repeat(2,1fr)!important}
+  .eod-grid{grid-template-columns:1fr 1fr!important;row-gap:10px}
+  /* Nav banner full stack */
+  .nav-banner{grid-template-columns:1fr!important}
+  .nb-cell{border-bottom:1px solid rgba(0,196,212,.08);border-right:none!important}
+  /* Range sliders */
   input[type=range]::-webkit-slider-thumb{width:22px!important;height:22px!important}
   input[type=range]::-moz-range-thumb{width:22px!important;height:22px!important}
+  input[type=range]{touch-action:pan-y}
   .topbar{flex-wrap:wrap;gap:8px}
-  .page,.content-area{padding:10px!important}
   table{font-size:10px}
   .eod-break{grid-template-columns:1fr!important}
-  .panel{padding:14px!important}
+  .panel{padding:12px!important}
   .section-title{font-size:10px!important}
+  /* Zaronia strip stacks */
+  .zaronia-strip{flex-direction:column!important;align-items:flex-start!important;gap:8px!important}
+  /* Performance summary wraps */
+  .perf-summary{flex-wrap:wrap;overflow:visible!important}
 }
 @media(max-width:480px){
+  .g2,.g3,.g4,.g5{grid-template-columns:1fr!important}
+  .perf-stats,.dnav-grid,.eod-breakdown,.lstress-grid{grid-template-columns:1fr 1fr!important}
   .kpi-grid,.kpi-strip,.hero-strip{grid-template-columns:repeat(2,1fr)!important}
   .mech-grid{grid-template-columns:repeat(2,1fr)!important}
   .formatted-input{min-width:80px!important;font-size:14px!important}
+  .eod-grid{grid-template-columns:1fr!important}
+  .nav-banner{grid-template-columns:1fr!important}
 }
 .tbl-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 </style>
@@ -851,7 +887,7 @@ textarea:focus{border-color:var(--teal2)}
 </div>
 
 <div class="disc">
-  Phylax Capital — Macro Protector Fund &nbsp;·&nbsp;
+  Phylax Capital — Macro Protector Fund &nbsp;·&nbsp; Quattro Investment Brokers (Pty) Ltd — FSP 46524 &nbsp;·&nbsp;
   BS engine: Merton (1973) continuous dividend yield, verified against Python/scipy. NAV = Cash Core (JIBAR-accreted from inception) + Option Book (BS MTM) + Residual Cash. &nbsp;·&nbsp;
   All data stored in this browser's localStorage only — export CSV regularly. Browser data clearing will erase records permanently. &nbsp;·&nbsp;
   Not investment advice. Trade decisions require fund manager authorisation.
