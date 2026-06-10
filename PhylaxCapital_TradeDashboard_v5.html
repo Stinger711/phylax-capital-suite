@@ -397,29 +397,32 @@ textarea:focus{border-color:var(--teal2)}
 <div class="modal-overlay" id="setup-modal">
   <div class="modal-box" style="max-width:600px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
-      <!-- Δ Circuit Logo -->
-      <svg width="46" height="42" viewBox="0 0 48 44" aria-label="Phylax Delta">
+      <!-- Phylax Hexagon Logo -->
+      <svg width="44" height="44" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Phylax">
         <defs>
           <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#00e8f8"/>
-            <stop offset="100%" stop-color="#c8a84a"/>
+            <stop offset="0%" stop-color="#FFFFFF"/><stop offset="50%" stop-color="#B0B5B9"/><stop offset="100%" stop-color="#8A9196"/>
           </linearGradient>
-          <filter id="glow1" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="1.1" result="b"/>
-            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          <linearGradient id="lg1i" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#E0FFFF"/><stop offset="50%" stop-color="#00E5FF"/><stop offset="100%" stop-color="#008B8B"/>
+          </linearGradient>
+          <filter id="glow1" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.2" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/>
           </filter>
         </defs>
-        <g filter="url(#glow1)">
-          <polygon points="24,5 43,39 5,39" fill="none" stroke="url(#lg1)" stroke-width="2"/>
-          <line x1="10.6" y1="29" x2="37.4" y2="29" stroke="url(#lg1)" stroke-width="1.6"/>
-          <line x1="24" y1="29" x2="24" y2="39" stroke="url(#lg1)" stroke-width="1.1" opacity=".5"/>
-        </g>
-        <circle cx="24" cy="5" r="2.6" fill="#00e8f8"/>
-        <circle cx="5" cy="39" r="2.6" fill="#c8a84a"/>
-        <circle cx="43" cy="39" r="2.6" fill="#c8a84a"/>
-        <circle cx="10.6" cy="29" r="2" fill="#00c4d4"/>
-        <circle cx="37.4" cy="29" r="2" fill="#c8a84a"/>
-        <circle cx="24" cy="29" r="1.7" fill="#00e8f8"/>
+        <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23" fill="none" stroke="url(#lg1)" stroke-width="2.0" stroke-linejoin="round"/>
+        <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5" fill="none" stroke="url(#lg1)" stroke-width="1.5" stroke-linejoin="round"/>
+        <line x1="40" y1="6" x2="40" y2="23" stroke="url(#lg1)" stroke-width="1.5"/>
+        <line x1="69.4" y1="23" x2="54.72" y2="31.5" stroke="url(#lg1)" stroke-width="1.5"/>
+        <line x1="69.4" y1="57" x2="54.72" y2="48.5" stroke="url(#lg1)" stroke-width="1.5"/>
+        <line x1="40" y1="74" x2="40" y2="57" stroke="url(#lg1)" stroke-width="1.5"/>
+        <line x1="10.6" y1="57" x2="25.28" y2="48.5" stroke="url(#lg1)" stroke-width="1.5"/>
+        <line x1="10.6" y1="23" x2="25.28" y2="31.5" stroke="url(#lg1)" stroke-width="1.5"/>
+        <line x1="40" y1="6" x2="69.4" y2="57" stroke="url(#lg1)" stroke-width="0.6" opacity="0.4"/>
+        <line x1="40" y1="6" x2="10.6" y2="57" stroke="url(#lg1)" stroke-width="0.6" opacity="0.4"/>
+        <line x1="40" y1="74" x2="69.4" y2="23" stroke="url(#lg1)" stroke-width="0.6" opacity="0.4"/>
+        <line x1="40" y1="74" x2="10.6" y2="23" stroke="url(#lg1)" stroke-width="0.6" opacity="0.4"/>
+        <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05" fill="url(#lg1i)" filter="url(#glow1)"/>
       </svg>
       <div>
         <div class="modal-title">New Demo Session</div>
@@ -576,29 +579,32 @@ textarea:focus{border-color:var(--teal2)}
 <!-- ══ TOP BAR ═══════════════════════════════════════════════════════ -->
 <div class="topbar">
   <div class="brand-row">
-    <!-- Δ Circuit Logo -->
-    <svg width="50" height="46" viewBox="0 0 48 44" aria-label="Phylax Delta">
+    <!-- Phylax Hexagon Logo -->
+    <svg width="48" height="48" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Phylax">
       <defs>
         <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#00e8f8"/>
-          <stop offset="100%" stop-color="#c8a84a"/>
+          <stop offset="0%" stop-color="#FFFFFF"/><stop offset="50%" stop-color="#B0B5B9"/><stop offset="100%" stop-color="#8A9196"/>
         </linearGradient>
-        <filter id="glow2" x="-60%" y="-60%" width="220%" height="220%">
-          <feGaussianBlur stdDeviation="1.1" result="b"/>
-          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        <linearGradient id="lg2i" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E0FFFF"/><stop offset="50%" stop-color="#00E5FF"/><stop offset="100%" stop-color="#008B8B"/>
+        </linearGradient>
+        <filter id="glow2" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="2.2" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/>
         </filter>
       </defs>
-      <g filter="url(#glow2)">
-        <polygon points="24,5 43,39 5,39" fill="none" stroke="url(#lg2)" stroke-width="2"/>
-        <line x1="10.6" y1="29" x2="37.4" y2="29" stroke="url(#lg2)" stroke-width="1.6"/>
-        <line x1="24" y1="29" x2="24" y2="39" stroke="url(#lg2)" stroke-width="1.1" opacity=".5"/>
-      </g>
-      <circle cx="24" cy="5" r="2.6" fill="#00e8f8"/>
-      <circle cx="5" cy="39" r="2.6" fill="#c8a84a"/>
-      <circle cx="43" cy="39" r="2.6" fill="#c8a84a"/>
-      <circle cx="10.6" cy="29" r="2" fill="#00c4d4"/>
-      <circle cx="37.4" cy="29" r="2" fill="#c8a84a"/>
-      <circle cx="24" cy="29" r="1.7" fill="#00e8f8"/>
+      <polygon points="40,6 69.4,23 69.4,57 40,74 10.6,57 10.6,23" fill="none" stroke="url(#lg2)" stroke-width="2.0" stroke-linejoin="round"/>
+      <polygon points="40,23 54.72,31.5 54.72,48.5 40,57 25.28,48.5 25.28,31.5" fill="none" stroke="url(#lg2)" stroke-width="1.5" stroke-linejoin="round"/>
+      <line x1="40" y1="6" x2="40" y2="23" stroke="url(#lg2)" stroke-width="1.5"/>
+      <line x1="69.4" y1="23" x2="54.72" y2="31.5" stroke="url(#lg2)" stroke-width="1.5"/>
+      <line x1="69.4" y1="57" x2="54.72" y2="48.5" stroke="url(#lg2)" stroke-width="1.5"/>
+      <line x1="40" y1="74" x2="40" y2="57" stroke="url(#lg2)" stroke-width="1.5"/>
+      <line x1="10.6" y1="57" x2="25.28" y2="48.5" stroke="url(#lg2)" stroke-width="1.5"/>
+      <line x1="10.6" y1="23" x2="25.28" y2="31.5" stroke="url(#lg2)" stroke-width="1.5"/>
+      <line x1="40" y1="6" x2="69.4" y2="57" stroke="url(#lg2)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="6" x2="10.6" y2="57" stroke="url(#lg2)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="69.4" y2="23" stroke="url(#lg2)" stroke-width="0.6" opacity="0.4"/>
+      <line x1="40" y1="74" x2="10.6" y2="23" stroke="url(#lg2)" stroke-width="0.6" opacity="0.4"/>
+      <polygon points="40,28.1 50.31,34.05 50.31,45.95 40,51.9 29.69,45.95 29.69,34.05" fill="url(#lg2i)" filter="url(#glow2)"/>
     </svg>
     <div>
       <div class="bname">Phylax Capital</div>
