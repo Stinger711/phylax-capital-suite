@@ -394,7 +394,7 @@ textarea:focus{border-color:var(--teal2)}
 <div class="page">
 
 <!-- ══ SESSION SETUP MODAL ══════════════════════════════════════════ -->
-<div class="modal-overlay" id="setup-modal">
+<div class="modal-overlay hidden" id="setup-modal">
   <div class="modal-box" style="max-width:600px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
       <!-- Phylax Hexagon Logo -->
@@ -500,6 +500,7 @@ textarea:focus{border-color:var(--teal2)}
     </div>
 
     <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm hidden" id="setup-cancel-btn" onclick="closeSetupModal()" style="flex:1">✕ Cancel</button>
       <button class="btn btn-ghost btn-sm" onclick="openExistingSession()" style="flex:1">↩ Load Existing Session</button>
       <button class="btn btn-green" onclick="createSession()" style="flex:2;font-size:10px">▶ &nbsp;Create Session &amp; Start Demo</button>
     </div>
@@ -551,7 +552,7 @@ textarea:focus{border-color:var(--teal2)}
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeSessionList()" style="flex:1">Close</button>
-      <button class="btn btn-green" onclick="closeSessionList();openSetupModal()" style="flex:1;font-size:10px">+ New Session</button>
+      <button class="btn btn-green" onclick="closeSessionList();newSession()" style="flex:1;font-size:10px">+ New Session</button>
     </div>
   </div>
 </div>
@@ -568,6 +569,7 @@ textarea:focus{border-color:var(--teal2)}
     <span class="fb-status" id="fb-status-text">Connecting…</span>
   </div>
   <div class="sess-actions">
+    <button class="btn btn-green btn-xs" onclick="newSession()">+ New Session</button>
     <button class="btn btn-purple btn-xs" onclick="openInflowModal()">+ Capital Inflow</button>
     <button class="btn btn-ghost btn-xs" onclick="openSessionList()">⇄ Sessions</button>
     <button class="btn btn-ghost btn-xs" onclick="exportGoogleDrive()">↑ Drive Backup</button>
@@ -2525,10 +2527,31 @@ async function loadSessionById(id){
 // ════════════════════════════════════════════════════════════════════
 // SETUP MODAL
 // ════════════════════════════════════════════════════════════════════
-function openSetupModal(){
-  c('setup-modal').classList.remove('hidden');
+function openSetupModal(resetDefaults){
+  // Optionally reset all wizard fields to a clean default state (for a brand-new session)
+  if(resetDefaults){
+    c('setup-name').value='Demo — R1bn Portfolio, 7% Phylax';
+    c('setup-inception').value='2026-07-01';
+    c('setup-total-port').value='1000000000';
+    c('setup-phylax-pct').value='7';
+    c('setup-jibar').value='7.50';
+    c('setup-zaronia-spread').value='-15';
+    c('setup-otm').value='10';
+    c('setup-dY').value='3.80';
+  }
   generateSessionId();
+  var tp=c('setup-total-port'); if(tp) formatSetupRand(tp);
+  updateSetupPreview();
+  // Show Cancel only when there is already an active session to return to
+  c('setup-cancel-btn').classList.toggle('hidden', !CURRENT_SESSION);
+  c('setup-modal').classList.remove('hidden');
 }
+function closeSetupModal(){
+  // Only allowed to close if a live session exists to fall back to
+  if(CURRENT_SESSION) c('setup-modal').classList.add('hidden');
+}
+// Deliberately start a brand-new session (from the session bar)
+function newSession(){ openSetupModal(true); }
 function generateSessionId(){
   var id='PHYLAX_'+Date.now().toString(36).toUpperCase()+'_'+Math.random().toString(36).slice(2,6).toUpperCase();
   c('setup-session-id').value=id;
