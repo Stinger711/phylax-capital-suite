@@ -300,7 +300,7 @@ textarea:focus{border-color:var(--teal2)}
 
 /* ── EOD ───────────────────────────────────────────────────────── */
 .eod-note{font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:14px}
-.eod-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
+.eod-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
 .eod-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
   padding:12px;background:rgba(0,196,212,.04);border-radius:2px;border:1px solid var(--border2)}
 .eb-item{text-align:center}
@@ -492,6 +492,13 @@ textarea:focus{border-color:var(--teal2)}
       </div>
     </div>
 
+    <div class="modal-section">Inception Benchmark</div>
+    <div class="mfi">
+      <label>Inception ALSI Level (J200 Index Points)</label>
+      <input type="text" id="setup-alsi-inception" placeholder="e.g. 88000"/>
+      <div class="hint" style="color:var(--teal2)">Locked at inception. This is the baseline the JSE tracker sleeve measures its return from \u2014 enter the actual ALSI close on your inception date.</div>
+    </div>
+
     <div class="modal-section">Storage</div>
     <div class="mfi">
       <label>Session Storage ID (auto-generated)</label>
@@ -655,11 +662,11 @@ textarea:focus{border-color:var(--teal2)}
     <div class="pb-sub">Blended vs pure tracker</div>
   </div>
   <div class="pb-alsi">
-    <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">ALSI Spot Entry</div>
+    <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Inception ALSI <span style="color:var(--teal2)">🔒</span></div>
     <div class="mfi" style="margin:0">
-      <input type="text" id="pb-alsi-entry" placeholder="Enter inception ALSI" style="font-size:11px;padding:5px 8px" oninput="updatePortfolio()"/>
+      <input type="text" id="pb-alsi-entry" class="auto-field" readonly placeholder="Set at session creation" style="font-size:11px;padding:5px 8px" title="Locked at inception. To change it, create a new session."/>
     </div>
-    <div style="font-size:8.5px;color:var(--muted);margin-top:3px">Tracker sleeve tracks ALSI from this level</div>
+    <div style="font-size:8.5px;color:var(--muted);margin-top:3px">Baseline \u2014 tracker measures return from here</div>
   </div>
 </div>
 
@@ -993,6 +1000,10 @@ textarea:focus{border-color:var(--teal2)}
   </div>
   <div class="eod-grid">
     <div class="fi" style="margin-bottom:0">
+      <div class="fi-l">Opening ALSI Spot</div>
+      <input type="text" id="eod-open" placeholder="Day's open" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+    </div>
+    <div class="fi" style="margin-bottom:0">
       <div class="fi-l">Closing ALSI Spot</div>
       <input type="text" id="eod-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
     </div>
@@ -1155,7 +1166,7 @@ textarea:focus{border-color:var(--teal2)}
     <table class="nav-table">
       <thead><tr>
         <th style="text-align:left">Date</th>
-        <th>ALSI Close</th><th>Tracker Level</th><th>IV</th><th>Contracts</th>
+        <th>ALSI Open</th><th>ALSI Close</th><th>Tracker Level</th><th>IV</th><th>Contracts</th>
         <th>Cash Core</th><th>Option Book</th>
         <th style="color:var(--teal2)">Phylax NAV</th>
         <th>Day P&amp;L</th><th>vs Capital</th>
@@ -1163,7 +1174,7 @@ textarea:focus{border-color:var(--teal2)}
         <th>Blended NAV</th>
       </tr></thead>
       <tbody id="nav-history-body">
-        <tr><td colspan="12" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>
+        <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1289,7 +1300,7 @@ function c(id){ return document.getElementById(id); }
 var FVAL = {
   'i-spot':113000,'i-jibar':0.075,'i-dY':0.038,
   'i-otm':0.10,'i-iv':0.18,'i-held':0,'i-nav':70000000,
-  'eod-spot':113000,'eod-iv':0.18,'eod-alsi-tracker':113000
+  'eod-spot':113000,'eod-iv':0.18,'eod-alsi-tracker':113000,'eod-open':113000
 };
 var FCFG = {
   'i-spot':   {fmt:function(v){return fmtInt(v)+' pts';}, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;}},
@@ -1300,6 +1311,7 @@ var FCFG = {
   'i-held':   {fmt:function(v){return Math.round(v).toString();}, parse:function(s){return Math.max(0,parseInt(s.replace(/[^\d]/g,''))||0);}},
   'i-nav':    {fmt:fmtRand, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;}},
   'eod-spot': {fmt:function(v){return fmtInt(v)+' pts';}, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;}},
+  'eod-open': {fmt:function(v){return fmtInt(v)+' pts';}, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;}},
   'eod-alsi-tracker':{fmt:function(v){return fmtInt(v)+' pts';}, parse:function(s){return parseFloat(s.replace(/[^\d.]/g,''))||0;}},
   'eod-iv':   {fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;}}
 };
@@ -1311,13 +1323,26 @@ var ZARONIA_SPREAD_BPS = -15;
 
 function getZaronia(){ return (FVAL['i-jibar']||0.075) + ZARONIA_SPREAD_BPS/10000; }
 
+// Inception ALSI is locked at session creation. Read from session config,
+// falling back to the (legacy) banner field for sessions created before this existed.
+function getInceptionALSI(){
+  if(CURRENT_SESSION && CURRENT_SESSION.alsiInception>0) return CURRENT_SESSION.alsiInception;
+  var el=document.getElementById('pb-alsi-entry');
+  return el ? (parseFloat(el.value.replace(/[^\d.]/g,''))||0) : 0;
+}
+function paintInceptionALSI(){
+  var v=getInceptionALSI();
+  var el=document.getElementById('pb-alsi-entry');
+  if(el) el.value = v>0 ? fmtInt(v)+' pts' : '';
+}
+
 function fFocus(el){
   if(el.readOnly && !navOverrideActive) return;
   var cfg=FCFG[el.id]; if(!cfg) return;
   var v=FVAL[el.id]||0;
   if(['i-jibar','i-dY','i-otm','i-iv','eod-iv'].indexOf(el.id)>=0){
     el.value=(v*100).toFixed(4).replace(/\.?0+$/,'');
-  } else if(['i-spot','eod-spot','eod-alsi-tracker'].indexOf(el.id)>=0){
+  } else if(['i-spot','eod-spot','eod-alsi-tracker','eod-open'].indexOf(el.id)>=0){
     el.value=Math.round(v).toString();
   } else if(el.id==='i-nav'){
     el.value=v>0?Math.round(v).toString():'';
@@ -1343,8 +1368,7 @@ function saveInputsLocal(){
   var data={spot:FVAL['i-spot'],jibar:FVAL['i-jibar'],dY:FVAL['i-dY'],
     otm:FVAL['i-otm'],iv:FVAL['i-iv'],held:FVAL['i-held'],
     navOverride:navOverrideActive?FVAL['i-nav']:0,
-    expiry:document.getElementById('i-expiry').value,
-    alsiEntry:(parseFloat(document.getElementById('pb-alsi-entry').value)||0)};
+    expiry:document.getElementById('i-expiry').value};
   try{ localStorage.setItem('phylax_v5_inputs_'+CURRENT_SESSION.sessionId, JSON.stringify(data)); }catch(e){}
 }
 function loadInputsLocal(){
@@ -1360,7 +1384,6 @@ function loadInputsLocal(){
     if(d.iv)    FVAL['i-iv']=d.iv;
     if(d.held!=null) FVAL['i-held']=d.held;
     if(d.expiry) document.getElementById('i-expiry').value=d.expiry;
-    if(d.alsiEntry>0) document.getElementById('pb-alsi-entry').value=d.alsiEntry;
     if(d.navOverride && d.navOverride>0){ FVAL['i-nav']=d.navOverride; activateOverride(true); }
   }catch(e){}
 }
@@ -1704,6 +1727,8 @@ function calc(){
   FVAL['eod-spot']=S; FVAL['eod-iv']=iv;
   c('eod-spot').value=FCFG['eod-spot'].fmt(S);
   c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
+  // Pre-fill opening ALSI from the morning spot, unless already entered for today
+  if(!c('eod-open').value || c('eod-open').value==='0 pts'){ FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S); }
   if(!c('eod-alsi-tracker').value || c('eod-alsi-tracker').value==='0 pts') c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(S);
 
   window._calc={S,K,T:T.toFixed(6),r,iv,q,d1:f4(d1),d2:f4(d2),Nd1:f4(Nd1),Nd2:f4(Nd2),nd1:f4(nd1),
@@ -1741,7 +1766,7 @@ function updatePortfolio(){
   if(!CURRENT_SESSION) return;
   var st=getState();
   var history=getNavHistory();
-  var alsiEntry=parseFloat(document.getElementById('pb-alsi-entry').value)||0;
+  var alsiEntry=getInceptionALSI();
   var currentALSI=FVAL['i-spot']||alsiEntry;
 
   var phylaxNAV;
@@ -1800,6 +1825,7 @@ function updatePortfolio(){
 async function endOfDay(){
   if(!CURRENT_SESSION){ alert('No active session. Please create or load a session first.'); return; }
   var eodSpot=FVAL['eod-spot']||FVAL['i-spot'];
+  var eodOpen=parseFloat((document.getElementById('eod-open').value||'').replace(/[^\d.]/g,''))||FVAL['eod-open']||eodSpot;
   var eodIV=FVAL['eod-iv']||FVAL['i-iv'];
   var eodTrackerLevel=parseFloat(document.getElementById('eod-alsi-tracker').value.replace(/[^\d.]/g,''))||eodSpot;
   var held=FVAL['i-held'];
@@ -1859,7 +1885,7 @@ async function endOfDay(){
   var closingNAV=cashCoreClose+residualClose+optBookClose;
 
   // Tracker NAV calculation
-  var alsiEntry=parseFloat(document.getElementById('pb-alsi-entry').value)||eodTrackerLevel;
+  var alsiEntry=getInceptionALSI()||eodTrackerLevel;
   var trackerCapital=st.totalPortfolio-(st.capital||CURRENT_SESSION.phylaxCapital);
   var trackerNAV=alsiEntry>0?trackerCapital*(eodTrackerLevel/alsiEntry):trackerCapital;
   var blendedNAV=closingNAV+trackerNAV;
@@ -1871,7 +1897,7 @@ async function endOfDay(){
   var optionPnl=dayPnl-carryToday;
 
   var entry={
-    date:today, alsi:eodSpot, alsiTracker:eodTrackerLevel, iv:eodIV,
+    date:today, alsiOpen:eodOpen, alsi:eodSpot, alsiTracker:eodTrackerLevel, iv:eodIV,
     contracts:held, cashCore:cashCoreClose, optBook:optBookClose,
     residual:residualClose, nav:closingNAV,
     trackerNAV:trackerNAV, blendedNAV:blendedNAV,
@@ -2042,7 +2068,7 @@ function renderNavHistoryTable(){
   var capital=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:70000000);
   var tbody=c('nav-history-body');
   if(history.length===0){
-    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
     return;
   }
   var html='';
@@ -2051,6 +2077,7 @@ function renderNavHistoryTable(){
     var pnlC=pnl>=0?'var(--green2)':'var(--red2)',vsCC=vsC>=0?'var(--green2)':'var(--red2)';
     html+='<tr>'
       +'<td>'+h.date+'</td>'
+      +'<td style="color:var(--muted)">'+Math.round(h.alsiOpen||h.alsi).toLocaleString('en-ZA')+'</td>'
       +'<td>'+Math.round(h.alsi).toLocaleString('en-ZA')+'</td>'
       +'<td style="color:var(--gold)">'+Math.round(h.alsiTracker||h.alsi).toLocaleString('en-ZA')+'</td>'
       +'<td>'+(h.iv*100).toFixed(1)+'%</td>'
@@ -2487,6 +2514,7 @@ function openSessionList(){
   c('session-list-modal').classList.remove('hidden');
   c('session-list-body').innerHTML='<div style="color:var(--muted);text-align:center;padding:24px;font-size:11px">Loading…</div>';
   fbListSessions().then(function(sessions){
+    window._sessionListCache = sessions || [];
     if(!sessions.length){
       c('session-list-body').innerHTML='<div style="color:var(--muted);text-align:center;padding:24px;font-size:11px">No sessions found.</div>';
       return;
@@ -2494,7 +2522,8 @@ function openSessionList(){
     var html='';
     sessions.forEach(function(s){
       var isActive=CURRENT_SESSION&&CURRENT_SESSION.sessionId===s.sessionId;
-      html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:2px;margin-bottom:6px;cursor:pointer" onclick="loadSessionById(\''+s.sessionId+'\')">'
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:2px;margin-bottom:6px">'
+        +'<div style="flex:1;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="loadSessionById(\''+s.sessionId+'\')">'
         +(isActive?'<span style="font-family:\'Rajdhani\',sans-serif;font-size:8px;font-weight:700;color:var(--teal2);text-transform:uppercase;letter-spacing:.1em;background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.2);padding:2px 6px;border-radius:2px;flex-shrink:0">Active</span>':'')
         +'<div style="flex:1">'
         +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+(s.config?s.config.sessionName:s.sessionId)+'</div>'
@@ -2503,12 +2532,57 @@ function openSessionList(){
         +'</div>'
         +'</div>'
         +'<div style="text-align:right;font-size:9px;color:var(--muted)">'+(s.lastEODDate||'no closes')+'</div>'
+        +'</div>'
+        +'<button class="btn btn-danger btn-xs" title="Delete session" onclick="event.stopPropagation();deleteSession(\''+s.sessionId+'\')" style="flex-shrink:0">✕ Delete</button>'
         +'</div>';
     });
     c('session-list-body').innerHTML=html;
   });
 }
 function closeSessionList(){ c('session-list-modal').classList.add('hidden'); }
+
+// Delete keys are id-specific, so build them directly (lsKey is bound to the active session)
+function purgeLocalSession(id){
+  ['state','navhistory','log','ladder','inflowlog'].forEach(function(k){
+    try{ localStorage.removeItem('phylax_v5_'+id+'_'+k); }catch(e){}
+  });
+  try{ localStorage.removeItem('phylax_v5_inputs_'+id); }catch(e){}
+  try{ localStorage.removeItem('phylax_v5_config_'+id); }catch(e){}
+}
+
+async function deleteSession(id){
+  var name=id;
+  try{
+    var cached=(window._sessionListCache||[]).find(function(s){return s.sessionId===id;});
+    if(cached&&cached.config&&cached.config.sessionName) name=cached.config.sessionName;
+  }catch(e){}
+  var isActive=CURRENT_SESSION&&CURRENT_SESSION.sessionId===id;
+  var typed=prompt('Permanently delete this session?\n\n  "'+name+'"\n'+(isActive?'\n⚠ This is your ACTIVE session.\n':'')+'\nThis removes its NAV history, ladder, audit log and all records — there is no undo.\n\nType DELETE to confirm:');
+  if(typed!=='DELETE'){ if(typed!==null) alert('Not deleted — you must type DELETE exactly.'); return; }
+
+  // Remove from cloud (if reachable) and from this device
+  if(fbReady()){
+    try{ await window.db.collection('phylax_sessions').doc(id).delete(); }
+    catch(e){ console.error('Firebase delete error:',e); alert('Could not delete from the cloud (check connection). It was removed from this device only — try again to clear the cloud copy.'); }
+  }
+  purgeLocalSession(id);
+
+  if(isActive){
+    // We just deleted the session we were in — leave it cleanly
+    CURRENT_SESSION=null;
+    try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
+    c('session-bar').style.display='none';
+  }
+
+  // Refresh the list; if nothing left, go to the wizard
+  var remaining = await fbListSessions();
+  if(!remaining.length){
+    closeSessionList();
+    if(!CURRENT_SESSION) openSetupModal(true);
+    return;
+  }
+  openSessionList();
+}
 
 async function loadSessionById(id){
   closeSessionList();
@@ -2538,6 +2612,7 @@ function openSetupModal(resetDefaults){
     c('setup-zaronia-spread').value='-15';
     c('setup-otm').value='10';
     c('setup-dY').value='3.80';
+    c('setup-alsi-inception').value='';
   }
   generateSessionId();
   var tp=c('setup-total-port'); if(tp) formatSetupRand(tp);
@@ -2603,16 +2678,20 @@ async function createSession(){
   var zaroniaSpread=parseFloat(c('setup-zaronia-spread').value)||-15;
   var otm=parseFloat(c('setup-otm').value)||10; if(otm>1) otm/=100;
   var dY=parseFloat(c('setup-dY').value)||3.8; if(dY>1) dY/=100;
+  var alsiInception=parseFloat((c('setup-alsi-inception').value||'').replace(/[^\d.]/g,''))||0;
   var sessionId=c('setup-session-id').value||('PHYLAX_'+Date.now().toString(36).toUpperCase());
 
   CURRENT_SESSION={
     sessionId, sessionName, inceptionDate,
     totalPortfolio, phylaxCapital, phylaxPct,
-    jibar, zaroniaSpread, otm, dY,
+    jibar, zaroniaSpread, otm, dY, alsiInception,
     createdAt:new Date().toISOString()
   };
   saveSessionConfigLocal();
   setActiveSessionId(sessionId);
+
+  // Lock the inception ALSI into the (read-only) banner field
+  paintInceptionALSI();
 
   // Set default inputs
   FVAL['i-jibar']=jibar;
@@ -2658,6 +2737,26 @@ function activateDashboard(){
     fRk(CURRENT_SESSION.phylaxCapital)+' Phylax · '+
     fRk(CURRENT_SESSION.totalPortfolio)+' total · inception '+CURRENT_SESSION.inceptionDate+
     ' · ID: '+CURRENT_SESSION.sessionId;
+  paintInceptionALSI();
+  // Legacy sessions created before the inception-ALSI lock: allow a one-time entry
+  enableLegacyInceptionEntry();
+}
+// For sessions created before the inception ALSI was locked in the wizard:
+// let the user set it once directly in the banner field, then it locks.
+function enableLegacyInceptionEntry(){
+  var el=document.getElementById('pb-alsi-entry');
+  if(!el) return;
+  if(getInceptionALSI()>0){ el.readOnly=true; el.classList.add('auto-field'); el.oninput=null; return; }
+  el.readOnly=false; el.classList.remove('auto-field');
+  el.placeholder='Set inception ALSI (one time)';
+  el.oninput=function(){
+    var v=parseFloat(el.value.replace(/[^\d.]/g,''))||0;
+    if(CURRENT_SESSION && v>0){
+      CURRENT_SESSION.alsiInception=v;
+      saveSessionConfigLocal();
+    }
+    updatePortfolio();
+  };
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2695,11 +2794,11 @@ function exportCSV(){
 function exportNAVCSV(){
   var history=getNavHistory();
   if(!history.length){alert('No NAV history to export.');return;}
-  var headers=['Date','ALSI_Close','Tracker_Level','IV','Contracts','CashCore_R','OptionBook_R','Residual_R','PhylaxNAV_R','TrackerNAV_R','BlendedNAV_R','DayPnL_R','CarryToday_R','OptionPnL_R','vs_Capital_%'];
+  var headers=['Date','ALSI_Open','ALSI_Close','Tracker_Level','IV','Contracts','CashCore_R','OptionBook_R','Residual_R','PhylaxNAV_R','TrackerNAV_R','BlendedNAV_R','DayPnL_R','CarryToday_R','OptionPnL_R','vs_Capital_%'];
   var st=getState(); var capital=st.capital||CURRENT_SESSION.phylaxCapital;
   var rows=history.map(function(h){
     var vsC=((h.nav-capital)/capital*100).toFixed(2);
-    return [h.date,h.alsi,h.alsiTracker||h.alsi,(h.iv*100).toFixed(2),h.contracts,
+    return [h.date,h.alsiOpen||h.alsi,h.alsi,h.alsiTracker||h.alsi,(h.iv*100).toFixed(2),h.contracts,
       Math.round(h.cashCore),Math.round(h.optBook),Math.round(h.residual||0),
       Math.round(h.nav),Math.round(h.trackerNAV||0),Math.round(h.blendedNAV||0),
       Math.round(h.dayPnl||0),Math.round(h.carryToday||0),Math.round(h.optionPnl||0),vsC].join(',');
