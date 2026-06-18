@@ -671,6 +671,28 @@ tr:hover td{background:rgba(0,196,212,.07);cursor:pointer}
       </div>
     </div>
 
+    <div class="ce-chart-wrap" id="ce-alpha-wrap">
+      <div class="sh gc" id="ce-alpha-title">Alpha Gained Over Time</div>
+      <div class="chart-svg-box">
+        <svg id="ce-alpha-chart" viewBox="0 0 800 140"
+          style="width:100%;display:block;overflow:visible"></svg>
+      </div>
+      <div class="legend">
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#60e8a0"></div>
+          <span>Hedge ahead of unhedged</span>
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#ff6060"></div>
+          <span>Hedge behind unhedged</span>
+        </div>
+        <div class="leg-item">
+          <div class="leg-dot" style="background:#e8c870;border-radius:50%;width:8px;height:8px"></div>
+          <span>Crash event (redeployment day+1)</span>
+        </div>
+      </div>
+    </div>
+
     <div class="note-box" id="ce-note">
       <strong>Redeployment mechanics:</strong> On crash day+1, the entire Phylax sleeve is liquidated and redeployed into crashed equities at the lower price. The portfolio is <strong style="color:var(--amber)">unprotected for ~90 days</strong>. At the next quarterly option roll, the PM restocks Phylax to the same % of current portfolio value and re-enters the put ladder. Fees modelled annually; the 90-day unprotected window is not fee-adjusted.
     </div>
@@ -1057,6 +1079,7 @@ function runSimulation(){
     for(var yr=1;yr<=horizon;yr++){unh.push(unh_m[yr*12]);hed.push(hed_nc[yr*12]);}
     drawCEChart(unh,hed,freq,port,horizon);
     buildMilestoneTable(unh,hed,port,horizon);
+    drawAlphaChart(unh,hed,freq,port,horizon);
     return;
   }
 
@@ -1138,6 +1161,7 @@ function runSimulation(){
 
   drawCEChart(unh,hed,freq,port,horizon);
   buildMilestoneTable(unh,hed,port,horizon);
+  drawAlphaChart(unh,hed,freq,port,horizon);
 }
 
 function drawCEChart(unh,hed,freq,port,horizon){
@@ -1232,6 +1256,92 @@ function buildMilestoneTable(unh,hed,port,horizon){
     html+='</tr>';
   });
   tbody.innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+// ALPHA-OVER-TIME PANEL
+// Plots (hedged - unhedged) per year on its own zero-baselined chart.
+// Green fill above zero = hedge ahead; red fill below zero = hedge behind.
+// Makes the sawtooth (drag between crashes, snap-back at each crash) legible
+// even when the two absolute-value lines on the main chart sit close together.
+function drawAlphaChart(unh,hed,freq,port,horizon){
+  var svg=document.getElementById('ce-alpha-chart');
+  if(!svg)return;
+  var W=800,H=140,PL=65,PR=20,PT=12,PB=30;
+  var cw=W-PL-PR, ch=H-PT-PB, N=horizon;
+
+  var alpha=[];
+  for(var i=0;i<=N;i++) alpha.push(hed[i]-unh[i]);
+
+  var aMin=Math.min.apply(null,alpha), aMax=Math.max.apply(null,alpha);
+  var minV=Math.min(0,aMin)*1.15, maxV=Math.max(0,aMax)*1.15;
+  if(minV===maxV){minV-=1;maxV+=1;}
+  var rng=maxV-minV;
+  if(!rng||isNaN(rng)||rng<=0){svg.innerHTML='';return;}
+
+  function gx(i){return PL+(i/N)*cw;}
+  function gy(v){return PT+ch-((v-minV)/rng)*ch;}
+  var y0=gy(0);
+
+  var s='';
+
+  // Grid lines + Y labels: top, zero, bottom
+  [maxV,0,minV].forEach(function(gv){
+    var gyp=gy(gv);
+    s+='<line x1="'+PL+'" y1="'+gyp+'" x2="'+(PL+cw)+'" y2="'+gyp+'" stroke="rgba(184,200,212,.06)" stroke-width="1"/>';
+    var sign=gv<-0.5?'-':'';
+    var av=Math.abs(gv);
+    var lab=av>=1e9?'R'+(av/1e9).toFixed(1)+'bn':av>=1e6?'R'+(av/1e6).toFixed(0)+'m':'R'+av.toFixed(0);
+    s+='<text x="'+(PL-5)+'" y="'+(gyp+3)+'" font-family="DM Mono,monospace" font-size="9" fill="#4a6878" text-anchor="end">'+sign+lab+'</text>';
+  });
+
+  // Brighter zero/breakeven baseline
+  s+='<line x1="'+PL+'" y1="'+y0+'" x2="'+(PL+cw)+'" y2="'+y0+'" stroke="rgba(184,200,212,.28)" stroke-width="1"/>';
+
+  // X axis ticks + labels
+  var tickStep=N<=5?1:N<=10?2:N<=15?3:5;
+  for(var xi=0;xi<=N;xi+=tickStep){
+    var xp=gx(xi);
+    s+='<line x1="'+xp+'" y1="'+PT+'" x2="'+xp+'" y2="'+(PT+ch)+'" stroke="rgba(184,200,212,.04)" stroke-width="1"/>';
+    s+='<text x="'+xp+'" y="'+(PT+ch+16)+'" font-family="Rajdhani,sans-serif" font-size="10" font-weight="600" fill="#4a6878" text-anchor="middle">YR '+xi+'</text>';
+  }
+
+  // Crash marker lines (same cadence as main chart)
+  var showCrash=(freq>0&&CE.c_crash>0);
+  if(showCrash){
+    var fr=Math.max(1,Math.round(freq));
+    for(var ci=fr;ci<=N;ci+=fr){
+      s+='<line x1="'+gx(ci)+'" y1="'+PT+'" x2="'+gx(ci)+'" y2="'+(PT+ch)+'" stroke="rgba(232,64,64,.18)" stroke-width="1" stroke-dasharray="3,3"/>';
+    }
+  }
+
+  // Positive area (clamped at 0) — hedge ahead
+  var posD='M '+gx(0)+' '+y0;
+  for(var pi=0;pi<=N;pi++) posD+=' L '+gx(pi)+' '+gy(Math.max(0,alpha[pi]));
+  posD+=' L '+gx(N)+' '+y0+' Z';
+  s+='<path d="'+posD+'" fill="rgba(96,232,160,.16)"/>';
+
+  // Negative area (clamped at 0) — hedge behind
+  var negD='M '+gx(0)+' '+y0;
+  for(var ni=0;ni<=N;ni++) negD+=' L '+gx(ni)+' '+gy(Math.min(0,alpha[ni]));
+  negD+=' L '+gx(N)+' '+y0+' Z';
+  s+='<path d="'+negD+'" fill="rgba(255,96,96,.14)"/>';
+
+  // Alpha line
+  var lineD='M '+gx(0)+' '+gy(alpha[0]);
+  for(var li=1;li<=N;li++) lineD+=' L '+gx(li)+' '+gy(alpha[li]);
+  s+='<path d="'+lineD+'" fill="none" stroke="#e8c870" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+
+  // Crash event markers on the alpha line itself
+  if(showCrash){
+    var fr2=Math.max(1,Math.round(freq));
+    for(var di=fr2;di<=N;di+=fr2){
+      s+='<circle cx="'+gx(di)+'" cy="'+gy(alpha[di])+'" r="4" fill="#e8c870" stroke="#080d14" stroke-width="1.5"/>';
+    }
+  }
+
+  svg.innerHTML=s;
+  set('ce-alpha-title', 'Alpha Gained Over Time ('+N+'-Year Horizon)');
 }
 
 // ══════════════════════════════════════════════════════════
