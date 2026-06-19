@@ -1136,22 +1136,17 @@ function drawDrawdownChart(){
   var svg=document.getElementById('dd-chart');
   if(!svg)return;
 
-  // Three fixed crash scenarios — independent of c_crash/c_freq sliders
-  var SCENARIOS=[
-    {label:'Mild',    sublabel:'-15% crash', crash:0.15},
-    {label:'Historical', sublabel:'-20% crash', crash:0.20},
-    {label:'Stress',  sublabel:'-35% crash (GFC-like)', crash:0.35}
-  ];
+  var crash=CE.c_crash/100;
+  if(!crash||crash<=0){svg.innerHTML='';return;}
 
-  // Use current allocation and JIBAR from CE state
-  var alloc=CE.c_alloc/100, jibar=CE.c_jibar/100;
+  // Five allocation levels — X axis is the variable the manager controls
+  var ALLOCS=[2.5, 5, 7.5, 10, 15];
+  var jibar=CE.c_jibar/100;
   var alsi=CE.c_alsi||113000;
   var q_div=0.038, iv=0.18, T_roll=45/365;
 
-  // Compute drawdowns for each scenario
-  SCENARIOS.forEach(function(sc){
-    var crash=sc.crash;
-    // Normalise to a portfolio of 1; alloc% in Phylax, rest in equity
+  var bars=ALLOCS.map(function(ap){
+    var alloc=ap/100;
     var phy=alloc, eq=1-alloc;
     var cashCore=phy/(1+jibar*T_BUY);
     var optBudget=phy-cashCore;
@@ -1163,84 +1158,88 @@ function drawDrawdownChart(){
     var putRoll=bsPut(S_crashed,K,jibar,sigma_spike,T_roll,q_div);
     var grossPay=putRoll*MULT*contracts;
     var perf_fee=fees_on?Math.max(0,grossPay-optBudget)*0.20:0;
-    // Scale fees to normalised portfolio (fees were calibrated to phy in rands;
-    // here phy=alloc fraction, so ops fees as % of phy ≈ 0.014 ann / 4 quarters)
     var ops_fee=fees_on?phy*(0.014/4):0;
     var phylax_end=Math.max(0,cashCore+grossPay-perf_fee-ops_fee);
     var post_crash=eq*(1-crash)+phylax_end;
-    sc.unh_dd=crash;                       // unhedged = full crash %
-    sc.hed_dd=Math.max(0,1-post_crash);    // hedged drawdown
-    sc.protection=sc.unh_dd-sc.hed_dd;    // pp protected
+    var hed_dd=Math.max(0,1-post_crash);
+    return {
+      alloc:ap,
+      unh_dd:crash,
+      hed_dd:hed_dd,
+      protection:crash-hed_dd,
+      absorbed:crash>0?(crash-hed_dd)/crash*100:0
+    };
   });
 
   // ── SVG layout ───────────────────────────────────────────────────────
-  var W=800, H=240, PL=58, PR=20, PT=18, PB=60;
+  var W=800, H=240, PL=58, PR=20, PT=18, PB=62;
   var cw=W-PL-PR, ch=H-PT-PB;
-  var maxDD=0.40; // Y axis: 0% → -40%
-  var nSc=SCENARIOS.length;
-  var groupW=cw/nSc;
+  var maxDD=Math.min(0.50, crash*1.25); // Y axis scales to crash severity
+  var nB=bars.length;
+  var groupW=cw/nB;
   var barW=groupW*0.22;
   var gap=groupW*0.08;
 
-  function gx(scIdx,side){ // side: 0=unhedged, 1=hedged
-    var cx=PL+scIdx*groupW+groupW/2;
-    return side===0 ? cx-barW/2-gap/2 : cx+gap/2;
+  function gx(i,side){ // side 0=unhedged, 1=hedged
+    var cx=PL+i*groupW+groupW/2;
+    return side===0?cx-barW/2-gap/2:cx+gap/2;
   }
-  function gy(dd){ return PT+(dd/maxDD)*ch; } // dd as decimal, bars go DOWN from PT
+  function gh(dd){ return Math.max(1,(dd/maxDD)*ch); }  // bar height in px
 
   var s='';
 
-  // Zero baseline (top of bars)
+  // Zero baseline
   s+='<line x1="'+PL+'" y1="'+PT+'" x2="'+(PL+cw)+'" y2="'+PT+'" stroke="rgba(184,200,212,.35)" stroke-width="1"/>';
 
-  // Horizontal grid lines (every 10%)
+  // Grid lines — 4 evenly spaced
   for(var gi=1;gi<=4;gi++){
-    var dd=gi*0.10, gyp=gy(dd);
+    var dd=maxDD*(gi/4), gyp=PT+(gi/4)*ch;
     s+='<line x1="'+PL+'" y1="'+gyp+'" x2="'+(PL+cw)+'" y2="'+gyp+'" stroke="rgba(184,200,212,.07)" stroke-width="1"/>';
-    s+='<text x="'+(PL-5)+'" y="'+(gyp+3)+'" font-family="DM Mono,monospace" font-size="9" fill="#4a6878" text-anchor="end">-'+(gi*10)+'%</text>';
+    s+='<text x="'+(PL-5)+'" y="'+(gyp+3)+'" font-family="DM Mono,monospace" font-size="9" fill="#4a6878" text-anchor="end">-'+(dd*100).toFixed(0)+'%</text>';
   }
 
-  SCENARIOS.forEach(function(sc,i){
+  bars.forEach(function(b,i){
     var ux=gx(i,0), hx=gx(i,1);
-    var uH=gy(sc.unh_dd), hedH=gy(sc.hed_dd), prot=gy(sc.protection);
+    var uH=gh(b.unh_dd), hedH=gh(b.hed_dd);
 
-    // Unhedged bar — red
-    s+='<rect x="'+ux+'" y="'+PT+'" width="'+barW+'" height="'+uH+'" rx="3" fill="#e84040" opacity="0.85"/>';
+    // Unhedged bar — red (always full crash, greyed slightly when current alloc matches)
+    var isCurrentAlloc=(b.alloc===CE.c_alloc);
+    s+='<rect x="'+ux+'" y="'+PT+'" width="'+barW+'" height="'+uH+'" rx="3" fill="#e84040" opacity="'+(isCurrentAlloc?'1':'0.65')+'"/>';
     // Hedged bar — gold
-    s+='<rect x="'+hx+'" y="'+PT+'" width="'+barW+'" height="'+hedH+'" rx="3" fill="#e8c870" opacity="0.9"/>';
+    s+='<rect x="'+hx+'" y="'+PT+'" width="'+barW+'" height="'+hedH+'" rx="3" fill="#e8c870" opacity="'+(isCurrentAlloc?'1':'0.65')+'"/>';
 
-    // Protection bracket: green bar on right side of hedged bar
+    // Highlight ring on current alloc
+    if(isCurrentAlloc){
+      var grpX=PL+i*groupW+4, grpW=groupW-8;
+      s+='<rect x="'+grpX+'" y="'+(PT-3)+'" width="'+grpW+'" height="'+(ch+3)+'" rx="4" fill="none" stroke="rgba(232,200,112,.25)" stroke-width="1.5"/>';
+    }
+
+    // Protection bracket
     var brkX=hx+barW+4;
-    s+='<rect x="'+brkX+'" y="'+hedH+'" width="5" height="'+(uH-hedH)+'" rx="2" fill="#60e8a0" opacity="0.85"/>';
-    // Bracket end ticks
-    s+='<line x1="'+brkX+'" y1="'+hedH+'" x2="'+(brkX+8)+'" y2="'+hedH+'" stroke="#60e8a0" stroke-width="1.5"/>';
-    s+='<line x1="'+brkX+'" y1="'+uH+'" x2="'+(brkX+8)+'" y2="'+uH+'" stroke="#60e8a0" stroke-width="1.5"/>';
+    if(uH-hedH>2){
+      s+='<rect x="'+brkX+'" y="'+(PT+hedH)+'" width="4" height="'+(uH-hedH)+'" rx="2" fill="#60e8a0" opacity="0.9"/>';
+      s+='<line x1="'+brkX+'" y1="'+(PT+hedH)+'" x2="'+(brkX+7)+'" y2="'+(PT+hedH)+'" stroke="#60e8a0" stroke-width="1.5"/>';
+      s+='<line x1="'+brkX+'" y1="'+(PT+uH)+'" x2="'+(brkX+7)+'" y2="'+(PT+uH)+'" stroke="#60e8a0" stroke-width="1.5"/>';
+      var brkMidY=PT+(hedH+uH)/2;
+      s+='<text x="'+(brkX+12)+'" y="'+(brkMidY+3)+'" font-family="DM Mono,monospace" font-size="9" fill="#60e8a0" font-weight="700">+'+(b.protection*100).toFixed(1)+'pp</text>';
+    }
 
-    // Protection label (pp protected)
-    var protMid=(hedH+uH)/2+PT; // midpoint of bracket in absolute Y... wait
-    // hedH and uH are already absolute SVG Y (measured from PT offset built in gy)
-    // gy returns PT + fraction*ch, so hedH and uH are absolute Y coords
-    var brkMidY=(hedH+uH)/2;
-    s+='<text x="'+(brkX+14)+'" y="'+(brkMidY+3)+'" font-family="DM Mono,monospace" font-size="9" fill="#60e8a0" font-weight="700">+'+(sc.protection*100).toFixed(1)+'pp</text>';
+    // Bar value labels (only if bar is tall enough)
+    if(uH>16) s+='<text x="'+(ux+barW/2)+'" y="'+(PT+uH-5)+'" font-family="DM Mono,monospace" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">-'+(b.unh_dd*100).toFixed(0)+'%</text>';
+    if(hedH>16) s+='<text x="'+(hx+barW/2)+'" y="'+(PT+hedH-5)+'" font-family="DM Mono,monospace" font-size="9" fill="#080d14" text-anchor="middle" font-weight="700">-'+(b.hed_dd*100).toFixed(1)+'%</text>';
 
-    // Bar value labels
-    s+='<text x="'+(ux+barW/2)+'" y="'+(PT+uH-6)+'" font-family="DM Mono,monospace" font-size="9" fill="#fff" text-anchor="middle" font-weight="700">-'+(sc.unh_dd*100).toFixed(0)+'%</text>';
-    s+='<text x="'+(hx+barW/2)+'" y="'+(PT+hedH-6)+'" font-family="DM Mono,monospace" font-size="9" fill="#080d14" text-anchor="middle" font-weight="700">-'+(sc.hed_dd*100).toFixed(1)+'%</text>';
-
-    // Scenario label below bars
+    // X labels
     var lblX=PL+i*groupW+groupW/2;
-    s+='<text x="'+lblX+'" y="'+(PT+ch+18)+'" font-family="Rajdhani,sans-serif" font-size="13" font-weight="700" fill="#b8c8d4" text-anchor="middle">'+sc.label+'</text>';
-    s+='<text x="'+lblX+'" y="'+(PT+ch+32)+'" font-family="DM Mono,monospace" font-size="9" fill="#4a6878" text-anchor="middle">'+sc.sublabel+'</text>';
-
-    // Redeployed capital note — how much firepower was available (in % of portfolio)
-    var firepower=(1-sc.hed_dd-(1-sc.unh_dd))/(1); // = protection as fraction
-    // Actually express it as: "payout absorbs X% of crash loss"
-    var absorbed=(sc.unh_dd>0)?(sc.protection/sc.unh_dd)*100:0;
-    s+='<text x="'+lblX+'" y="'+(PT+ch+46)+'" font-family="DM Mono,monospace" font-size="8" fill="#40c880" text-anchor="middle">'+absorbed.toFixed(0)+'% of loss absorbed</text>';
+    s+='<text x="'+lblX+'" y="'+(PT+ch+16)+'" font-family="Rajdhani,sans-serif" font-size="13" font-weight="700" fill="'+(isCurrentAlloc?'#e8c870':'#b8c8d4')+'" text-anchor="middle">'+b.alloc+'%</text>';
+    s+='<text x="'+lblX+'" y="'+(PT+ch+29)+'" font-family="DM Mono,monospace" font-size="8" fill="#4a6878" text-anchor="middle">Phylax alloc</text>';
+    s+='<text x="'+lblX+'" y="'+(PT+ch+42)+'" font-family="DM Mono,monospace" font-size="8" fill="#40c880" text-anchor="middle">'+b.absorbed.toFixed(0)+'% of loss absorbed</text>';
   });
 
   // Y-axis label
   s+='<text x="13" y="'+(PT+ch/2)+'" font-family="Rajdhani,sans-serif" font-size="10" font-weight="600" fill="#4a6878" text-anchor="middle" transform="rotate(-90,13,'+(PT+ch/2)+')">DRAWDOWN</text>';
+
+  // Chart subtitle: current crash assumption
+  s+='<text x="'+(PL+cw/2)+'" y="'+(H-4)+'" font-family="DM Mono,monospace" font-size="9" fill="#4a6878" text-anchor="middle">At '+(crash*100).toFixed(0)+'% crash severity · JIBAR '+(CE.c_jibar)+'% · highlighted column = current slider setting</text>';
 
   svg.innerHTML=s;
 }
