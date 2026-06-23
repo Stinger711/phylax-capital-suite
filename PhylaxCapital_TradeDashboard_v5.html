@@ -379,6 +379,44 @@ textarea:focus{border-color:var(--teal2)}
 .disc{font-size:8.5px;color:var(--muted);line-height:1.7;
   border-top:1px solid var(--border);padding-top:16px;margin-top:20px}
 
+/* ── TODAY-BUY EXECUTION PANEL ─────────────────────────────────── */
+.exec-panel{margin-top:12px;padding:14px 16px;border-radius:2px;
+  background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.2)}
+.exec-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.exec-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--teal);flex-shrink:0}
+.exec-input{width:90px;background:rgba(0,0,0,.4);border:1px solid rgba(0,196,212,.3);
+  border-radius:2px;padding:7px 10px;color:var(--white);font-family:'DM Mono',monospace;
+  font-size:14px;font-weight:700;text-align:center;outline:none;transition:border .2s}
+.exec-input:focus{border-color:var(--teal2);box-shadow:0 0 0 2px rgba(0,196,212,.12)}
+.exec-meta{font-size:9px;color:var(--muted);font-family:'DM Mono',monospace}
+.exec-warn{margin-top:8px;padding:6px 10px;border-radius:2px;font-size:9px;
+  font-family:'Rajdhani',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.09em;display:none}
+.exec-warn.over{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:var(--red2)}
+.exec-warn.under{background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
+.exec-warn.ok{background:rgba(64,200,128,.08);border:1px solid rgba(64,200,128,.25);color:var(--green2)}
+
+/* ── HEDGE STATUS ALERT ─────────────────────────────────────────── */
+.hedge-alert{display:none;margin-bottom:12px;padding:10px 14px;border-radius:2px;
+  font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;line-height:1.6}
+.hedge-alert.overhedged{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.3);color:var(--red2)}
+.hedge-alert.underhedged{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
+
+/* ── REDUCE MODAL ───────────────────────────────────────────────── */
+.reduce-tranche-row{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border-radius:2px;background:rgba(232,64,64,.05);border:1px solid rgba(232,64,64,.15);
+  margin-bottom:6px}
+.reduce-tranche-row input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--red2);flex-shrink:0}
+.reduce-tranche-info{flex:1;font-family:'DM Mono',monospace;font-size:10px;color:var(--plat)}
+.reduce-qty-input{width:70px;background:rgba(0,0,0,.4);border:1px solid rgba(232,64,64,.3);
+  border-radius:2px;padding:5px 8px;color:var(--white);font-family:'DM Mono',monospace;
+  font-size:12px;text-align:center;outline:none;transition:border .2s}
+.reduce-qty-input:focus{border-color:var(--red2)}
+.reduce-qty-input:disabled{opacity:.35;cursor:not-allowed}
+.reduce-summary{padding:10px 12px;border-radius:2px;background:rgba(232,64,64,.07);
+  border:1px solid rgba(232,64,64,.2);margin:12px 0;font-family:'DM Mono',monospace;font-size:10px;line-height:1.8}
+
 @media(max-width:900px){
   .main-grid{grid-template-columns:1fr}
   .g4{grid-template-columns:1fr 1fr}
@@ -582,6 +620,21 @@ textarea:focus{border-color:var(--teal2)}
     <button class="btn btn-ghost btn-xs" onclick="exportGoogleDrive()">↑ Drive Backup</button>
     <button class="btn btn-ghost btn-xs" onclick="exportFullSession()">↓ JSON Export</button>
     <button class="btn btn-danger btn-xs" onclick="resetDemo()">⚠ Reset</button>
+  </div>
+</div>
+
+<!-- ══ REDUCE POSITION MODAL ════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="reduce-modal">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-title" style="color:var(--red2)">⚠ Reduce Position</div>
+    <div class="modal-sub" id="reduce-modal-sub">Select tranches to close and specify how many contracts to reduce from each. Your actual trades — not the system's decision.</div>
+    <div class="modal-section">Active Tranches</div>
+    <div id="reduce-tranche-list"></div>
+    <div class="reduce-summary" id="reduce-summary" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="confirmReduce()" id="reduce-confirm-btn">✕ &nbsp;Close Selected Tranches</button>
+      <button class="btn btn-ghost" onclick="closeReduceModal()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -943,11 +996,27 @@ textarea:focus{border-color:var(--teal2)}
 
     <div id="carry-status" class="carry-ok">✓ &nbsp;Carry positive — hedge is self-financing</div>
 
+    <div id="hedge-alert" class="hedge-alert"></div>
+
     <div id="decision-box" class="decision-box hold">
       <div class="dec-action" id="dec-action">CALCULATING…</div>
       <div class="dec-contracts" id="dec-contracts">—</div>
       <div class="dec-label" id="dec-label">Contracts</div>
       <div class="dec-details" id="dec-details"></div>
+
+      <div class="exec-panel" id="exec-panel" style="display:none">
+        <div class="exec-row">
+          <span class="exec-label">Execute today:</span>
+          <input type="number" class="exec-input" id="exec-qty" min="0" step="1"
+            oninput="onExecQtyInput()" placeholder="0"/>
+          <span class="exec-meta" id="exec-meta">contracts</span>
+          <button class="btn btn-sm" id="exec-btn" onclick="executeTodayBuy()"
+            style="background:rgba(0,196,212,.15);border:1px solid var(--border2);color:var(--teal2);font-size:9px;padding:6px 14px">
+            + Add Tranche
+          </button>
+        </div>
+        <div class="exec-warn" id="exec-warn"></div>
+      </div>
     </div>
 
     <div class="g3" style="margin-bottom:14px">
@@ -1682,21 +1751,70 @@ function calc(){
   else if(netCarry>=0){ cs.className='carry-ok'; cs.innerHTML='✓ &nbsp;Carry POSITIVE — self-financing at '+held+' contracts ('+fRk(netCarry)+'/day net)'; }
   else { cs.className='carry-bad'; cs.innerHTML='⚠ &nbsp;Carry NEGATIVE — theta bleed exceeds yield at '+held+' contracts. Max carry-neutral: '+maxCarryContracts; }
 
-  // Decision box
+  // ── Derive held from ladder (single source of truth) ──────────────
+  var ladder=getLadder();
+  var ladderHeld=(ladder.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
+  // tradeRequired uses ladder-derived held, not the manual i-held field
+  var tradeRequiredLadder=recommended-ladderHeld;
+
+  // ── Hedge alert (overhedge / underhedge carry-forward) ─────────────
+  var alertEl=c('hedge-alert');
+  if(ladderHeld>recommended){
+    var excess=ladderHeld-recommended;
+    alertEl.className='hedge-alert overhedged';
+    alertEl.innerHTML='⚠ OVERHEDGED &nbsp;·&nbsp; Holding <strong>'+ladderHeld+'</strong> contracts vs target <strong>'+recommended+'</strong> &nbsp;·&nbsp; Excess: <strong>'+excess+'</strong> contracts'
+      +'<br><span style="font-weight:400;color:var(--red2);opacity:.8">Market conditions have shifted — consider reducing. Click "Reduce Position" below to select tranches.</span>';
+    alertEl.style.display='block';
+  } else if(ladderHeld<recommended && ladderHeld>0){
+    var deficit=recommended-ladderHeld;
+    alertEl.className='hedge-alert underhedged';
+    alertEl.innerHTML='ℹ UNDERHEDGED &nbsp;·&nbsp; Holding <strong>'+ladderHeld+'</strong> contracts vs target <strong>'+recommended+'</strong> &nbsp;·&nbsp; Gap: <strong>'+deficit+'</strong> contracts to close';
+    alertEl.style.display='block';
+  } else {
+    alertEl.style.display='none';
+  }
+
+  // ── Decision box ───────────────────────────────────────────────────
   var box=c('decision-box'),action=c('dec-action'),num=c('dec-contracts'),lbl=c('dec-label'),det=c('dec-details');
-  if(tradeRequired>0){
+  var execPanel=c('exec-panel'), execQty=c('exec-qty'), execBtn=c('exec-btn');
+  if(tradeRequiredLadder>0){
     box.className='decision-box buy'; action.textContent='BUY'; action.style.color='var(--teal2)';
-    num.textContent=tradeRequired; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
-    det.innerHTML='Increase from <strong>'+held+'</strong> → <strong>'+recommended+'</strong><br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequired*putPriceR);
-  } else if(tradeRequired<0){
-    box.className='decision-box sell'; action.textContent='SELL'; action.style.color='var(--red)';
-    num.textContent=Math.abs(tradeRequired); num.style.color='var(--red)'; lbl.textContent='Contracts to Sell / Close';
-    det.innerHTML='Reduce from <strong>'+held+'</strong> → <strong>'+recommended+'</strong><br>Carry ratio: '+carryRatio.toFixed(2)+'× &nbsp;·&nbsp; Max carry-neutral: '+maxCarryContracts;
+    num.textContent=tradeRequiredLadder; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
+    det.innerHTML='Increase from <strong>'+ladderHeld+'</strong> → <strong>'+recommended+'</strong><br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);
+    execPanel.style.display='block';
+    execBtn.style.display='inline-block';
+    // Pre-fill with recommended gap only if user hasn't already typed something
+    if(!execQty.dataset.userEdited) execQty.value=tradeRequiredLadder;
+    execQty.dataset.recommended=tradeRequiredLadder;
+    execQty.dataset.putPriceR=putPriceR;
+    execQty.dataset.strike=K;
+    onExecQtyInput();
+  } else if(tradeRequiredLadder<0){
+    box.className='decision-box sell'; action.textContent='REDUCE'; action.style.color='var(--red)';
+    num.textContent=Math.abs(tradeRequiredLadder); num.style.color='var(--red)'; lbl.textContent='Contracts to Reduce';
+    det.innerHTML='Overhedged: holding <strong>'+ladderHeld+'</strong> vs target <strong>'+recommended+'</strong><br>Carry ratio: '+carryRatio.toFixed(2)+'× &nbsp;·&nbsp; Max carry-neutral: '+maxCarryContracts
+      +'<br><button onclick="openReduceModal('+Math.abs(tradeRequiredLadder)+')" style="margin-top:8px;padding:5px 14px;background:rgba(232,64,64,.15);border:1px solid rgba(232,64,64,.4);color:var(--red2);border-radius:2px;cursor:pointer;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">✕ Reduce Position</button>';
+    execPanel.style.display='none';
   } else {
     box.className='decision-box hold'; action.textContent='HOLD'; action.style.color='var(--amber)';
     num.textContent='0'; num.style.color='var(--amber)'; lbl.textContent='No Trade Required';
-    det.innerHTML='Position optimal at <strong>'+held+'</strong> contracts<br>Carry: '+(isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞')+' &nbsp;·&nbsp; HM: '+hedgeMultiple.toFixed(2)+'×<br>Monitor ALSI and SAVI daily';
+    det.innerHTML='Position optimal at <strong>'+ladderHeld+'</strong> contracts<br>Carry: '+(isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞')+' &nbsp;·&nbsp; HM: '+hedgeMultiple.toFixed(2)+'×<br>Monitor ALSI and SAVI daily';
+    execPanel.style.display='none';
   }
+
+  // Store for use in execution
+  window._calcRecommended=recommended;
+  window._calcPutPriceR=putPriceR;
+  window._calcK=K;
+  window._calcLadderHeld=ladderHeld;
+
+  // If position is now at target, reset userEdited so next gap pre-fills cleanly
+  if(tradeRequiredLadder===0){
+    var eq=c('exec-qty'); if(eq) delete eq.dataset.userEdited;
+  }
+
+  // tradeRequired in _calc still uses manual held for audit log compatibility
+  var tradeRequired=recommended-held;
 
   // Metrics
   c('o-price').textContent=f2(putPrice)+' pts';
@@ -2124,9 +2242,46 @@ function updateSimState(){
 // ════════════════════════════════════════════════════════════════════
 // LADDER ENGINE
 // ════════════════════════════════════════════════════════════════════
-function addTranche(){
+// ── EXECUTION: today's buy input validation ────────────────────────
+function onExecQtyInput(){
+  var execQty=c('exec-qty');
+  execQty.dataset.userEdited='1';
+  var qty=parseInt(execQty.value)||0;
+  var rec=parseInt(execQty.dataset.recommended||0);
+  var putR=parseFloat(execQty.dataset.putPriceR||0);
+  var warnEl=c('exec-warn');
+  var meta=c('exec-meta');
+  if(qty<=0){
+    warnEl.style.display='none';
+    meta.textContent='contracts (0 = skip today)';
+    return;
+  }
+  var totalCost=qty*putR;
+  meta.textContent='contracts · Cost: '+fRk(totalCost);
+  if(qty>rec){
+    var over=qty-rec;
+    warnEl.className='exec-warn over';
+    warnEl.textContent='⚠ Overhedge: buying '+over+' more than recommended ('+rec+'). Carry ratio will deteriorate.';
+    warnEl.style.display='block';
+  } else if(qty<rec){
+    var deficit=rec-qty;
+    warnEl.className='exec-warn under';
+    warnEl.textContent='ℹ Underhedge: '+deficit+' contracts short of target. Gap will carry to tomorrow\'s advisory.';
+    warnEl.style.display='block';
+  } else {
+    warnEl.className='exec-warn ok';
+    warnEl.textContent='✓ Matches recommendation — position will be fully hedged.';
+    warnEl.style.display='block';
+  }
+}
+
+// ── EXECUTION: commit today's buy ─────────────────────────────────
+function executeTodayBuy(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
   if(!window._calc){ alert('Enter market inputs first.'); return; }
+  var execQty=c('exec-qty');
+  var qty=parseInt(execQty.value)||0;
+  if(qty<=0){ alert('Enter how many contracts you want to purchase today (or 0 to skip).'); return; }
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var otmFrac=FVAL['i-otm'];
   var K=Math.round(S*(1-otmFrac));
@@ -2136,28 +2291,147 @@ function addTranche(){
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
   var putR=bsPutRepriceR(S,K,r,q,iv,T);
   if(putR<=0){ alert('Put price is zero — check inputs.'); return; }
+  var premiumTotal=qty*putR;
   var st=getState();
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
-  var annualBudget=capital*(r/(1+r));
-  var trancheBudget=annualBudget/4;
-  var contracts=Math.max(1,Math.floor(trancheBudget/putR));
-  var premiumTotal=contracts*putR;
   var ladder=getLadder();
   var id='T'+(String(Date.now()).slice(-6));
   ladder.tranches.push({
     id:id, buyDate:new Date().toISOString().slice(0,10),
     expiry:expStr, strikeLevel:K, spotAtBuy:S,
-    tteAtBuyYears:T, contracts:contracts,
+    tteAtBuyYears:T, contracts:qty,
     premiumPerContract:putR, premiumTotal:premiumTotal,
     status:'active', payoffReceived:0, otmFrac:otmFrac, addedTs:Date.now()
   });
   if(ladder.cashBalance===0) ladder.cashBalance=capital-premiumTotal;
   else ladder.cashBalance-=premiumTotal;
   saveLadder(ladder);
+  // Reset user-edited flag so next calc re-fills with fresh gap
+  delete execQty.dataset.userEdited;
+  execQty.value='';
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
-  var btn=document.querySelector('.btn-add-tranche');
-  btn.textContent='✓ Tranche Added';
-  setTimeout(function(){btn.textContent='+ Add Tranche';},2000);
+  calc(); // re-run so advisory updates immediately
+  var btn=c('exec-btn');
+  var orig=btn.textContent;
+  btn.textContent='✓ Added!'; btn.style.background='rgba(64,200,128,.25)';
+  setTimeout(function(){btn.textContent=orig;btn.style.background='';},2000);
+}
+
+// Keep the header button working (opens exec flow via addTranche button in ladder header)
+function addTranche(){
+  // Scroll to decision box and focus the exec qty input
+  var ep=c('exec-panel');
+  if(ep && ep.style.display!=='none'){
+    ep.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(function(){ c('exec-qty').focus(); },400);
+  } else {
+    // No buy signal — show message
+    alert('No buy signal active. The advisory box will show an execution panel when contracts are needed.');
+  }
+}
+
+// ── REDUCE POSITION MODAL ──────────────────────────────────────────
+function openReduceModal(suggestedExcess){
+  var ladder=getLadder();
+  if(!ladder.tranches||!ladder.tranches.length){ alert('No active tranches to reduce.'); return; }
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var excess=suggestedExcess||Math.abs(window._calcLadderHeld-(window._calcRecommended||0));
+  c('reduce-modal-sub').innerHTML='System recommends reducing by <strong style="color:var(--red2)">'+excess+' contracts</strong>. Select tranches and enter how many contracts to close from each. The decision is yours — you can reduce more, less, or from different tranches.';
+  var list=c('reduce-tranche-list');
+  list.innerHTML='';
+  ladder.tranches.forEach(function(t){
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var proceeds=mtm*t.contracts*0.975;
+    var div=document.createElement('div');
+    div.className='reduce-tranche-row';
+    div.innerHTML=
+      '<input type="checkbox" id="rc-'+t.id+'" onchange="onReduceCheck(\''+t.id+'\')">'
+      +'<div class="reduce-tranche-info">'
+        +'<span style="color:var(--teal2);font-weight:700">'+t.id+'</span>'
+        +' &nbsp;·&nbsp; Strike: '+Math.round(t.strikeLevel).toLocaleString('en-ZA')
+        +' &nbsp;·&nbsp; <span style="color:var(--amber)">'+t.contracts+' contracts</span>'
+        +' &nbsp;·&nbsp; MTM: '+fRk(mtm*t.contracts)
+        +' &nbsp;·&nbsp; <span style="color:var(--green2)">Proceeds (bid): '+fRk(proceeds)+'</span>'
+      +'</div>'
+      +'<input type="number" class="reduce-qty-input" id="rq-'+t.id+'" min="1" max="'+t.contracts+'" value="'+t.contracts+'" disabled placeholder="qty">';
+    list.appendChild(div);
+  });
+  c('reduce-summary').style.display='none';
+  c('reduce-modal').classList.remove('hidden');
+}
+
+function onReduceCheck(id){
+  var cb=document.getElementById('rc-'+id);
+  var qi=document.getElementById('rq-'+id);
+  qi.disabled=!cb.checked;
+  updateReduceSummary();
+}
+
+function updateReduceSummary(){
+  var ladder=getLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var totalContracts=0, totalProceeds=0;
+  var lines=[];
+  (ladder.tranches||[]).forEach(function(t){
+    var cb=document.getElementById('rc-'+t.id);
+    var qi=document.getElementById('rq-'+t.id);
+    if(!cb||!cb.checked) return;
+    var qty=Math.min(parseInt(qi.value)||0, t.contracts);
+    if(qty<=0) return;
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var proceeds=mtm*qty*0.975;
+    totalContracts+=qty; totalProceeds+=proceeds;
+    lines.push(t.id+': −'+qty+' contracts &nbsp;·&nbsp; proceeds: '+fRk(proceeds));
+  });
+  var sumEl=c('reduce-summary');
+  if(totalContracts===0){ sumEl.style.display='none'; return; }
+  sumEl.style.display='block';
+  sumEl.innerHTML='<strong style="color:var(--red2)">Reducing '+totalContracts+' contracts total</strong><br>'
+    +lines.join('<br>')
+    +'<br><strong style="color:var(--green2)">Total proceeds (bid): '+fRk(totalProceeds)+'</strong>';
+}
+
+function closeReduceModal(){ c('reduce-modal').classList.add('hidden'); }
+
+function confirmReduce(){
+  var ladder=getLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var anySelected=false;
+  var toRemove=[];
+  ladder.tranches.forEach(function(t,idx){
+    var cb=document.getElementById('rc-'+t.id);
+    var qi=document.getElementById('rq-'+t.id);
+    if(!cb||!cb.checked) return;
+    var qty=Math.min(parseInt(qi.value)||0, t.contracts);
+    if(qty<=0) return;
+    anySelected=true;
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var proceeds=mtm*qty*0.975;
+    ladder.cashBalance+=proceeds;
+    if(qty>=t.contracts){
+      toRemove.push(idx);
+    } else {
+      t.contracts-=qty;
+      t.premiumTotal=t.premiumPerContract*t.contracts;
+    }
+  });
+  if(!anySelected){ alert('Select at least one tranche to reduce.'); return; }
+  // Remove fully-closed tranches (reverse order to preserve indices)
+  toRemove.slice().reverse().forEach(function(idx){ ladder.tranches.splice(idx,1); });
+  saveLadder(ladder);
+  closeReduceModal();
+  renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+  calc();
+  fbSaveSession(buildSessionData());
 }
 
 function closeTranche(id){
