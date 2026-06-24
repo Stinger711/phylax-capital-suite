@@ -375,11 +375,41 @@ textarea:focus{border-color:var(--teal2)}
 .fb-indicator.connecting{background:var(--amber);animation:pulse 1s infinite}
 .fb-indicator.error{background:var(--red)}
 
+/* ── BUDGET REMAINING PANEL ─────────────────────────────────────── */
+.budget-panel{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  background:linear-gradient(135deg,rgba(160,96,240,.07),rgba(0,196,212,.03));
+  border:1px solid rgba(160,96,240,.25);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.bp-cell{padding:11px 14px;border-right:1px solid rgba(160,96,240,.12);text-align:center}
+.bp-cell:last-child{border-right:none}
+.bp-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.bp-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.bp-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
+
+/* ── PORTFOLIO HEDGE VIEW ───────────────────────────────────────── */
+.hedge-panel{background:linear-gradient(135deg,rgba(0,196,212,.06),rgba(0,196,212,.02));
+  border:1px solid rgba(0,196,212,.28);border-radius:2px;padding:18px;margin-bottom:14px}
+.hedge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.hg-card{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:2px;padding:11px 13px}
+.hg-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.hg-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--white)}
+.hg-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
+.stress-hedge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.shg-card{border-radius:2px;padding:11px 13px;border:1px solid var(--border)}
+.shg-card.s0{background:rgba(0,196,212,.05);border-color:rgba(0,196,212,.2)}
+.shg-card.s10{background:rgba(232,160,32,.05);border-color:rgba(232,160,32,.2)}
+.shg-card.s25{background:rgba(232,64,64,.05);border-color:rgba(232,64,64,.2)}
+.shg-card.s40{background:rgba(232,64,64,.09);border-color:rgba(232,64,64,.3)}
+.shg-title{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.shg-row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:9.5px}
+.shg-k{color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}
+.shg-v{font-family:'DM Mono',monospace;font-size:9.5px}
+
 /* ── DISCLAIMER ────────────────────────────────────────────────── */
 .disc{font-size:8.5px;color:var(--muted);line-height:1.7;
   border-top:1px solid var(--border);padding-top:16px;margin-top:20px}
-
-/* ── TODAY-BUY EXECUTION PANEL ─────────────────────────────────── */
 .exec-panel{margin-top:12px;padding:14px 16px;border-radius:2px;
   background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.2)}
 .exec-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -780,6 +810,97 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ REMAINING BUDGET PANEL ════════════════════════════════════════ -->
+<div class="budget-panel" id="budget-panel">
+  <div class="bp-cell">
+    <div class="bp-label">Quarterly Budget</div>
+    <div class="bp-val" id="bp-total" style="color:var(--purple)">—</div>
+    <div class="bp-sub">FI interest this quarter</div>
+  </div>
+  <div class="bp-cell">
+    <div class="bp-label">Premiums Paid</div>
+    <div class="bp-val" id="bp-paid" style="color:var(--red2)">—</div>
+    <div class="bp-sub">Cumulative across tranches</div>
+  </div>
+  <div class="bp-cell">
+    <div class="bp-label">Remaining Budget</div>
+    <div class="bp-val" id="bp-remaining" style="color:var(--teal2)">—</div>
+    <div class="bp-sub" id="bp-remaining-pct">— of quarterly budget</div>
+  </div>
+  <div class="bp-cell">
+    <div class="bp-label">Affordable Today</div>
+    <div class="bp-val" id="bp-affordable" style="color:var(--green2)">—</div>
+    <div class="bp-sub" id="bp-affordable-sub">at today's premium</div>
+  </div>
+  <div class="bp-cell">
+    <div class="bp-label">Blended Entry</div>
+    <div class="bp-val" id="bp-blended" style="color:var(--gold)">—</div>
+    <div class="bp-sub">Wt avg cost/contract</div>
+  </div>
+</div>
+
+<!-- ══ PORTFOLIO HEDGE VIEW ══════════════════════════════════════════ -->
+<div class="hedge-panel" id="hedge-panel">
+  <div class="sh c-teal" style="margin-bottom:14px">Portfolio Hedge View — Delta-Adjusted</div>
+  <div class="hedge-grid">
+    <div class="hg-card">
+      <div class="hg-label">Delta-Adj Hedge Multiple</div>
+      <div class="hg-val" id="hv-hm" style="color:var(--teal2)">—</div>
+      <div class="hg-sub">Contracts × |Δ| × R10 × ALSI ÷ Portfolio</div>
+    </div>
+    <div class="hg-card">
+      <div class="hg-label">Notional Protected</div>
+      <div class="hg-val" id="hv-notional" style="color:var(--plat)">—</div>
+      <div class="hg-sub" id="hv-notional-pct">% of total portfolio</div>
+    </div>
+    <div class="hg-card">
+      <div class="hg-label">Book Unreal P&amp;L</div>
+      <div class="hg-val" id="hv-pnl">—</div>
+      <div class="hg-sub" id="hv-pnl-pct">vs total premiums paid</div>
+    </div>
+    <div class="hg-card">
+      <div class="hg-label">Wt Avg Entry Premium</div>
+      <div class="hg-val" id="hv-entry" style="color:var(--gold)">—</div>
+      <div class="hg-sub" id="hv-mtm-now">Current MTM: —/contract</div>
+    </div>
+  </div>
+  <div class="sh c-plat" style="margin-bottom:10px;font-size:9px">Stress Scenarios — Portfolio Impact (Delta-Adjusted)</div>
+  <div class="stress-hedge-grid">
+    <div class="shg-card s0">
+      <div class="shg-title" style="color:var(--teal2)">Current Position</div>
+      <div class="shg-row"><span class="shg-k">ALSI Drop</span><span class="shg-v">0%</span></div>
+      <div class="shg-row"><span class="shg-k">Portfolio Loss</span><span class="shg-v" id="sh-s0-loss">—</span></div>
+      <div class="shg-row"><span class="shg-k">Put Book Gain</span><span class="shg-v" id="sh-s0-gain" style="color:var(--green2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Net Impact</span><span class="shg-v" id="sh-s0-net">—</span></div>
+      <div class="shg-row"><span class="shg-k">Offset Ratio</span><span class="shg-v" id="sh-s0-ratio" style="color:var(--teal2)">—</span></div>
+    </div>
+    <div class="shg-card s10">
+      <div class="shg-title" style="color:var(--amber)">▼ ALSI −10%</div>
+      <div class="shg-row"><span class="shg-k">Portfolio Loss</span><span class="shg-v" id="sh-s10-loss" style="color:var(--red2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Put Book Gain</span><span class="shg-v" id="sh-s10-gain" style="color:var(--green2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Net Impact</span><span class="shg-v" id="sh-s10-net">—</span></div>
+      <div class="shg-row"><span class="shg-k">Offset Ratio</span><span class="shg-v" id="sh-s10-ratio" style="color:var(--teal2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Implied Delta</span><span class="shg-v" id="sh-s10-delta">—</span></div>
+    </div>
+    <div class="shg-card s25">
+      <div class="shg-title" style="color:var(--red2)">▼ ALSI −25%</div>
+      <div class="shg-row"><span class="shg-k">Portfolio Loss</span><span class="shg-v" id="sh-s25-loss" style="color:var(--red2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Put Book Gain</span><span class="shg-v" id="sh-s25-gain" style="color:var(--green2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Net Impact</span><span class="shg-v" id="sh-s25-net">—</span></div>
+      <div class="shg-row"><span class="shg-k">Offset Ratio</span><span class="shg-v" id="sh-s25-ratio" style="color:var(--teal2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Implied Delta</span><span class="shg-v" id="sh-s25-delta">—</span></div>
+    </div>
+    <div class="shg-card s40">
+      <div class="shg-title" style="color:var(--red2)">▼ ALSI −40%</div>
+      <div class="shg-row"><span class="shg-k">Portfolio Loss</span><span class="shg-v" id="sh-s40-loss" style="color:var(--red2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Put Book Gain</span><span class="shg-v" id="sh-s40-gain" style="color:var(--green2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Net Impact</span><span class="shg-v" id="sh-s40-net">—</span></div>
+      <div class="shg-row"><span class="shg-k">Offset Ratio</span><span class="shg-v" id="sh-s40-ratio" style="color:var(--teal2)">—</span></div>
+      <div class="shg-row"><span class="shg-k">Implied Delta</span><span class="shg-v" id="sh-s40-delta">—</span></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ OPTION LADDER PANEL ══════════════════════════════════════════ -->
 <div class="panel" style="margin-bottom:14px;border-color:rgba(0,196,212,.3)">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
@@ -795,9 +916,11 @@ textarea:focus{border-color:var(--teal2)}
         <tr>
           <th style="text-align:left;padding-left:12px">Tranche</th>
           <th>Buy Date</th><th>Expiry</th><th>TTE (days)</th>
-          <th>Strike</th><th>Contracts</th><th>Cost (R)</th>
-          <th>BS MTM (R)</th><th>P&amp;L</th><th>Θ/day</th>
-          <th>Status</th><th style="text-align:center">Close</th>
+          <th>Strike</th><th>Contracts</th>
+          <th>Entry (R/c)</th><th>MTM (R/c)</th><th>Cost Total</th>
+          <th>MTM Total</th><th>Unreal P&amp;L</th><th>P&amp;L %</th>
+          <th>Δ (delta)</th><th>Θ/day</th><th>Days Held</th>
+          <th style="text-align:center">Close</th>
         </tr>
       </thead>
       <tbody id="ladder-tbody"></tbody>
@@ -918,8 +1041,8 @@ textarea:focus{border-color:var(--teal2)}
         <input type="text" id="i-iv" onfocus="fFocus(this)" onblur="fBlur(this)"/>
       </div>
       <div class="fi">
-        <div class="fi-l">Contracts Held <span class="fi-badge">✎ From blotter</span></div>
-        <input type="text" id="i-held" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+        <div class="fi-l">Contracts Held <span class="fi-badge auto">From Ladder</span></div>
+        <input type="text" id="i-held" class="auto-field" readonly/>
       </div>
       <div class="g2">
         <div class="fi" style="margin-bottom:0">
@@ -1861,6 +1984,8 @@ function calc(){
   renderLadderPanel();
   renderDailyNAV();
   renderLiquidityStress();
+  renderBudgetPanel();
+  renderHedgeView();
   updatePortfolio();
 }
 
@@ -2310,6 +2435,7 @@ function executeTodayBuy(){
   delete execQty.dataset.userEdited;
   execQty.value='';
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+  renderBudgetPanel(); renderHedgeView();
   calc(); // re-run so advisory updates immediately
   var btn=c('exec-btn');
   var orig=btn.textContent;
@@ -2430,6 +2556,7 @@ function confirmReduce(){
   saveLadder(ladder);
   closeReduceModal();
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+  renderBudgetPanel(); renderHedgeView();
   calc();
   fbSaveSession(buildSessionData());
 }
@@ -2456,48 +2583,226 @@ function renderLadderPanel(){
   var ladder=getLadder();
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var today=new Date(); today.setHours(0,0,0,0);
+
+  // Always sync i-held from ladder (single source of truth)
+  var ladderTotal=(ladder.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
+  FVAL['i-held']=ladderTotal;
+  var heldEl=c('i-held');
+  if(heldEl){ heldEl.value=ladderTotal.toString(); }
+
   var tbody=c('ladder-tbody');
   if(!ladder.tranches||!ladder.tranches.length){
-    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No tranches. Click "+ Add Tranche" to build the first quarterly ladder.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="16" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No tranches. Use the execution panel in the advisory box to add tranches.</td></tr>';
     c('ladder-totals').innerHTML=''; return;
   }
-  var rows='',totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0;
+
+  var rows='',totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0,totalPnl=0;
   ladder.tranches.forEach(function(t){
     var expiry=new Date(t.expiry);
     var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
     var tteDays=Math.round(T*365);
-    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
-    var totalMtmR=mtm*t.contracts;
-    var pnl=(mtm-t.premiumPerContract)*t.contracts;
+    var buyDate=new Date(t.buyDate); buyDate.setHours(0,0,0,0);
+    var daysHeld=Math.max(0,Math.round((today-buyDate)/86400000));
+
+    // Per-contract figures
+    var mtmPerContract=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var entryPerContract=t.premiumPerContract;
+
+    // Per-tranche totals
+    var totalMtmR=mtmPerContract*t.contracts;
+    var pnl=(mtmPerContract-entryPerContract)*t.contracts;
+    var pnlPct=entryPerContract>0?(mtmPerContract-entryPerContract)/entryPerContract*100:0;
     var theta=bsThetaPerDay(S,t.strikeLevel,r,q,iv,T);
+
+    // Delta for this tranche's strike
+    var d1t=(Math.log(S/t.strikeLevel)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
+    var deltaTranche=Math.exp(-q*T)*(normCDF(d1t)-1);
+
     var isITM=S<t.strikeLevel, isNear=!isITM&&(t.strikeLevel-S)/S<0.03;
     var rowCls=isITM?'tranche-itm':isNear?'tranche-near':'tranche-otm';
     var badge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':isNear?'<span class="tdd-badge tdd-near">Near</span>':'<span class="tdd-badge tdd-otm">OTM</span>';
-    totalContracts+=t.contracts; totalCost+=t.premiumTotal; totalMTM+=totalMtmR; totalTheta+=theta*t.contracts;
+
+    // Roll warning on TTE
+    var tteCol=tteDays<14?'var(--red2)':tteDays<45?'var(--amber)':'var(--muted)';
+    var tteFlag=tteDays<45?' ⚠':'';
+
+    totalContracts+=t.contracts; totalCost+=t.premiumTotal;
+    totalMTM+=totalMtmR; totalTheta+=theta*t.contracts; totalPnl+=pnl;
+
     rows+='<tr class="'+rowCls+'">'
       +'<td>'+t.id+badge+'</td>'
-      +'<td>'+t.buyDate+'</td>'
-      +'<td>'+t.expiry+'</td>'
-      +'<td style="color:'+(tteDays<14?'var(--amber)':'var(--muted)')+'">'+tteDays+'</td>'
+      +'<td style="color:var(--muted)">'+t.buyDate+'</td>'
+      +'<td style="color:var(--muted)">'+t.expiry+'</td>'
+      +'<td style="color:'+tteCol+'">'+tteDays+tteFlag+'</td>'
       +'<td style="color:var(--plat)">'+Math.round(t.strikeLevel).toLocaleString('en-ZA')+'</td>'
-      +'<td style="color:var(--teal2)">'+t.contracts+'</td>'
+      +'<td style="color:var(--teal2);font-weight:700">'+t.contracts+'</td>'
+      +'<td style="color:var(--muted)">'+fRk(entryPerContract)+'</td>'
+      +'<td style="color:'+(mtmPerContract>entryPerContract?'var(--green2)':'var(--amber)')+'">'+fRk(mtmPerContract)+'</td>'
       +'<td style="color:var(--muted)">'+fRk(t.premiumTotal)+'</td>'
       +'<td style="color:'+(totalMtmR>t.premiumTotal?'var(--green2)':'var(--amber)')+'">'+fRk(totalMtmR)+'</td>'
-      +'<td style="color:'+(pnl>=0?'var(--green2)':'var(--red2)')+'">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
+      +'<td style="color:'+(pnl>=0?'var(--green2)':'var(--red2)')+';font-weight:700">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
+      +'<td style="color:'+(pnlPct>=0?'var(--green2)':'var(--red2)')+'">'+(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%</td>'
+      +'<td style="color:var(--blue2)">'+deltaTranche.toFixed(4)+'</td>'
       +'<td style="color:var(--red2)">−'+fRk(theta*t.contracts)+'</td>'
-      +'<td>'+tteDays+' days</td>'
+      +'<td style="color:var(--muted)">'+daysHeld+'d</td>'
       +'<td style="text-align:center"><button class="btn-close-tranche" onclick="closeTranche(\''+t.id+'\')">✕ Close</button></td>'
       +'</tr>';
   });
   tbody.innerHTML=rows;
-  var pnlTotal=totalMTM-totalCost;
+
+  var pnlTotalColor=totalPnl>=0?'var(--green2)':'var(--red2)';
   c('ladder-totals').innerHTML=
     '<span style="font-family:\'Rajdhani\',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">TOTALS:</span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Contracts: <span style="color:var(--teal2)">'+totalContracts+'</span></span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Cost: <span style="color:var(--muted)">'+fRk(totalCost)+'</span></span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">MTM: <span style="color:var(--amber)">'+fRk(totalMTM)+'</span></span>'
-    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">P&L: <span style="color:'+(pnlTotal>=0?'var(--green2)':'var(--red2)')+'">'+fRk(pnlTotal)+'</span></span>'
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Unreal P&L: <span style="color:'+pnlTotalColor+'">'+(totalPnl>=0?'+':'')+fRk(totalPnl)+'</span></span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Θ/day: <span style="color:var(--red2)">−'+fRk(totalTheta)+'</span></span>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// REMAINING BUDGET PANEL
+// ════════════════════════════════════════════════════════════════════
+function renderBudgetPanel(){
+  if(!CURRENT_SESSION) return;
+  var st=getState();
+  var capital=st.capital||CURRENT_SESSION.phylaxCapital;
+  var r=FVAL['i-jibar'];
+  var S=FVAL['i-spot'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var expiryStr=document.getElementById('i-expiry').value;
+  if(!r||!capital||!expiryStr) return;
+
+  var today=new Date(); today.setHours(0,0,0,0);
+  var expiry=new Date(expiryStr);
+  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+
+  // Total quarterly budget = capital × r/(1+r) ÷ 4
+  var annualBudget=capital*(r/(1+r));
+  var quarterlyBudget=annualBudget/4;
+
+  // Cumulative premiums already paid
+  var ladder=getLadder();
+  var paid=(ladder.tranches||[]).reduce(function(s,t){return s+t.premiumTotal;},0);
+  var remaining=Math.max(0,quarterlyBudget-paid);
+  var remainingPct=quarterlyBudget>0?(remaining/quarterlyBudget*100):0;
+
+  // Affordable contracts today
+  var otmFrac=FVAL['i-otm']||0.10;
+  var K=Math.round(S*(1-otmFrac));
+  var putR=T>0?bsPutRepriceR(S,K,r,q,iv,T):0;
+  var affordable=putR>0?Math.floor(remaining/putR):0;
+
+  // Weighted average entry premium across all tranches
+  var totalContracts=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
+  var blended=totalContracts>0?paid/totalContracts:0;
+
+  setText('bp-total',fRk(quarterlyBudget));
+  setText('bp-paid',paid>0?'−'+fRk(paid):'—');
+  c('bp-paid').style.color=paid>0?'var(--red2)':'var(--muted)';
+  setText('bp-remaining',fRk(remaining));
+  c('bp-remaining').style.color=remainingPct>50?'var(--teal2)':remainingPct>20?'var(--amber)':'var(--red2)';
+  setText('bp-remaining-pct',remainingPct.toFixed(1)+'% of quarterly budget');
+  setText('bp-affordable',affordable>0?affordable+' contracts':'Budget exhausted');
+  c('bp-affordable').style.color=affordable>0?'var(--green2)':'var(--red2)';
+  setText('bp-affordable-sub',putR>0?'at '+fRk(putR)+'/contract today':'no price available');
+  setText('bp-blended',blended>0?fRk(blended):'—');
+
+  window._budgetData={quarterlyBudget,paid,remaining,affordable,putR,blended,totalContracts};
+}
+
+// ════════════════════════════════════════════════════════════════════
+// PORTFOLIO HEDGE VIEW
+// ════════════════════════════════════════════════════════════════════
+function renderHedgeView(){
+  if(!CURRENT_SESSION) return;
+  var st=getState();
+  var totalPortfolio=st.totalPortfolio||CURRENT_SESSION.totalPortfolio;
+  if(!totalPortfolio) return;
+
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var ladder=getLadder();
+  var today=new Date(); today.setHours(0,0,0,0);
+
+  if(!S||!r||!iv||!ladder.tranches||!ladder.tranches.length){
+    ['hv-hm','hv-notional','hv-pnl','hv-entry'].forEach(function(id){ setText(id,'—'); });
+    return;
+  }
+
+  // ── Book-level aggregates ──────────────────────────────────────────
+  var totalContracts=0,totalCost=0,totalMTM=0,totalDeltaNotional=0;
+  ladder.tranches.forEach(function(t){
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var d1t=(Math.log(S/t.strikeLevel)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(Math.max(T,1e-6)));
+    var delta=Math.exp(-q*T)*(normCDF(d1t)-1);
+    totalContracts+=t.contracts;
+    totalCost+=t.premiumTotal;
+    totalMTM+=mtm*t.contracts;
+    // Delta-adjusted notional: |delta| × contracts × R10 × ALSI
+    totalDeltaNotional+=Math.abs(delta)*t.contracts*10*S;
+  });
+
+  var bookPnl=totalMTM-totalCost;
+  var bookPnlPct=totalCost>0?(bookPnl/totalCost*100):0;
+  var hedgeMultiple=totalPortfolio>0?(totalDeltaNotional/totalPortfolio):0;
+  var notionalPct=totalPortfolio>0?(totalDeltaNotional/totalPortfolio*100):0;
+  var avgEntry=totalContracts>0?(totalCost/totalContracts):0;
+  var avgMTM=totalContracts>0?(totalMTM/totalContracts):0;
+
+  setText('hv-hm',hedgeMultiple.toFixed(4)+'×');
+  c('hv-hm').style.color=hedgeMultiple>0.05?'var(--green2)':hedgeMultiple>0.01?'var(--amber)':'var(--muted)';
+  setText('hv-notional',fRk(totalDeltaNotional));
+  setText('hv-notional-pct',notionalPct.toFixed(2)+'% of R'+fRk(totalPortfolio)+' portfolio');
+  setText('hv-pnl',(bookPnl>=0?'+':'')+fRk(bookPnl));
+  c('hv-pnl').style.color=bookPnl>=0?'var(--green2)':'var(--red2)';
+  setText('hv-pnl-pct',(bookPnlPct>=0?'+':'')+bookPnlPct.toFixed(1)+'% vs cost basis');
+  setText('hv-entry',avgEntry>0?fRk(avgEntry)+'/contract':'—');
+  setText('hv-mtm-now','Current MTM: '+fRk(avgMTM)+'/contract');
+
+  // ── Stress scenarios ───────────────────────────────────────────────
+  function stressHedge(shockPct, prefix){
+    var sS=S*(1+shockPct);
+    // Equity portfolio loss (tracker sleeve tracks ALSI)
+    var portLoss=totalPortfolio*Math.abs(shockPct);
+    var newBookMTM=0;
+    ladder.tranches.forEach(function(t){
+      var exp=new Date(t.expiry);
+      var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+      // Vol spike: same calcCrashVol used elsewhere
+      var ivStress=calcCrashVol(iv,Math.abs(shockPct));
+      var mtmStress=bsPutRepriceR(sS,t.strikeLevel,r,q,ivStress,T);
+      newBookMTM+=mtmStress*t.contracts;
+    });
+    var putGain=newBookMTM-totalMTM; // gain vs today's book
+    var netImpact=putGain-portLoss;
+    var offsetRatio=portLoss>0?(putGain/portLoss):0;
+
+    // Implied aggregate delta at this shock
+    var impliedDelta=portLoss>0?(putGain/(Math.abs(shockPct)*S*totalContracts*10)):0;
+
+    if(prefix==='s0'){
+      setText('sh-s0-loss','—');
+      setText('sh-s0-gain','+'+fRk(0));
+      setText('sh-s0-net','—');
+      setText('sh-s0-ratio',hedgeMultiple.toFixed(4)+'×');
+      return;
+    }
+    setText('sh-'+prefix+'-loss','−'+fRk(portLoss));
+    c('sh-'+prefix+'-loss').style.color='var(--red2)';
+    setText('sh-'+prefix+'-gain',(putGain>=0?'+':'')+fRk(putGain));
+    c('sh-'+prefix+'-gain').style.color=putGain>0?'var(--green2)':'var(--red2)';
+    setText('sh-'+prefix+'-net',(netImpact>=0?'+':'')+fRk(netImpact));
+    c('sh-'+prefix+'-net').style.color=netImpact>=0?'var(--green2)':'var(--red2)';
+    setText('sh-'+prefix+'-ratio',(offsetRatio*100).toFixed(1)+'% offset');
+    c('sh-'+prefix+'-ratio').style.color=offsetRatio>0.5?'var(--green2)':offsetRatio>0.2?'var(--teal2)':'var(--amber)';
+    if(c('sh-'+prefix+'-delta')) setText('sh-'+prefix+'-delta',impliedDelta.toFixed(4));
+  }
+
+  stressHedge(0,'s0');
+  stressHedge(-0.10,'s10');
+  stressHedge(-0.25,'s25');
+  stressHedge(-0.40,'s40');
 }
 
 function renderDailyNAV(){
