@@ -653,6 +653,77 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ BUY CONFIRMATION MODAL ════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="buy-confirm-modal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-title" style="color:var(--teal2)">Step 4 — Confirm Tranche Purchase</div>
+    <div class="modal-sub">Review the details below carefully before confirming. This will lock the position into your book.</div>
+    <div class="modal-section">Trade Summary</div>
+    <div style="background:rgba(0,196,212,.05);border:1px solid rgba(0,196,212,.2);border-radius:2px;padding:14px 16px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px">
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Contracts to Buy</div><div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--teal2)" id="bc-contracts">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Strike</div><div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:var(--plat)" id="bc-strike">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Premium per Contract</div><div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--white)" id="bc-premium">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Total Cost</div><div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--red2)" id="bc-total-cost">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Expiry</div><div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--white)" id="bc-expiry">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Remaining Budget After</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="bc-budget-after">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">vs Recommendation</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="bc-vs-rec">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Held After Purchase</div><div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--teal2)" id="bc-held-after">—</div></div>
+      </div>
+    </div>
+    <div class="modal-section">Step 5 — Type BUY to confirm</div>
+    <input type="text" id="bc-confirm-input" placeholder='Type "BUY" to confirm'
+      style="margin-bottom:12px;text-transform:uppercase;letter-spacing:.12em;font-size:13px"
+      oninput="onBuyConfirmInput()"/>
+    <div class="exec-warn" id="bc-warn" style="display:none;margin-bottom:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" id="bc-confirm-btn" onclick="executeTodayBuy()" disabled
+        style="opacity:.4;cursor:not-allowed">✓ &nbsp;Confirm Purchase</button>
+      <button class="btn btn-ghost" onclick="closeBuyConfirmModal()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CLOSE TRANCHE MODAL ══════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="close-tranche-modal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-title" style="color:var(--red2)">Close Tranche Position</div>
+    <div class="modal-sub" id="ct-sub">Review the position details and choose how many contracts to close.</div>
+    <div class="modal-section">Position Details</div>
+    <div style="background:rgba(232,64,64,.05);border:1px solid rgba(232,64,64,.15);border-radius:2px;padding:14px 16px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px">
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Tranche</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:var(--teal2)" id="ct-id">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Strike</div><div style="font-family:'DM Mono',monospace;font-size:16px;font-weight:700;color:var(--plat)" id="ct-strike">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Contracts Held</div><div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--white)" id="ct-total">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Entry Premium</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="ct-entry">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Current MTM</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="ct-mtm">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Unrealised P&amp;L</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="ct-pnl">—</div></div>
+      </div>
+    </div>
+    <div class="modal-section">Contracts to Close</div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--plat)">
+        <input type="radio" name="ct-close-type" value="full" checked onchange="onCloseTypeChange()" style="width:auto;accent-color:var(--red2)"/> Full position
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--plat)">
+        <input type="radio" name="ct-close-type" value="partial" onchange="onCloseTypeChange()" style="width:auto;accent-color:var(--red2)"/> Partial
+      </label>
+      <input type="number" id="ct-partial-qty" min="1" placeholder="Qty"
+        style="width:90px;display:none" oninput="onCloseQtyInput()"/>
+    </div>
+    <div style="background:rgba(232,64,64,.07);border:1px solid rgba(232,64,64,.2);border-radius:2px;padding:12px 14px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:10.5px;line-height:1.8" id="ct-proceeds-summary"></div>
+    <div class="modal-section">Type CLOSE to confirm</div>
+    <input type="text" id="ct-confirm-input" placeholder='Type "CLOSE" to confirm'
+      style="margin-bottom:12px;text-transform:uppercase;letter-spacing:.12em;font-size:13px"
+      oninput="onCloseConfirmInput()"/>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="ct-confirm-btn" onclick="executeCloseConfirmed()" disabled
+        style="opacity:.4;cursor:not-allowed;padding:10px 20px;font-size:10px">✕ &nbsp;Confirm Close</button>
+      <button class="btn btn-ghost" onclick="closeTrancheModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ REDUCE POSITION MODAL ════════════════════════════════════════ -->
 <div class="modal-overlay hidden" id="reduce-modal">
   <div class="modal-box" style="max-width:600px">
@@ -661,8 +732,13 @@ textarea:focus{border-color:var(--teal2)}
     <div class="modal-section">Active Tranches</div>
     <div id="reduce-tranche-list"></div>
     <div class="reduce-summary" id="reduce-summary" style="display:none"></div>
+    <div class="modal-section">Type REDUCE to confirm</div>
+    <input type="text" id="reduce-confirm-input" placeholder='Type "REDUCE" to confirm'
+      style="margin-bottom:12px;text-transform:uppercase;letter-spacing:.12em;font-size:13px"
+      oninput="onReduceConfirmInput()"/>
     <div class="modal-actions">
-      <button class="btn btn-danger" onclick="confirmReduce()" id="reduce-confirm-btn">✕ &nbsp;Close Selected Tranches</button>
+      <button class="btn btn-danger" onclick="confirmReduce()" id="reduce-confirm-btn"
+        disabled style="opacity:.4;cursor:not-allowed">✕ &nbsp;Close Selected Tranches</button>
       <button class="btn btn-ghost" onclick="closeReduceModal()">Cancel</button>
     </div>
   </div>
@@ -1128,14 +1204,16 @@ textarea:focus{border-color:var(--teal2)}
       <div class="dec-details" id="dec-details"></div>
 
       <div class="exec-panel" id="exec-panel" style="display:none">
+        <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px">
+          Step 2 — How many contracts do you want to buy today?
+        </div>
         <div class="exec-row">
-          <span class="exec-label">Execute today:</span>
           <input type="number" class="exec-input" id="exec-qty" min="0" step="1"
             oninput="onExecQtyInput()" placeholder="0"/>
           <span class="exec-meta" id="exec-meta">contracts</span>
-          <button class="btn btn-sm" id="exec-btn" onclick="executeTodayBuy()"
-            style="background:rgba(0,196,212,.15);border:1px solid var(--border2);color:var(--teal2);font-size:9px;padding:6px 14px">
-            + Add Tranche
+          <button class="btn btn-sm" id="exec-btn" onclick="openBuyConfirmModal()"
+            style="background:rgba(0,196,212,.15);border:1px solid var(--border2);color:var(--teal2);font-size:9px;padding:6px 16px;letter-spacing:.08em">
+            + Add Tranche →
           </button>
         </div>
         <div class="exec-warn" id="exec-warn"></div>
@@ -2367,7 +2445,7 @@ function updateSimState(){
 // ════════════════════════════════════════════════════════════════════
 // LADDER ENGINE
 // ════════════════════════════════════════════════════════════════════
-// ── EXECUTION: today's buy input validation ────────────────────────
+// ── STEP 2/3: qty input validation ────────────────────────────────
 function onExecQtyInput(){
   var execQty=c('exec-qty');
   execQty.dataset.userEdited='1';
@@ -2391,7 +2469,7 @@ function onExecQtyInput(){
   } else if(qty<rec){
     var deficit=rec-qty;
     warnEl.className='exec-warn under';
-    warnEl.textContent='ℹ Underhedge: '+deficit+' contracts short of target. Gap will carry to tomorrow\'s advisory.';
+    warnEl.textContent='ℹ Underhedge: '+deficit+' contracts short of target. Gap carries to tomorrow.';
     warnEl.style.display='block';
   } else {
     warnEl.className='exec-warn ok';
@@ -2400,13 +2478,14 @@ function onExecQtyInput(){
   }
 }
 
-// ── EXECUTION: commit today's buy ─────────────────────────────────
-function executeTodayBuy(){
+// ── STEP 3→4: open buy confirmation modal ─────────────────────────
+function openBuyConfirmModal(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
   if(!window._calc){ alert('Enter market inputs first.'); return; }
   var execQty=c('exec-qty');
   var qty=parseInt(execQty.value)||0;
-  if(qty<=0){ alert('Enter how many contracts you want to purchase today (or 0 to skip).'); return; }
+  if(qty<=0){ alert('Enter how many contracts you want to purchase today.'); execQty.focus(); return; }
+
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var otmFrac=FVAL['i-otm'];
   var K=Math.round(S*(1-otmFrac));
@@ -2415,55 +2494,248 @@ function executeTodayBuy(){
   var expiry=new Date(expStr);
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
   var putR=bsPutRepriceR(S,K,r,q,iv,T);
-  if(putR<=0){ alert('Put price is zero — check inputs.'); return; }
-  var premiumTotal=qty*putR;
+  if(putR<=0){ alert('Put price is zero — check market inputs.'); return; }
+
+  var totalCost=qty*putR;
+  var rec=parseInt(execQty.dataset.recommended||0);
+  var ladderHeld=window._calcLadderHeld||0;
+
+  // Budget remaining after this purchase
+  var bd=window._budgetData||{};
+  var remainingAfter=Math.max(0,(bd.remaining||0)-totalCost);
+
+  // vs recommendation label
+  var diff=qty-rec;
+  var vsRec=diff===0?'✓ Matches recommendation':diff>0?'⚠ +'+diff+' over recommendation':'ℹ −'+Math.abs(diff)+' under recommendation';
+  var vsRecColor=diff===0?'var(--green2)':diff>0?'var(--red2)':'var(--amber)';
+
+  setText('bc-contracts',qty);
+  setText('bc-strike',K.toLocaleString('en-ZA')+' pts');
+  setText('bc-premium',fRk(putR)+'/contract');
+  setText('bc-total-cost','−'+fRk(totalCost));
+  c('bc-total-cost').style.color='var(--red2)';
+  setText('bc-expiry',expStr);
+  setText('bc-budget-after',fRk(remainingAfter));
+  c('bc-budget-after').style.color=remainingAfter>0?'var(--teal2)':'var(--red2)';
+  setText('bc-vs-rec',vsRec);
+  c('bc-vs-rec').style.color=vsRecColor;
+  setText('bc-held-after',(ladderHeld+qty)+' contracts');
+
+  // Store for execution
+  window._pendingBuy={qty,K,putR,expStr,T,totalCost};
+
+  // Reset confirmation input
+  c('bc-confirm-input').value='';
+  var btn=c('bc-confirm-btn');
+  btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+  c('bc-warn').style.display='none';
+  c('buy-confirm-modal').classList.remove('hidden');
+}
+
+function closeBuyConfirmModal(){ c('buy-confirm-modal').classList.add('hidden'); }
+
+// ── STEP 5: typed confirmation enables button ──────────────────────
+function onBuyConfirmInput(){
+  var val=c('bc-confirm-input').value.trim().toUpperCase();
+  var btn=c('bc-confirm-btn');
+  if(val==='BUY'){
+    btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+    c('bc-warn').style.display='none';
+  } else {
+    btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+  }
+}
+
+// ── STEP 5→EXECUTE: commit purchase ───────────────────────────────
+function executeTodayBuy(){
+  if(!window._pendingBuy){ alert('No pending buy — please start again.'); closeBuyConfirmModal(); return; }
+  if(c('bc-confirm-input').value.trim().toUpperCase()!=='BUY'){ alert('Type BUY to confirm.'); return; }
+
+  var pb=window._pendingBuy;
+  var ladder=getLadder();
   var st=getState();
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
-  var ladder=getLadder();
   var id='T'+(String(Date.now()).slice(-6));
   ladder.tranches.push({
     id:id, buyDate:new Date().toISOString().slice(0,10),
-    expiry:expStr, strikeLevel:K, spotAtBuy:S,
-    tteAtBuyYears:T, contracts:qty,
-    premiumPerContract:putR, premiumTotal:premiumTotal,
-    status:'active', payoffReceived:0, otmFrac:otmFrac, addedTs:Date.now()
+    expiry:pb.expStr, strikeLevel:pb.K,
+    spotAtBuy:FVAL['i-spot'],
+    tteAtBuyYears:pb.T, contracts:pb.qty,
+    premiumPerContract:pb.putR, premiumTotal:pb.totalCost,
+    status:'active', payoffReceived:0,
+    otmFrac:FVAL['i-otm'], addedTs:Date.now()
   });
-  if(ladder.cashBalance===0) ladder.cashBalance=capital-premiumTotal;
-  else ladder.cashBalance-=premiumTotal;
+  if(!ladder.cashBalance) ladder.cashBalance=capital-pb.totalCost;
+  else ladder.cashBalance-=pb.totalCost;
   saveLadder(ladder);
-  // Reset user-edited flag so next calc re-fills with fresh gap
+
+  window._pendingBuy=null;
+  var execQty=c('exec-qty');
   delete execQty.dataset.userEdited;
   execQty.value='';
+  closeBuyConfirmModal();
+
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
   renderBudgetPanel(); renderHedgeView();
-  calc(); // re-run so advisory updates immediately
-  var btn=c('exec-btn');
-  var orig=btn.textContent;
-  btn.textContent='✓ Added!'; btn.style.background='rgba(64,200,128,.25)';
-  setTimeout(function(){btn.textContent=orig;btn.style.background='';},2000);
+  calc();
+  fbSaveSession(buildSessionData());
 }
 
-// Keep the header button working (opens exec flow via addTranche button in ladder header)
+// ── HEADER BUTTON: scroll to exec panel ───────────────────────────
 function addTranche(){
-  // Scroll to decision box and focus the exec qty input
   var ep=c('exec-panel');
   if(ep && ep.style.display!=='none'){
     ep.scrollIntoView({behavior:'smooth',block:'center'});
     setTimeout(function(){ c('exec-qty').focus(); },400);
   } else {
-    // No buy signal — show message
-    alert('No buy signal active. The advisory box will show an execution panel when contracts are needed.');
+    alert('No buy signal active. Check market inputs — the advisory box will show the execution panel when contracts are needed.');
   }
 }
 
+// ── CLOSE TRANCHE MODAL ────────────────────────────────────────────
+var _closingTrancheId=null;
+
+function closeTranche(id){
+  var ladder=getLadder();
+  var t=ladder.tranches.find(function(x){return x.id===id;});
+  if(!t){ alert('Tranche not found.'); return; }
+
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var expiry=new Date(t.expiry);
+  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+  var mtmPerContract=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+  var pnl=(mtmPerContract-t.premiumPerContract)*t.contracts;
+  var haircut=t.contracts<50?0.025:t.contracts<200?0.04:0.06;
+
+  _closingTrancheId=id;
+  setText('ct-id',t.id);
+  setText('ct-strike',Math.round(t.strikeLevel).toLocaleString('en-ZA')+' pts');
+  setText('ct-total',t.contracts+' contracts');
+  setText('ct-entry',fRk(t.premiumPerContract)+'/contract (total: '+fRk(t.premiumTotal)+')');
+  setText('ct-mtm',fRk(mtmPerContract)+'/contract (total: '+fRk(mtmPerContract*t.contracts)+')');
+  c('ct-mtm').style.color=mtmPerContract>t.premiumPerContract?'var(--green2)':'var(--red2)';
+  setText('ct-pnl',(pnl>=0?'+':'')+fRk(pnl)+' ('+(pnl>=0?'+':'')+((pnl/t.premiumTotal)*100).toFixed(1)+'%)');
+  c('ct-pnl').style.color=pnl>=0?'var(--green2)':'var(--red2)';
+
+  // Reset to full close mode
+  document.querySelector('input[name="ct-close-type"][value="full"]').checked=true;
+  c('ct-partial-qty').style.display='none';
+  c('ct-partial-qty').value='';
+  c('ct-confirm-input').value='';
+  var btn=c('ct-confirm-btn');
+  btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+
+  // Set proceeds summary for full close
+  var proceeds=mtmPerContract*t.contracts*(1-haircut);
+  c('ct-proceeds-summary').innerHTML=
+    'Closing <strong style="color:var(--red2)">'+t.contracts+' contracts</strong> (full position)'
+    +'<br>Bid haircut: '+((haircut*100).toFixed(1))+'% ('+t.contracts+' contracts)'
+    +'<br>Gross MTM: '+fRk(mtmPerContract*t.contracts)
+    +'<br><strong style="color:var(--green2)">Net proceeds to cash: '+fRk(proceeds)+'</strong>';
+
+  window._closingMTM=mtmPerContract;
+  window._closingHaircut=haircut;
+  window._closingT=t;
+  c('close-tranche-modal').classList.remove('hidden');
+}
+
+function onCloseTypeChange(){
+  var isPartial=document.querySelector('input[name="ct-close-type"]:checked').value==='partial';
+  c('ct-partial-qty').style.display=isPartial?'inline-block':'none';
+  if(!isPartial) updateCloseProceeds(window._closingT.contracts);
+  c('ct-confirm-input').value='';
+  var btn=c('ct-confirm-btn');
+  btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+}
+
+function onCloseQtyInput(){
+  var t=window._closingT;
+  if(!t) return;
+  var qty=Math.min(parseInt(c('ct-partial-qty').value)||0, t.contracts);
+  updateCloseProceeds(qty);
+  c('ct-confirm-input').value='';
+  var btn=c('ct-confirm-btn');
+  btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+}
+
+function updateCloseProceeds(qty){
+  var t=window._closingT;
+  var mtm=window._closingMTM||0;
+  var haircut=window._closingHaircut||0.025;
+  if(!qty||qty<=0){ c('ct-proceeds-summary').innerHTML='Enter a quantity.'; return; }
+  var gross=mtm*qty;
+  var proceeds=gross*(1-haircut);
+  var remaining=t.contracts-qty;
+  c('ct-proceeds-summary').innerHTML=
+    'Closing <strong style="color:var(--red2)">'+qty+' of '+t.contracts+' contracts</strong>'
+    +(remaining>0?'<br>Remaining in book: <strong style="color:var(--teal2)">'+remaining+' contracts</strong>':'<br><span style="color:var(--amber)">Full position will be closed</span>')
+    +'<br>Bid haircut: '+((haircut*100).toFixed(1))+'%'
+    +'<br>Gross MTM: '+fRk(gross)
+    +'<br><strong style="color:var(--green2)">Net proceeds to cash: '+fRk(proceeds)+'</strong>';
+}
+
+function onCloseConfirmInput(){
+  var val=c('ct-confirm-input').value.trim().toUpperCase();
+  var btn=c('ct-confirm-btn');
+  if(val==='CLOSE'){
+    btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+  } else {
+    btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+  }
+}
+
+function closeTrancheModal(){ c('close-tranche-modal').classList.add('hidden'); _closingTrancheId=null; }
+
+function executeCloseConfirmed(){
+  if(c('ct-confirm-input').value.trim().toUpperCase()!=='CLOSE'){ alert('Type CLOSE to confirm.'); return; }
+  var t=window._closingT;
+  if(!t){ alert('No tranche selected.'); return; }
+  var isPartial=document.querySelector('input[name="ct-close-type"]:checked').value==='partial';
+  var qty=isPartial?Math.min(parseInt(c('ct-partial-qty').value)||0,t.contracts):t.contracts;
+  if(qty<=0){ alert('Enter a valid quantity.'); return; }
+
+  var mtm=window._closingMTM||0;
+  var haircut=window._closingHaircut||0.025;
+  var proceeds=mtm*qty*(1-haircut);
+
+  var ladder=getLadder();
+  var idx=ladder.tranches.findIndex(function(x){return x.id===t.id;});
+  if(idx<0){ alert('Tranche no longer found.'); closeTrancheModal(); return; }
+
+  ladder.cashBalance+=proceeds;
+  if(qty>=t.contracts){
+    ladder.tranches.splice(idx,1);
+  } else {
+    ladder.tranches[idx].contracts-=qty;
+    ladder.tranches[idx].premiumTotal=ladder.tranches[idx].premiumPerContract*ladder.tranches[idx].contracts;
+  }
+  saveLadder(ladder);
+  closeTrancheModal();
+  renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+  renderBudgetPanel(); renderHedgeView();
+  calc();
+  fbSaveSession(buildSessionData());
+}
+
 // ── REDUCE POSITION MODAL ──────────────────────────────────────────
+function onReduceConfirmInput(){
+  var val=c('reduce-confirm-input').value.trim().toUpperCase();
+  var btn=c('reduce-confirm-btn');
+  if(val==='REDUCE'){
+    btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+  } else {
+    btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+  }
+}
+
 function openReduceModal(suggestedExcess){
   var ladder=getLadder();
   if(!ladder.tranches||!ladder.tranches.length){ alert('No active tranches to reduce.'); return; }
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var today=new Date(); today.setHours(0,0,0,0);
   var excess=suggestedExcess||Math.abs(window._calcLadderHeld-(window._calcRecommended||0));
-  c('reduce-modal-sub').innerHTML='System recommends reducing by <strong style="color:var(--red2)">'+excess+' contracts</strong>. Select tranches and enter how many contracts to close from each. The decision is yours — you can reduce more, less, or from different tranches.';
+  c('reduce-modal-sub').innerHTML='System recommends reducing by <strong style="color:var(--red2)">'+excess+' contracts</strong>. Select tranches and enter how many contracts to close from each. The decision is yours.';
   var list=c('reduce-tranche-list');
   list.innerHTML='';
   ladder.tranches.forEach(function(t){
@@ -2486,6 +2758,9 @@ function openReduceModal(suggestedExcess){
     list.appendChild(div);
   });
   c('reduce-summary').style.display='none';
+  c('reduce-confirm-input').value='';
+  var btn=c('reduce-confirm-btn');
+  btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
   c('reduce-modal').classList.remove('hidden');
 }
 
@@ -2526,6 +2801,7 @@ function updateReduceSummary(){
 function closeReduceModal(){ c('reduce-modal').classList.add('hidden'); }
 
 function confirmReduce(){
+  if(c('reduce-confirm-input').value.trim().toUpperCase()!=='REDUCE'){ alert('Type REDUCE to confirm.'); return; }
   var ladder=getLadder();
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var today=new Date(); today.setHours(0,0,0,0);
@@ -2974,8 +3250,8 @@ function renderLog(){
 function clearLog(){
   var log=getLog();
   if(log.length===0){alert('Log is already empty.');return;}
-  if(!confirm('Delete all '+log.length+' audit log entries?')) return;
-  if(prompt('Type YES to confirm:')!=='YES'){alert('Cancelled.');return;}
+  if(!confirm('Delete all '+log.length+' audit log entries? This cannot be undone.\n\nA second confirmation will follow.')) return;
+  if(!confirm('FINAL CONFIRMATION: Permanently delete all '+log.length+' log entries?')) return;
   saveLog([]); renderLog();
 }
 
