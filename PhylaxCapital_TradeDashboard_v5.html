@@ -1992,17 +1992,16 @@ function calc(){
   c('o-carry').style.color=netCarry>=0?'var(--green)':'var(--red)';
   c('mc-carry').className='mc'+(netCarry>=0?'':' r');
 
-  // Carry status
-  var cs=c('carry-status');
-  if(held===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts held — carry N/A until first purchase'; }
-  else if(netCarry>=0){ cs.className='carry-ok'; cs.innerHTML='✓ &nbsp;Carry POSITIVE — self-financing at '+held+' contracts ('+fRk(netCarry)+'/day net)'; }
-  else { cs.className='carry-bad'; cs.innerHTML='⚠ &nbsp;Carry NEGATIVE — theta bleed exceeds yield at '+held+' contracts. Max carry-neutral: '+maxCarryContracts; }
-
   // ── Derive held from ladder (single source of truth) ──────────────
   var ladder=getLadder();
   var ladderHeld=(ladder.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
-  // tradeRequired uses ladder-derived held, not the manual i-held field
   var tradeRequiredLadder=recommended-ladderHeld;
+
+  // Carry status — use ladderHeld not the stale manual held field
+  var cs=c('carry-status');
+  if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts held — carry N/A until first purchase'; }
+  else if(netCarry>=0){ cs.className='carry-ok'; cs.innerHTML='✓ &nbsp;Carry POSITIVE — self-financing at '+ladderHeld+' contracts ('+fRk(netCarry)+'/day net)'; }
+  else { cs.className='carry-bad'; cs.innerHTML='⚠ &nbsp;Carry NEGATIVE — theta bleed exceeds yield at '+ladderHeld+' contracts. Max carry-neutral: '+maxCarryContracts; }
 
   // ── Hedge alert (overhedge / underhedge carry-forward) ─────────────
   var alertEl=c('hedge-alert');
