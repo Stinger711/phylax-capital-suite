@@ -1969,8 +1969,16 @@ function calc(){
   var dailyYield=NAV*zaronia/365;
   var thetaBleedPC=Math.abs(thetaD)*10;
   var maxCarryContracts=thetaBleedPC>0?Math.floor(dailyYield/thetaBleedPC):9999;
-  var convexityBudget=NAV-(NAV/(1+r*T));
-  var budgetContracts=putPriceR>0?Math.floor(convexityBudget/putPriceR):0;
+
+  // ── Unified budget: remaining after premiums already paid ──────────
+  // Total quarterly budget uses same formula as budget panel
+  var annualBudgetCalc=NAV*(r/(1+r));
+  var quarterlyBudgetCalc=annualBudgetCalc/4;
+  var ladder=getLadder();
+  var premiumsPaid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+  var remainingBudget=Math.max(0,quarterlyBudgetCalc-premiumsPaid);
+  var convexityBudget=remainingBudget; // keep name for BS table display
+  var budgetContracts=putPriceR>0?Math.floor(remainingBudget/putPriceR):0;
   var recommended=Math.max(0,Math.min(budgetContracts,maxCarryContracts));
   var tradeRequired=recommended-held;
   var dailyThetaBleed=thetaBleedPC*held;
@@ -2592,7 +2600,7 @@ function onBuyConfirmInput(){
 }
 
 // ── STEP 5→EXECUTE: commit purchase ───────────────────────────────
-function executeTodayBuy(){
+async function executeTodayBuy(){
   if(!window._pendingBuy){ alert('No pending buy — please start again.'); closeBuyConfirmModal(); return; }
   if(c('bc-confirm-input').value.trim().toUpperCase()!=='BUY'){ alert('Type BUY to confirm.'); return; }
 
@@ -2612,7 +2620,31 @@ function executeTodayBuy(){
   });
   if(!ladder.cashBalance) ladder.cashBalance=capital-pb.totalCost;
   else ladder.cashBalance-=pb.totalCost;
+
+  // Save to localStorage immediately (synchronous)
   saveLadder(ladder);
+
+  // ── Save to Firestore NOW before closing modal ──────────────────────
+  // Keep modal open with a saving indicator so user cannot navigate away
+  var confirmBtn=c('bc-confirm-btn');
+  var confirmInput=c('bc-confirm-input');
+  confirmBtn.textContent='⏳ Saving to Firebase…';
+  confirmBtn.disabled=true;
+  confirmInput.disabled=true;
+
+  var saveOk=false;
+  if(fbReady()){
+    setFBStatus('connecting','Saving…');
+    try{
+      var data=buildSessionData();
+      await sessionDoc(CURRENT_SESSION.sessionId).set(data,{merge:true});
+      setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+      saveOk=true;
+    }catch(e){
+      console.error('Firebase save error:',e);
+      setFBStatus('error','Cloud save failed — saved locally');
+    }
+  }
 
   window._pendingBuy=null;
   var execQty=c('exec-qty');
@@ -2620,10 +2652,24 @@ function executeTodayBuy(){
   execQty.value='';
   closeBuyConfirmModal();
 
-  renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
-  renderBudgetPanel(); renderHedgeView();
-  calc();
-  fbSaveTrade("Tranche purchase");
+  // Reset button state
+  confirmBtn.textContent='✓ &nbsp;Confirm Purchase';
+  confirmBtn.disabled=false;
+  confirmInput.disabled=false;
+
+  // Render panels — wrapped so any display error cannot suppress the toast
+  try{
+    renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+    renderBudgetPanel(); renderHedgeView();
+    calc();
+  }catch(renderErr){ console.error('Render error (trade already saved):', renderErr); }
+
+  // Show toast AFTER confirmed write
+  if(saveOk){
+    showToast('✓  Tranche '+id+' ('+pb.qty+' contracts) confirmed & saved to Firebase','success',6000);
+  } else {
+    showToast('⚠  Tranche saved locally — Firebase unavailable. Do not close this tab.','error',10000);
+  }
 }
 
 // ── HEADER BUTTON: scroll to exec panel ───────────────────────────
@@ -2732,7 +2778,7 @@ function onCloseConfirmInput(){
 
 function closeTrancheModal(){ c('close-tranche-modal').classList.add('hidden'); _closingTrancheId=null; }
 
-function executeCloseConfirmed(){
+async function executeCloseConfirmed(){
   if(c('ct-confirm-input').value.trim().toUpperCase()!=='CLOSE'){ alert('Type CLOSE to confirm.'); return; }
   var t=window._closingT;
   if(!t){ alert('No tranche selected.'); return; }
@@ -2756,11 +2802,27 @@ function executeCloseConfirmed(){
     ladder.tranches[idx].premiumTotal=ladder.tranches[idx].premiumPerContract*ladder.tranches[idx].contracts;
   }
   saveLadder(ladder);
+
+  // Await Firestore before closing modal
+  var btn=c('ct-confirm-btn');
+  btn.textContent='⏳ Saving…'; btn.disabled=true;
+  var saveOk=false;
+  if(fbReady()){
+    try{
+      await sessionDoc(CURRENT_SESSION.sessionId).set(buildSessionData(),{merge:true});
+      setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+      saveOk=true;
+    }catch(e){ console.error('Firebase save error:',e); setFBStatus('error','Cloud save failed'); }
+  }
+  btn.textContent='✕ &nbsp;Confirm Close'; btn.disabled=false;
   closeTrancheModal();
-  renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
-  renderBudgetPanel(); renderHedgeView();
-  calc();
-  fbSaveTrade("Tranche close");
+  try{
+    renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+    renderBudgetPanel(); renderHedgeView();
+    calc();
+  }catch(renderErr){ console.error('Render error (trade already saved):', renderErr); }
+  if(saveOk) showToast('✓  Tranche close confirmed & saved to Firebase','success',6000);
+  else showToast('⚠  Close saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
 // ── REDUCE POSITION MODAL ──────────────────────────────────────────
@@ -2845,7 +2907,7 @@ function updateReduceSummary(){
 
 function closeReduceModal(){ c('reduce-modal').classList.add('hidden'); }
 
-function confirmReduce(){
+async function confirmReduce(){
   if(c('reduce-confirm-input').value.trim().toUpperCase()!=='REDUCE'){ alert('Type REDUCE to confirm.'); return; }
   var ladder=getLadder();
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
@@ -2875,11 +2937,25 @@ function confirmReduce(){
   // Remove fully-closed tranches (reverse order to preserve indices)
   toRemove.slice().reverse().forEach(function(idx){ ladder.tranches.splice(idx,1); });
   saveLadder(ladder);
+
+  // Await Firestore save before rendering
+  var saveOk=false;
+  if(fbReady()){
+    try{
+      await sessionDoc(CURRENT_SESSION.sessionId).set(buildSessionData(),{merge:true});
+      setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+      saveOk=true;
+    }catch(e){ console.error('Firebase save error:',e); setFBStatus('error','Cloud save failed'); }
+  }
+
   closeReduceModal();
-  renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
-  renderBudgetPanel(); renderHedgeView();
-  calc();
-  fbSaveTrade("Position reduce");
+  try{
+    renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+    renderBudgetPanel(); renderHedgeView();
+    calc();
+  }catch(renderErr){ console.error('Render error (trade already saved):', renderErr); }
+  if(saveOk) showToast('✓  Position reduce confirmed & saved to Firebase','success',6000);
+  else showToast('⚠  Reduce saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
 function closeTranche(id){
@@ -2997,8 +3073,10 @@ function renderBudgetPanel(){
   var expiry=new Date(expiryStr);
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
 
-  // Total quarterly budget = capital × r/(1+r) ÷ 4
-  var annualBudget=capital*(r/(1+r));
+  // Total quarterly budget — same formula as calc() so panels agree
+  var navData=window._ladderNAV;
+  var navForBudget=navData?navData.totalNAV:(st.capital||CURRENT_SESSION.phylaxCapital);
+  var annualBudget=navForBudget*(r/(1+r));
   var quarterlyBudget=annualBudget/4;
 
   // Cumulative premiums already paid
@@ -3029,6 +3107,13 @@ function renderBudgetPanel(){
   setText('bp-blended',blended>0?fRk(blended):'—');
 
   window._budgetData={quarterlyBudget,paid,remaining,affordable,putR,blended,totalContracts};
+}
+
+// Vol spike model: implied vol rises as market falls
+// Empirical approximation: IV roughly doubles at -25% shock
+function calcCrashVol(baseIv, absMoveSize){
+  var multiplier=1+Math.min(absMoveSize*4, 2.0); // caps at 3x base IV
+  return Math.min(baseIv*multiplier, 1.50); // hard cap at 150%
 }
 
 // ════════════════════════════════════════════════════════════════════
