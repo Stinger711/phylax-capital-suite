@@ -1858,31 +1858,33 @@ function computeNAVFromState(spotOverride,ivOverride){
   var inception=new Date(st.inceptionDate);
   var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
   var zaronia=getZaronia();
+  var capital=st.capital||CURRENT_SESSION.phylaxCapital;
 
-  // Call account: simple daily accrual on initial cash core
-  var cashCore = st.cashCoreInit>0
-    ? st.cashCoreInit * (1 + zaronia * daysElapsed/365)
-    : st.capital;
+  // Cash base: use ladder cashBalance if set (premium already deducted),
+  // otherwise fall back to full capital (no tranches yet)
+  var ladder=getLadder();
+  var hasTranches=ladder.tranches&&ladder.tranches.length>0;
+  var cashBase=hasTranches&&ladder.cashBalance>0 ? ladder.cashBalance : capital;
 
-  // Residual cash also accretes
-  var residualToday = (st.residualCash||0) * (1 + zaronia * daysElapsed/365);
+  // Call account accrual on cash base
+  var cashCore=cashBase*(1+zaronia*daysElapsed/365);
+  var residualToday=(st.residualCash||0)*(1+zaronia*daysElapsed/365);
 
-  // Option book MTM using ladder
+  // Option book MTM using per-tranche ladder pricing
   var S=spotOverride||FVAL['i-spot'];
   var iv=ivOverride||FVAL['i-iv'];
-  var held=FVAL['i-held'];
-  var expiryStr=document.getElementById('i-expiry').value;
+  var r=FVAL['i-jibar'],q=FVAL['i-dY'];
   var optBook=0;
-  if(held>0&&expiryStr){
-    var expiry=new Date(expiryStr);
-    var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
-    var K=Math.round(S*(1-FVAL['i-otm']));
-    var putPts=bsCalcPutPrice(S,K,FVAL['i-jibar'],FVAL['i-dY'],iv,T);
-    optBook=putPts*10*held;
+  if(hasTranches&&S&&iv&&r){
+    ladder.tranches.forEach(function(t){
+      var expiry=new Date(t.expiry);
+      var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+      optBook+=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T)*t.contracts;
+    });
   }
 
   var totalNAV=cashCore+residualToday+optBook;
-  return {cashCore,residual:residualToday,optBook,total:totalNAV,daysElapsed,zaronia};
+  return {cashCore,residual:residualToday,optBook,total:totalNAV,daysElapsed,zaronia,cashBase};
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3222,12 +3224,15 @@ function renderDailyNAV(){
   var inception=st.inceptionDate?new Date(st.inceptionDate):today;
   var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
 
-  // Call account cash accrual
-  var cashCore=st.cashCoreInit>0?st.cashCoreInit*(1+zaronia*daysElapsed/365):st.capital||CURRENT_SESSION.phylaxCapital;
+  // Cash base: ladder cashBalance has premiums already deducted
+  // Fall back to full capital only if no tranches exist yet
+  var capital=st.capital||CURRENT_SESSION.phylaxCapital;
+  var hasTranches=ladder.tranches&&ladder.tranches.length>0;
+  var cashBase=hasTranches&&ladder.cashBalance>0?ladder.cashBalance:capital;
+  var cashCore=cashBase*(1+zaronia*daysElapsed/365);
   var residual=(st.residualCash||0)*(1+zaronia*daysElapsed/365);
-  var ladderTotalCost=(ladder.tranches||[]).reduce(function(s,t){return s+t.premiumTotal;},0);
-  var effectiveCash=Math.max(0,cashCore+residual-ladderTotalCost);
-  var dailyCashAccrual=effectiveCash*dailyZaronia;
+  var effectiveCash=cashCore+residual;
+  var dailyCashAccrual=cashBase*dailyZaronia;
 
   var optBook=0,totalTheta=0,totalIntrinsic=0;
   (ladder.tranches||[]).forEach(function(t){
@@ -3241,7 +3246,7 @@ function renderDailyNAV(){
 
   var totalNAV=effectiveCash+optBook;
   var floor=effectiveCash+totalIntrinsic;
-  var initialCap=st.capital||CURRENT_SESSION.phylaxCapital;
+  var initialCap=capital;
   var navVsCap=(totalNAV-initialCap)/initialCap*100;
 
   var navHistory=getNavHistory();
