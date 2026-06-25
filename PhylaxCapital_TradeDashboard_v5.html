@@ -4233,6 +4233,10 @@ function setFieldVal(id, val){
   if(FCFG[id]) el.value=FCFG[id].fmt(val);
   else el.value=val;
 }
+// ════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════
+function dashboardInit(){
   c('today-display').textContent=dt();
 
   // Generate session ID in modal
