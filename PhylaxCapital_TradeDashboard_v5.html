@@ -1826,7 +1826,18 @@ function saveInflowLog(l){ try{ localStorage.setItem(lsKey('inflowlog'),JSON.str
 // Restore session from Firebase data into localStorage
 function restoreSessionFromFirebase(data){
   if(!CURRENT_SESSION||!data) return;
-  if(data.state)   saveState(data.state);
+  if(data.state){
+    var st=data.state;
+    // Migration: zero out residualCash — it was double-counting the option budget
+    // Ladder cashBalance is now the single source of cash truth
+    st.residualCash=0;
+    // Also reset cashCoreInit so it gets correctly recalculated on next EOD
+    // from ladder.cashBalance rather than gross capital
+    if(data.ladder&&data.ladder.tranches&&data.ladder.tranches.length>0&&data.ladder.cashBalance>0){
+      st.cashCoreInit=data.ladder.cashBalance;
+    }
+    saveState(st);
+  }
   if(data.ladder)  saveLadder(data.ladder);
   if(data.navHistory) saveNavHistory(data.navHistory);
   if(data.auditLog)   saveLog(data.auditLog);
@@ -1868,7 +1879,7 @@ function computeNAVFromState(spotOverride,ivOverride){
 
   // Call account accrual on cash base
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
-  var residualToday=(st.residualCash||0)*(1+zaronia*daysElapsed/365);
+  // residualCash eliminated — ladder cashBalance is single cash source of truth
 
   // Option book MTM using per-tranche ladder pricing
   var S=spotOverride||FVAL['i-spot'];
@@ -1883,8 +1894,8 @@ function computeNAVFromState(spotOverride,ivOverride){
     });
   }
 
-  var totalNAV=cashCore+residualToday+optBook;
-  return {cashCore,residual:residualToday,optBook,total:totalNAV,daysElapsed,zaronia,cashBase};
+  var totalNAV=cashCore+optBook; // residual eliminated — ladder cashBalance is cash source of truth
+  return {cashCore,residual:0,optBook,total:totalNAV,daysElapsed,zaronia,cashBase};
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2217,28 +2228,16 @@ async function endOfDay(){
 
   // First EOD — initialise fund structure
   if(!st.cashCoreInit||st.cashCoreInit===0){
-    var expiry=new Date(expiryStr);
-    var now=new Date(); now.setHours(0,0,0,0);
-    var T0=Math.max(0.01,(expiry-now)/(365*24*60*60*1000));
     st.inceptionDate=CURRENT_SESSION.inceptionDate||today;
     st.capital=CURRENT_SESSION.phylaxCapital;
     st.totalPortfolio=CURRENT_SESSION.totalPortfolio;
     st.jibarAtInception=r;
-    // Call account: full capital goes in, daily ZARONIA accrual
-    // FI leg = capital, no need to discount — call account is daily liquid
-    st.cashCoreInit=st.capital;
-    var optBudget=st.capital*(r/(1+r)); // annual convexity budget
-    var K0=Math.round(eodSpot*(1-otm));
-    var putPts0=bsCalcPutPrice(eodSpot,K0,r,q,eodIV,T0);
-    var putR0=putPts0*10;
-    var initContracts=putR0>0?Math.floor((optBudget/4)/putR0):0;
-    var optSpend=initContracts*putR0;
-    st.residualCash=optBudget-optSpend;
-    if(held===0&&initContracts>0){
-      FVAL['i-held']=initContracts;
-      c('i-held').value=initContracts.toString();
-      held=initContracts;
-    }
+    // cashCoreInit = ladder cash balance (capital minus premiums paid)
+    // residualCash = 0 — ladder cashBalance is the single source of cash truth
+    var ldr=getLadder();
+    var hasTr=ldr.tranches&&ldr.tranches.length>0;
+    st.cashCoreInit=hasTr&&ldr.cashBalance>0?ldr.cashBalance:st.capital;
+    st.residualCash=0;
     saveState(st);
   }
 
@@ -2247,18 +2246,33 @@ async function endOfDay(){
   var todayDate=new Date(); todayDate.setHours(0,0,0,0);
   var daysElapsed=Math.max(0,Math.round((todayDate-inception)/86400000));
 
-  // Cash core (call account, daily accrual)
-  var cashCoreClose=st.cashCoreInit*(1+zaronia*daysElapsed/365);
-  var residualClose=(st.residualCash||0)*(1+zaronia*daysElapsed/365);
+  // ── Unified NAV: Cash (after premiums) + Accrual + Per-tranche MTM ──
+  // Same formula as renderDailyNAV and computeNAVFromState
+  var ldrClose=getLadder();
+  var hasTrClose=ldrClose.tranches&&ldrClose.tranches.length>0;
+  var cashBaseClose=hasTrClose&&ldrClose.cashBalance>0?ldrClose.cashBalance:(st.cashCoreInit||st.capital);
+  var cashCoreClose=cashBaseClose*(1+zaronia*daysElapsed/365);
+  var residualClose=0; // eliminated — ladder cashBalance is source of truth
 
-  // Option book at closing prices
+  // Option book: sum across all ladder tranches at closing prices
   var expiryD=new Date(expiryStr);
   var T=Math.max(0,(expiryD-todayDate)/(365*24*60*60*1000));
-  var K=Math.round(eodSpot*(1-otm));
-  var putPriceClose=bsCalcPutPrice(eodSpot,K,r,q,eodIV,T)*10;
-  var optBookClose=putPriceClose*held;
+  var optBookClose=0;
+  (ldrClose.tranches||[]).forEach(function(t){
+    var tExp=new Date(t.expiry);
+    var tT=Math.max(0,(tExp-todayDate)/(365*24*60*60*1000));
+    optBookClose+=bsPutRepriceR(eodSpot,t.strikeLevel,r,q,eodIV,tT)*t.contracts;
+  });
+  // Fallback if no tranches: use single-strike estimate
+  if(!hasTrClose&&held>0){
+    var K=Math.round(eodSpot*(1-otm));
+    optBookClose=bsCalcPutPrice(eodSpot,K,r,q,eodIV,T)*10*held;
+  }
 
-  var closingNAV=cashCoreClose+residualClose+optBookClose;
+  var closingNAV=cashCoreClose+optBookClose;
+
+  // Carry today = interest on cash base only (no residual)
+  var carryToday=cashBaseClose*zaronia/365;
 
   // Tracker NAV calculation
   var alsiEntry=getInceptionALSI()||eodTrackerLevel;
@@ -2269,16 +2283,15 @@ async function endOfDay(){
   var history=getNavHistory();
   var prevNAV=history.length>0?history[history.length-1].nav:st.capital;
   var dayPnl=closingNAV-prevNAV;
-  var carryToday=(st.cashCoreInit+st.residualCash)*zaronia/365;
   var optionPnl=dayPnl-carryToday;
 
   var entry={
     date:today, alsiOpen:eodOpen, alsi:eodSpot, alsiTracker:eodTrackerLevel, iv:eodIV,
     contracts:held, cashCore:cashCoreClose, optBook:optBookClose,
-    residual:residualClose, nav:closingNAV,
+    residual:0, nav:closingNAV,
     trackerNAV:trackerNAV, blendedNAV:blendedNAV,
     dayPnl:dayPnl, carryToday:carryToday, optionPnl:optionPnl,
-    putPriceR:putPriceClose, zaronia:zaronia
+    putPriceR:optBookClose>0&&held>0?optBookClose/held:0, zaronia:zaronia
   };
   var existing=history.findIndex(function(h){return h.date===today;});
   if(existing>=0) history[existing]=entry; else history.push(entry);
@@ -3230,8 +3243,8 @@ function renderDailyNAV(){
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
   var cashBase=hasTranches&&ladder.cashBalance>0?ladder.cashBalance:capital;
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
-  var residual=(st.residualCash||0)*(1+zaronia*daysElapsed/365);
-  var effectiveCash=cashCore+residual;
+  var residual=0; // eliminated — ladder cashBalance is cash source of truth
+  var effectiveCash=cashCore;
   var dailyCashAccrual=cashBase*dailyZaronia;
 
   var optBook=0,totalTheta=0,totalIntrinsic=0;
@@ -3447,13 +3460,15 @@ function confirmInflow(){
   var st=getState();
   // Update fund state
   var newCapital=(st.capital||CURRENT_SESSION.phylaxCapital)+ic.amount;
-  var newCashCore=(st.cashCoreInit||0)+ic.amount;
   st.capital=newCapital;
-  st.cashCoreInit=newCashCore;
   st.totalInflows=(st.totalInflows||0)+ic.amount;
   // Update total portfolio
   st.totalPortfolio=(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+ic.amount;
   saveState(st);
+  // Add cash to ladder balance — this is the single cash source of truth
+  var ldr=getLadder();
+  ldr.cashBalance=(ldr.cashBalance||0)+ic.amount;
+  saveLadder(ldr);
   CURRENT_SESSION.phylaxCapital=newCapital;
   CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
 
