@@ -407,7 +407,34 @@ textarea:focus{border-color:var(--teal2)}
 .shg-k{color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}
 .shg-v{font-family:'DM Mono',monospace;font-size:9.5px}
 
-/* ── TRADE TOAST ─────────────────────────────────────────────────── */
+/* ── MORNING CHECKLIST ──────────────────────────────────────────── */
+.mc-step{display:flex;align-items:flex-start;gap:14px;padding:12px 0;
+  border-bottom:1px solid var(--border)}
+.mc-step:last-child{border-bottom:none}
+.mc-num{width:24px;height:24px;border-radius:50%;background:rgba(0,196,212,.15);
+  border:1px solid rgba(0,196,212,.3);display:flex;align-items:center;justify-content:center;
+  font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--teal2);flex-shrink:0;margin-top:2px}
+.mc-num.done{background:rgba(64,200,128,.2);border-color:rgba(64,200,128,.4);color:var(--green2)}
+.mc-body{flex:1}
+.mc-label{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--plat);margin-bottom:6px}
+.mc-sub{font-size:9px;color:var(--muted);margin-bottom:8px;line-height:1.5}
+.mc-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mc-field{background:rgba(0,0,0,.4);border:1px solid var(--border2);border-radius:2px;
+  padding:7px 12px;color:var(--white);font-family:'DM Mono',monospace;font-size:13px;
+  font-weight:500;width:160px;outline:none;transition:border .2s}
+.mc-field:focus{border-color:var(--teal2)}
+.mc-unit{font-size:9px;color:var(--muted);font-family:'Rajdhani',sans-serif;
+  text-transform:uppercase;letter-spacing:.08em}
+.mc-carried{font-size:9px;color:var(--amber);font-family:'DM Mono',monospace}
+.mc-progress{display:flex;gap:4px;margin-bottom:16px}
+.mc-pip{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s}
+.mc-pip.done{background:var(--teal2)}
+.mc-summary{background:rgba(0,196,212,.05);border:1px solid rgba(0,196,212,.2);
+  border-radius:2px;padding:12px 14px;margin:12px 0;display:none}
+.mc-summary-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:10px}
+.mc-summary-k{color:var(--muted);font-family:'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.08em}
+.mc-summary-v{font-family:'DM Mono',monospace;color:var(--white)}
 .trade-toast{position:fixed;bottom:28px;right:28px;z-index:9999;
   padding:14px 20px;border-radius:3px;font-family:'Rajdhani',sans-serif;
   font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
@@ -657,6 +684,105 @@ textarea:focus{border-color:var(--teal2)}
     <button class="btn btn-ghost btn-xs" onclick="exportGoogleDrive()">↑ Drive Backup</button>
     <button class="btn btn-ghost btn-xs" onclick="exportFullSession()">↓ JSON Export</button>
     <button class="btn btn-danger btn-xs" onclick="resetDemo()">⚠ Reset</button>
+  </div>
+</div>
+
+<!-- ══ MORNING CHECKLIST MODAL ═══════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="morning-modal">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-title" style="color:var(--teal2)">☀ Morning Market Inputs</div>
+    <div class="modal-sub">Complete all fields before using the dashboard. These inputs drive every calculation — do not skip.</div>
+    <div class="mc-progress">
+      <div class="mc-pip" id="mc-pip-1"></div>
+      <div class="mc-pip" id="mc-pip-2"></div>
+      <div class="mc-pip" id="mc-pip-3"></div>
+      <div class="mc-pip" id="mc-pip-4"></div>
+    </div>
+
+    <!-- Step 1: ALSI Spot -->
+    <div class="mc-step">
+      <div class="mc-num" id="mc-num-1">1</div>
+      <div class="mc-body">
+        <div class="mc-label">ALSI Spot (J200 Index)</div>
+        <div class="mc-sub">Today's opening ALSI level in index points. Check Bloomberg, INET BFA, or JSE data feed.</div>
+        <div class="mc-input-row">
+          <input type="number" class="mc-field" id="mc-alsi" placeholder="e.g. 109 970" oninput="mcValidate()"/>
+          <span class="mc-unit">pts</span>
+          <span class="mc-carried" id="mc-alsi-prev"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: SAVI (Implied Vol) -->
+    <div class="mc-step">
+      <div class="mc-num" id="mc-num-2">2</div>
+      <div class="mc-body">
+        <div class="mc-label">Implied Volatility — SAVI (%)</div>
+        <div class="mc-sub">South African Volatility Index. Update weekly minimum — daily preferred. Drives put pricing and hedge calculations.</div>
+        <div class="mc-input-row">
+          <input type="number" class="mc-field" id="mc-savi" placeholder="e.g. 24.37" step="0.01" oninput="mcValidate()"/>
+          <span class="mc-unit">%</span>
+          <span class="mc-carried" id="mc-savi-prev"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: JIBAR (monthly) -->
+    <div class="mc-step">
+      <div class="mc-num" id="mc-num-3">3</div>
+      <div class="mc-body">
+        <div class="mc-label">JIBAR Rate (Monthly update)</div>
+        <div class="mc-sub" id="mc-jibar-sub">3-month JIBAR. Update monthly or after SARB MPC decision. ZARONIA = JIBAR − 15bps.</div>
+        <div class="mc-input-row">
+          <input type="number" class="mc-field" id="mc-jibar" placeholder="e.g. 6.99" step="0.01" oninput="mcValidate()"/>
+          <span class="mc-unit">% p.a.</span>
+          <span class="mc-carried" id="mc-jibar-prev"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Dividend Yield (quarterly) -->
+    <div class="mc-step">
+      <div class="mc-num" id="mc-num-4">4</div>
+      <div class="mc-body">
+        <div class="mc-label">ALSI Dividend Yield (Quarterly update)</div>
+        <div class="mc-sub">Continuous dividend yield for Black-Scholes. Update quarterly. Omitting causes ~25% mispricing.</div>
+        <div class="mc-input-row">
+          <input type="number" class="mc-field" id="mc-dy" placeholder="e.g. 3.37" step="0.01" oninput="mcValidate()"/>
+          <span class="mc-unit">% p.a.</span>
+          <span class="mc-carried" id="mc-dy-prev"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="mc-summary" id="mc-summary">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--teal2);margin-bottom:8px">Input Summary — Review Before Confirming</div>
+      <div class="mc-summary-row"><span class="mc-summary-k">ALSI Spot</span><span class="mc-summary-v" id="mc-s-alsi">—</span></div>
+      <div class="mc-summary-row"><span class="mc-summary-k">SAVI (IV)</span><span class="mc-summary-v" id="mc-s-savi">—</span></div>
+      <div class="mc-summary-row"><span class="mc-summary-k">JIBAR</span><span class="mc-summary-v" id="mc-s-jibar">—</span></div>
+      <div class="mc-summary-row"><span class="mc-summary-k">Dividend Yield</span><span class="mc-summary-v" id="mc-s-dy">—</span></div>
+      <div class="mc-summary-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <span class="mc-summary-k">Strike (10% OTM)</span><span class="mc-summary-v" id="mc-s-strike">—</span>
+      </div>
+      <div class="mc-summary-row"><span class="mc-summary-k">Put Premium (BS)</span><span class="mc-summary-v" id="mc-s-premium">—</span></div>
+      <div class="mc-summary-row"><span class="mc-summary-k">Contracts Held</span><span class="mc-summary-v" id="mc-s-held">—</span></div>
+      <div class="mc-summary-row"><span class="mc-summary-k">Daily ZARONIA Yield</span><span class="mc-summary-v" id="mc-s-carry">—</span></div>
+    </div>
+
+    <div class="modal-actions" style="margin-top:8px">
+      <button class="btn btn-green" id="mc-confirm-btn" onclick="morningChecklistConfirm()"
+        disabled style="opacity:.4;cursor:not-allowed">
+        ✓ &nbsp;Confirm — Open Dashboard
+      </button>
+      <button class="btn btn-ghost" onclick="morningChecklistSkip()"
+        style="font-size:8.5px;opacity:.6">
+        Skip (use yesterday's values)
+      </button>
+    </div>
+    <div style="font-size:8px;color:var(--muted);margin-top:8px;text-align:center">
+      Skipping uses carried-forward values — ensure they are still valid before trading
+    </div>
   </div>
 </div>
 
@@ -3974,9 +4100,139 @@ function refreshAllDisplays(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// INIT
+// MORNING CHECKLIST
 // ════════════════════════════════════════════════════════════════════
-function dashboardInit(){
+function morningChecklistNeeded(){
+  // Check if today's inputs have already been entered
+  var lastInput=localStorage.getItem('phylax_morning_'+todayStr());
+  return !lastInput;
+}
+
+function openMorningChecklist(){
+  // Pre-fill with yesterday's carried values so user can see what changed
+  var alsi=FVAL['i-spot']||0;
+  var savi=(FVAL['i-iv']||0)*100;
+  var jibar=(FVAL['i-jibar']||0)*100;
+  var dy=(FVAL['i-dY']||0)*100;
+
+  c('mc-alsi').value=alsi>0?Math.round(alsi):'';
+  c('mc-savi').value=savi>0?savi.toFixed(2):'';
+  c('mc-jibar').value=jibar>0?jibar.toFixed(2):'';
+  c('mc-dy').value=dy>0?dy.toFixed(2):'';
+
+  // Show carried labels
+  if(alsi>0) setText('mc-alsi-prev','← yesterday: '+Math.round(alsi).toLocaleString('en-ZA'));
+  if(savi>0) setText('mc-savi-prev','← yesterday: '+savi.toFixed(2)+'%');
+  if(jibar>0) setText('mc-jibar-prev','← yesterday: '+jibar.toFixed(2)+'%');
+  if(dy>0) setText('mc-dy-prev','← yesterday: '+dy.toFixed(2)+'%');
+
+  // Reset progress pips
+  [1,2,3,4].forEach(function(i){
+    c('mc-pip-'+i).className='mc-pip';
+    c('mc-num-'+i).className='mc-num';
+  });
+  c('mc-summary').style.display='none';
+  c('mc-confirm-btn').disabled=true;
+  c('mc-confirm-btn').style.opacity='.4';
+  c('mc-confirm-btn').style.cursor='not-allowed';
+  c('morning-modal').classList.remove('hidden');
+  setTimeout(function(){ c('mc-alsi').focus(); },300);
+}
+
+function mcValidate(){
+  var alsi=parseFloat(c('mc-alsi').value)||0;
+  var savi=parseFloat(c('mc-savi').value)||0;
+  var jibar=parseFloat(c('mc-jibar').value)||0;
+  var dy=parseFloat(c('mc-dy').value)||0;
+
+  // Update progress pips
+  var steps=[alsi>50000, savi>1&&savi<100, jibar>1&&jibar<30, dy>0&&dy<15];
+  steps.forEach(function(ok,i){
+    c('mc-pip-'+(i+1)).className='mc-pip'+(ok?' done':'');
+    c('mc-num-'+(i+1)).className='mc-num'+(ok?' done':'');
+  });
+
+  var allDone=steps.every(Boolean);
+
+  if(allDone){
+    // Compute summary values
+    var r=jibar/100, q=dy/100, iv=savi/100;
+    var otm=FVAL['i-otm']||0.10;
+    var K=Math.round(alsi*(1-otm));
+    var expiryStr=document.getElementById('i-expiry').value||safexExpiryStr(new Date());
+    var today=new Date(); today.setHours(0,0,0,0);
+    var T=Math.max(0,(new Date(expiryStr)-today)/(365*24*60*60*1000));
+    var putR=T>0?bsPutRepriceR(alsi,K,r,q,iv,T):0;
+    var zaronia=Math.max(0,r-0.0015);
+    var nav=FVAL['i-nav']||(window._ladderNAV?window._ladderNAV.totalNAV:0)||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
+    var dailyCarry=nav*zaronia/365;
+    var ladder=getLadder();
+    var held=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
+
+    setText('mc-s-alsi',Math.round(alsi).toLocaleString('en-ZA')+' pts');
+    setText('mc-s-savi',savi.toFixed(2)+'%');
+    setText('mc-s-jibar',jibar.toFixed(2)+'% (ZARONIA: '+(zaronia*100).toFixed(2)+'%)');
+    setText('mc-s-dy',dy.toFixed(2)+'%');
+    setText('mc-s-strike',K.toLocaleString('en-ZA')+' pts');
+    setText('mc-s-premium',putR>0?'R '+Math.round(putR).toLocaleString('en-ZA')+'/contract':'—');
+    setText('mc-s-held',held+' contracts');
+    setText('mc-s-carry','+R '+Math.round(dailyCarry).toLocaleString('en-ZA')+'/day');
+    c('mc-summary').style.display='block';
+    c('mc-confirm-btn').disabled=false;
+    c('mc-confirm-btn').style.opacity='1';
+    c('mc-confirm-btn').style.cursor='pointer';
+  } else {
+    c('mc-summary').style.display='none';
+    c('mc-confirm-btn').disabled=true;
+    c('mc-confirm-btn').style.opacity='.4';
+    c('mc-confirm-btn').style.cursor='not-allowed';
+  }
+}
+
+function morningChecklistConfirm(){
+  var alsi=parseFloat(c('mc-alsi').value)||0;
+  var savi=parseFloat(c('mc-savi').value)||0;
+  var jibar=parseFloat(c('mc-jibar').value)||0;
+  var dy=parseFloat(c('mc-dy').value)||0;
+  if(!alsi||!savi||!jibar||!dy){ alert('Complete all fields.'); return; }
+
+  // Push values into dashboard inputs
+  setFieldVal('i-spot', alsi);
+  setFieldVal('i-iv', savi/100);
+  setFieldVal('i-jibar', jibar/100);
+  setFieldVal('i-dY', dy/100);
+
+  // Update FVAL
+  FVAL['i-spot']=alsi;
+  FVAL['i-iv']=savi/100;
+  FVAL['i-jibar']=jibar/100;
+  FVAL['i-dY']=dy/100;
+
+  // Format displayed fields
+  Object.keys(FCFG).forEach(function(id){
+    var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
+  });
+
+  // Record that morning inputs are done for today
+  localStorage.setItem('phylax_morning_'+todayStr(),'1');
+
+  c('morning-modal').classList.add('hidden');
+  try{ refreshAllDisplays(); calc(); }catch(e){ console.error('Refresh error:',e); }
+  showToast('☀ Morning inputs confirmed — dashboard ready','success',4000);
+}
+
+function morningChecklistSkip(){
+  localStorage.setItem('phylax_morning_'+todayStr(),'skipped');
+  c('morning-modal').classList.add('hidden');
+  showToast('⚠ Morning inputs skipped — using carried values. Verify before trading.','error',6000);
+}
+
+function setFieldVal(id, val){
+  var el=c(id); if(!el) return;
+  FVAL[id]=val;
+  if(FCFG[id]) el.value=FCFG[id].fmt(val);
+  else el.value=val;
+}
   c('today-display').textContent=dt();
 
   // Generate session ID in modal
@@ -4020,6 +4276,10 @@ function dashboardInit(){
         c('setup-modal').classList.add('hidden');
         refreshAllDisplays();
         setFBStatus('ok','Session loaded');
+        // Show morning checklist if inputs not yet entered today
+        if(morningChecklistNeeded()){
+          setTimeout(function(){ openMorningChecklist(); },600);
+        }
       } else {
         // No session in Firebase — show setup modal
         setFBStatus('error','No saved session');
