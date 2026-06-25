@@ -407,9 +407,16 @@ textarea:focus{border-color:var(--teal2)}
 .shg-k{color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}
 .shg-v{font-family:'DM Mono',monospace;font-size:9.5px}
 
-/* ── DISCLAIMER ────────────────────────────────────────────────── */
-.disc{font-size:8.5px;color:var(--muted);line-height:1.7;
-  border-top:1px solid var(--border);padding-top:16px;margin-top:20px}
+/* ── TRADE TOAST ─────────────────────────────────────────────────── */
+.trade-toast{position:fixed;bottom:28px;right:28px;z-index:9999;
+  padding:14px 20px;border-radius:3px;font-family:'Rajdhani',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  box-shadow:0 4px 24px rgba(0,0,0,.5);pointer-events:none;
+  transition:opacity .4s,transform .4s;opacity:0;transform:translateY(12px)}
+.trade-toast.show{opacity:1;transform:translateY(0)}
+.trade-toast.success{background:rgba(64,200,128,.18);border:1px solid rgba(64,200,128,.5);color:var(--green2)}
+.trade-toast.error{background:rgba(232,64,64,.18);border:1px solid rgba(232,64,64,.5);color:var(--red2)}
+.trade-toast.saving{background:rgba(0,196,212,.12);border:1px solid rgba(0,196,212,.3);color:var(--teal2)}
 .exec-panel{margin-top:12px;padding:14px 16px;border-radius:2px;
   background:rgba(0,196,212,.04);border:1px solid rgba(0,196,212,.2)}
 .exec-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -743,6 +750,9 @@ textarea:focus{border-color:var(--teal2)}
     </div>
   </div>
 </div>
+
+<!-- ══ TRADE TOAST ════════════════════════════════════════════════════ -->
+<div class="trade-toast" id="trade-toast"></div>
 
 <!-- ══ TOP BAR ═══════════════════════════════════════════════════════ -->
 <div class="topbar">
@@ -1667,7 +1677,6 @@ function sessionDoc(id){ return window.db.collection('phylax_sessions').doc(id);
 
 async function fbSaveSession(data){
   if(!CURRENT_SESSION) return;
-  // Always mirror locally first — this is the offline-safe source of truth.
   saveSessionConfigLocal();
   if(!fbReady()){ setFBStatus('error','Offline — saved locally only'); return; }
   setFBStatus('connecting','Saving…');
@@ -1677,6 +1686,43 @@ async function fbSaveSession(data){
   }catch(e){
     setFBStatus('error','Cloud save failed (saved locally)');
     console.error('Firebase save error:',e);
+  }
+}
+
+// ── Toast notification ─────────────────────────────────────────────
+var _toastTimer=null;
+function showToast(msg, type, duration){
+  var el=c('trade-toast'); if(!el) return;
+  el.textContent=msg;
+  el.className='trade-toast '+(type||'success');
+  void el.offsetWidth; // force reflow
+  el.classList.add('show');
+  if(_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){
+    el.classList.remove('show');
+  }, duration||4000);
+}
+
+// ── Trade-specific save: waits for Firestore then shows toast ──────
+async function fbSaveTrade(label){
+  if(!CURRENT_SESSION) return;
+  saveSessionConfigLocal();
+  showToast('⏳  Saving '+label+' to Firebase…','saving',60000);
+  if(!fbReady()){
+    showToast('⚠  Cloud unavailable — '+label+' saved locally only. Do not close the tab.','error',8000);
+    setFBStatus('error','Offline — saved locally only');
+    return;
+  }
+  setFBStatus('connecting','Saving…');
+  try{
+    var data=buildSessionData();
+    await sessionDoc(CURRENT_SESSION.sessionId).set(data,{merge:true});
+    setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+    showToast('✓  '+label+' confirmed & saved to Firebase','success',5000);
+  }catch(e){
+    console.error('Firebase save error:',e);
+    setFBStatus('error','Cloud save failed (saved locally)');
+    showToast('⚠  Firebase save failed — '+label+' saved locally. Do not close the tab.','error',10000);
   }
 }
 
@@ -2578,7 +2624,7 @@ function executeTodayBuy(){
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
   renderBudgetPanel(); renderHedgeView();
   calc();
-  fbSaveSession(buildSessionData());
+  fbSaveTrade("Tranche purchase");
 }
 
 // ── HEADER BUTTON: scroll to exec panel ───────────────────────────
@@ -2715,7 +2761,7 @@ function executeCloseConfirmed(){
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
   renderBudgetPanel(); renderHedgeView();
   calc();
-  fbSaveSession(buildSessionData());
+  fbSaveTrade("Tranche close");
 }
 
 // ── REDUCE POSITION MODAL ──────────────────────────────────────────
@@ -2834,7 +2880,7 @@ function confirmReduce(){
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
   renderBudgetPanel(); renderHedgeView();
   calc();
-  fbSaveSession(buildSessionData());
+  fbSaveTrade("Position reduce");
 }
 
 function closeTranche(id){
