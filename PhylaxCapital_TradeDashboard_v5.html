@@ -1390,9 +1390,9 @@ textarea:focus{border-color:var(--teal2)}
         <div class="mc-s">Carry stays positive</div>
       </div>
       <div class="mc p">
-        <div class="mc-l">Convexity Budget</div>
+        <div class="mc-l">Remaining Budget</div>
         <div class="mc-v" id="o-budget">—</div>
-        <div class="mc-s">NAV − NAV/(1+r·T)</div>
+        <div class="mc-s">NAV × r/(1+r) ÷ 4 − premiums paid</div>
       </div>
     </div>
   </div>
@@ -1517,7 +1517,7 @@ textarea:focus{border-color:var(--teal2)}
         <tr><td>Gamma</td><td id="b-gamma">—</td><td>n(d1)e^(−qT)/(Sσ√T)</td></tr>
         <tr><td>Vega (R/1% vol)</td><td id="b-vega">—</td><td>per contract</td></tr>
         <tr class="sep"><td colspan="3"></td></tr>
-        <tr><td>Convexity Budget</td><td id="b-budget-bs">—</td><td>NAV − NAV/(1+r·t)</td></tr>
+        <tr><td>Remaining Option Budget</td><td id="b-budget-bs">—</td><td>Quarterly budget − premiums paid</td></tr>
         <tr><td>Contracts (budget)</td><td id="b-c-budget">—</td><td>Budget ÷ put price</td></tr>
         <tr><td>Contracts (carry-neutral)</td><td id="b-c-carry">—</td><td>Yield ÷ |theta|/contract</td></tr>
         <tr><td>Recommended</td><td id="b-c-rec">—</td><td>Min(budget, carry-neutral)</td></tr>
@@ -1588,7 +1588,7 @@ textarea:focus{border-color:var(--teal2)}
 
 <div class="disc">
   Phylax Capital — Macro Protector Fund &nbsp;·&nbsp; Phylax Capital (Pty) Ltd &nbsp;·&nbsp;
-  BS engine: Merton (1973) continuous dividend yield. NAV = Call Account (ZARONIA daily accreting) + Option Book (BS MTM) + Residual Cash. &nbsp;·&nbsp;
+  BS engine: Merton (1973) continuous dividend yield. NAV = Call Account (ZARONIA daily accreting) + Option Book (BS MTM). &nbsp;·&nbsp;
   All data persisted to Firebase Firestore — syncs on every EOD close. Export JSON/CSV regularly as secondary backup. &nbsp;·&nbsp;
   Not investment advice. All trade decisions require fund manager authorisation.
 </div>
