@@ -4216,9 +4216,11 @@ function refreshAllDisplays(){
 // MORNING CHECKLIST
 // ════════════════════════════════════════════════════════════════════
 function morningChecklistNeeded(){
-  // Check if today's inputs have already been entered
-  var lastInput=localStorage.getItem('phylax_morning_'+todayStr());
-  return !lastInput;
+  var raw=localStorage.getItem('phylax_morning_'+todayStr());
+  if(!raw) return true;
+  if(raw==='skipped') return false;
+  try{ var md=JSON.parse(raw); return !(md.alsi&&md.savi&&md.jibar&&md.dy); }
+  catch(e){ return true; }
 }
 
 function openMorningChecklist(){
@@ -4326,8 +4328,12 @@ function morningChecklistConfirm(){
     var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
   });
 
-  // Record that morning inputs are done for today
-  localStorage.setItem('phylax_morning_'+todayStr(),'1');
+  // Record that morning inputs are done for today — save actual values
+  var morningData={
+    alsi:alsi, savi:savi/100, jibar:jibar/100, dy:dy/100,
+    ts:Date.now()
+  };
+  localStorage.setItem('phylax_morning_'+todayStr(), JSON.stringify(morningData));
 
   c('morning-modal').classList.add('hidden');
   try{ refreshAllDisplays(); calc(); }catch(e){ console.error('Refresh error:',e); }
@@ -4393,6 +4399,26 @@ function dashboardInit(){
         c('setup-modal').classList.add('hidden');
         refreshAllDisplays();
         setFBStatus('ok','Session loaded');
+        // Restore today's morning inputs if already entered today
+        var morningKey='phylax_morning_'+todayStr();
+        var morningRaw=localStorage.getItem(morningKey);
+        if(morningRaw && morningRaw!=='skipped'){
+          try{
+            var md=JSON.parse(morningRaw);
+            if(md.alsi&&md.savi&&md.jibar&&md.dy){
+              setFieldVal('i-spot',md.alsi);
+              setFieldVal('i-iv',md.savi);
+              setFieldVal('i-jibar',md.jibar);
+              setFieldVal('i-dY',md.dy);
+              Object.keys(FCFG).forEach(function(id){
+                var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
+              });
+              try{ calc(); }catch(e){}
+              // Don't show checklist — already done today
+              return;
+            }
+          }catch(e){}
+        }
         // Show morning checklist if inputs not yet entered today
         if(morningChecklistNeeded()){
           setTimeout(function(){ openMorningChecklist(); },600);
