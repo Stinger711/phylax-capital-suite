@@ -375,7 +375,25 @@ textarea:focus{border-color:var(--teal2)}
 .fb-indicator.connecting{background:var(--amber);animation:pulse 1s infinite}
 .fb-indicator.error{background:var(--red)}
 
-/* ── BUDGET REMAINING PANEL ─────────────────────────────────────── */
+/* ── MULTI-EXPIRY ADVISORY GRID ─────────────────────────────────── */
+.expiry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.expiry-card{border-radius:2px;padding:12px;border:1px solid var(--border);
+  background:rgba(0,0,0,.2);cursor:pointer;transition:all .2s;position:relative}
+.expiry-card:hover{border-color:rgba(0,196,212,.4);background:rgba(0,196,212,.05)}
+.expiry-card.selected{border-color:var(--teal2);background:rgba(0,196,212,.1);
+  box-shadow:0 0 0 1px var(--teal2)}
+.expiry-card.selected::after{content:'✓';position:absolute;top:6px;right:8px;
+  font-size:10px;color:var(--teal2);font-weight:700}
+.ec-label{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
+.ec-expiry{font-family:'DM Mono',monospace;font-size:11px;color:var(--plat);margin-bottom:6px}
+.ec-tte{font-size:8px;color:var(--muted);margin-bottom:8px}
+.ec-price{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:var(--teal2);margin-bottom:2px}
+.ec-delta{font-size:8.5px;color:var(--muted);margin-bottom:4px}
+.ec-affordable{font-size:8px;color:var(--green2);font-family:'DM Mono',monospace}
+.ec-affordable.zero{color:var(--red2)}
+.expiry-select-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:8px}
 .budget-panel{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
   background:linear-gradient(135deg,rgba(160,96,240,.07),rgba(0,196,212,.03));
   border:1px solid rgba(160,96,240,.25);border-radius:2px;margin-bottom:14px;overflow:hidden}
@@ -1340,8 +1358,15 @@ textarea:focus{border-color:var(--teal2)}
       <div class="dec-details" id="dec-details"></div>
 
       <div class="exec-panel" id="exec-panel" style="display:none">
-        <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px">
-          Step 2 — How many contracts do you want to buy today?
+        <!-- Step 1: Expiry selection with BS pricing per tenor -->
+        <div class="expiry-select-label">Step 2 — Select expiry &amp; review pricing across tenors</div>
+        <div class="expiry-grid" id="expiry-grid">
+          <!-- populated by renderExpiryGrid() -->
+        </div>
+
+        <!-- Step 2: Quantity input -->
+        <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px;margin-top:4px">
+          Step 3 — How many contracts do you want to buy today?
         </div>
         <div class="exec-row">
           <input type="number" class="exec-input" id="exec-qty" min="0" step="1"
@@ -1685,6 +1710,12 @@ function fRk(n){
   if(a>=1e3) return s+'R '+(a/1e3).toFixed(0)+'k';
   return s+'R '+Math.round(a).toLocaleString('en-ZA');
 }
+// Full precision — used in ladder table where exact values matter
+function fRfull(n){
+  var a=Math.abs(n),s=(n<0?'−':'');
+  if(a>=1e6) return s+'R '+(a/1e6).toFixed(3)+'m';
+  return s+'R '+Math.round(a).toLocaleString('en-ZA');
+}
 function fR(n,d){ return 'R '+n.toLocaleString('en-ZA',{minimumFractionDigits:d||0,maximumFractionDigits:d||0}); }
 function f4(n){ return n.toFixed(4); }
 function f2(n){ return n.toFixed(2); }
@@ -1985,6 +2016,80 @@ function nextSAFEXExpiry(fromDate){
 }
 function safexExpiryStr(fromDate){ return nextSAFEXExpiry(fromDate).toISOString().slice(0,10); }
 
+// Get next N SAFEX quarterly expiry dates from today
+function getSAFEXExpiries(n){
+  var results=[], d=new Date(); d.setHours(0,0,0,0);
+  var m=d.getMonth(), y=d.getFullYear();
+  var quarters=[2,5,8,11];
+  // Find starting quarter
+  var qi=quarters.findIndex(function(q){return q>m;});
+  if(qi===-1){qi=0;y++;}
+  for(var i=0;i<n;i++){
+    var qm=quarters[(qi+i)%4];
+    var qy=y+Math.floor((qi+i)/4);
+    var first=new Date(qy,qm,1),day=first.getDay();
+    var thu=day<=4?4-day:11-day;
+    results.push(new Date(qy,qm,1+thu+14));
+  }
+  return results;
+}
+
+// Render the 4-expiry comparison grid in the exec panel
+function renderExpiryGrid(){
+  var grid=c('expiry-grid'); if(!grid) return;
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var otm=FVAL['i-otm']||0.10;
+  if(!S||!r||!iv){ grid.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see expiry pricing</div>'; return; }
+  var today=new Date(); today.setHours(0,0,0,0);
+  var expiries=getSAFEXExpiries(4);
+  var bd=window._budgetData||{};
+  var remaining=bd.remaining||0;
+  var selectedExpiry=window._selectedExpiry||expiries[0].toISOString().slice(0,10);
+  var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
+  var html='';
+  expiries.forEach(function(exp,i){
+    var expStr=exp.toISOString().slice(0,10);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var tteDays=Math.round(T*365);
+    var K=Math.round(S*(1-otm));
+    var putR=bsPutRepriceR(S,K,r,q,iv,T);
+    var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(Math.max(T,1e-6)));
+    var delta=Math.exp(-q*T)*(normCDF(d1)-1);
+    var affordable=putR>0?Math.floor(remaining/putR):0;
+    var isSelected=expStr===selectedExpiry;
+    html+='<div class="expiry-card'+(isSelected?' selected':'')+'" onclick="selectExpiry(\''+expStr+'\','+putR+','+K+')">'
+      +'<div class="ec-label">'+labels[i]+'</div>'
+      +'<div class="ec-expiry">'+expStr+'</div>'
+      +'<div class="ec-tte">'+tteDays+' days · Strike '+K.toLocaleString('en-ZA')+'</div>'
+      +'<div class="ec-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract</div>'
+      +'<div class="ec-delta">Δ '+delta.toFixed(4)+' · T '+T.toFixed(4)+'yr</div>'
+      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Budget: '+affordable+' contracts</div>'
+      +'</div>';
+  });
+  grid.innerHTML=html;
+  // Set default selection if not yet set
+  if(!window._selectedExpiry){
+    window._selectedExpiry=expiries[0].toISOString().slice(0,10);
+    window._selectedPutR=bsPutRepriceR(S,Math.round(S*(1-otm)),r,q,iv,Math.max(0,(expiries[0]-today)/(365*24*60*60*1000)));
+    window._selectedK=Math.round(S*(1-otm));
+  }
+}
+
+function selectExpiry(expStr, putR, K){
+  window._selectedExpiry=expStr;
+  window._selectedPutR=putR;
+  window._selectedK=K;
+  // Update exec-qty recommended based on selected expiry
+  var bd=window._budgetData||{};
+  var remaining=bd.remaining||0;
+  var affordable=putR>0?Math.floor(remaining/putR):0;
+  var execQty=c('exec-qty');
+  if(!execQty.dataset.userEdited) execQty.value=Math.min(affordable, window._calcRecommended||0);
+  // Re-render grid to show new selection
+  renderExpiryGrid();
+  onExecQtyInput();
+}
+
 // ════════════════════════════════════════════════════════════════════
 // NAV CALCULATION ENGINE (call account, daily accrual)
 // ════════════════════════════════════════════════════════════════════
@@ -2181,6 +2286,9 @@ function calc(){
     execQty.dataset.recommended=tradeRequiredLadder;
     execQty.dataset.putPriceR=putPriceR;
     execQty.dataset.strike=K;
+    // Reset selected expiry to default quarterly when advisory refreshes
+    if(!execQty.dataset.userEdited) window._selectedExpiry=null;
+    renderExpiryGrid();
     onExecQtyInput();
   } else if(tradeRequiredLadder<0){
     box.className='decision-box sell'; action.textContent='REDUCE'; action.style.color='var(--red)';
@@ -2682,43 +2790,38 @@ function openBuyConfirmModal(){
 
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var otmFrac=FVAL['i-otm'];
-  var K=Math.round(S*(1-otmFrac));
-  var expStr=document.getElementById('i-expiry').value||safexExpiryStr(new Date());
+
+  // Use selected expiry from grid, fall back to default quarterly
+  var expStr=window._selectedExpiry||safexExpiryStr(new Date());
+  var K=window._selectedK||Math.round(S*(1-otmFrac));
   var today=new Date(); today.setHours(0,0,0,0);
   var expiry=new Date(expStr);
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
-  var putR=bsPutRepriceR(S,K,r,q,iv,T);
+  var putR=window._selectedPutR||bsPutRepriceR(S,K,r,q,iv,T);
   if(putR<=0){ alert('Put price is zero — check market inputs.'); return; }
 
   var totalCost=qty*putR;
   var rec=parseInt(execQty.dataset.recommended||0);
   var ladderHeld=window._calcLadderHeld||0;
-
-  // Budget remaining after this purchase
   var bd=window._budgetData||{};
   var remainingAfter=Math.max(0,(bd.remaining||0)-totalCost);
-
-  // vs recommendation label
   var diff=qty-rec;
   var vsRec=diff===0?'✓ Matches recommendation':diff>0?'⚠ +'+diff+' over recommendation':'ℹ −'+Math.abs(diff)+' under recommendation';
   var vsRecColor=diff===0?'var(--green2)':diff>0?'var(--red2)':'var(--amber)';
 
   setText('bc-contracts',qty);
   setText('bc-strike',K.toLocaleString('en-ZA')+' pts');
-  setText('bc-premium',fRk(putR)+'/contract');
-  setText('bc-total-cost','−'+fRk(totalCost));
+  setText('bc-premium','R '+Math.round(putR).toLocaleString('en-ZA')+'/contract');
+  setText('bc-total-cost','−R '+Math.round(totalCost).toLocaleString('en-ZA'));
   c('bc-total-cost').style.color='var(--red2)';
-  setText('bc-expiry',expStr);
-  setText('bc-budget-after',fRk(remainingAfter));
+  setText('bc-expiry',expStr+' ('+Math.round(T*365)+' days TTE)');
+  setText('bc-budget-after','R '+Math.round(remainingAfter).toLocaleString('en-ZA'));
   c('bc-budget-after').style.color=remainingAfter>0?'var(--teal2)':'var(--red2)';
   setText('bc-vs-rec',vsRec);
   c('bc-vs-rec').style.color=vsRecColor;
   setText('bc-held-after',(ladderHeld+qty)+' contracts');
 
-  // Store for execution
   window._pendingBuy={qty,K,putR,expStr,T,totalCost};
-
-  // Reset confirmation input
   c('bc-confirm-input').value='';
   var btn=c('bc-confirm-btn');
   btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
@@ -3174,14 +3277,14 @@ function renderLadderPanel(){
       +'<td style="color:'+tteCol+'">'+tteDays+tteFlag+'</td>'
       +'<td style="color:var(--plat)">'+Math.round(t.strikeLevel).toLocaleString('en-ZA')+'</td>'
       +'<td style="color:var(--teal2);font-weight:700">'+t.contracts+'</td>'
-      +'<td style="color:var(--muted)">'+fRk(entryPerContract)+'</td>'
-      +'<td style="color:'+(mtmPerContract>entryPerContract?'var(--green2)':'var(--amber)')+'">'+fRk(mtmPerContract)+'</td>'
-      +'<td style="color:var(--muted)">'+fRk(t.premiumTotal)+'</td>'
-      +'<td style="color:'+(totalMtmR>t.premiumTotal?'var(--green2)':'var(--amber)')+'">'+fRk(totalMtmR)+'</td>'
-      +'<td style="color:'+(pnl>=0?'var(--green2)':'var(--red2)')+';font-weight:700">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
+      +'<td style="color:var(--muted)">'+fRfull(entryPerContract)+'</td>'
+      +'<td style="color:'+(mtmPerContract>entryPerContract?'var(--green2)':'var(--amber)')+'">'+fRfull(mtmPerContract)+'</td>'
+      +'<td style="color:var(--muted)">'+fRfull(t.premiumTotal)+'</td>'
+      +'<td style="color:'+(totalMtmR>t.premiumTotal?'var(--green2)':'var(--amber)')+'">'+fRfull(totalMtmR)+'</td>'
+      +'<td style="color:'+(pnl>=0?'var(--green2)':'var(--red2)')+';font-weight:700">'+(pnl>=0?'+':'')+fRfull(pnl)+'</td>'
       +'<td style="color:'+(pnlPct>=0?'var(--green2)':'var(--red2)')+'">'+(pnlPct>=0?'+':'')+pnlPct.toFixed(1)+'%</td>'
       +'<td style="color:var(--blue2)">'+deltaTranche.toFixed(4)+'</td>'
-      +'<td style="color:var(--red2)">−'+fRk(theta*t.contracts)+'</td>'
+      +'<td style="color:var(--red2)">−'+fRfull(theta*t.contracts)+'</td>'
       +'<td style="color:var(--muted)">'+daysHeld+'d</td>'
       +'<td style="text-align:center"><button class="btn-close-tranche" onclick="closeTranche(\''+t.id+'\')">✕ Close</button></td>'
       +'</tr>';
@@ -3192,10 +3295,10 @@ function renderLadderPanel(){
   c('ladder-totals').innerHTML=
     '<span style="font-family:\'Rajdhani\',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">TOTALS:</span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Contracts: <span style="color:var(--teal2)">'+totalContracts+'</span></span>'
-    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Cost: <span style="color:var(--muted)">'+fRk(totalCost)+'</span></span>'
-    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">MTM: <span style="color:var(--amber)">'+fRk(totalMTM)+'</span></span>'
-    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Unreal P&L: <span style="color:'+pnlTotalColor+'">'+(totalPnl>=0?'+':'')+fRk(totalPnl)+'</span></span>'
-    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Θ/day: <span style="color:var(--red2)">−'+fRk(totalTheta)+'</span></span>';
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Cost: <span style="color:var(--muted)">'+fRfull(totalCost)+'</span></span>'
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">MTM: <span style="color:var(--amber)">'+fRfull(totalMTM)+'</span></span>'
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Unreal P&L: <span style="color:'+pnlTotalColor+'">'+(totalPnl>=0?'+':'')+fRfull(totalPnl)+'</span></span>'
+    +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Θ/day: <span style="color:var(--red2)">−'+fRfull(totalTheta)+'</span></span>';
 }
 
 // ════════════════════════════════════════════════════════════════════
