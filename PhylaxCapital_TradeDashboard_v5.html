@@ -2042,8 +2042,17 @@ function renderExpiryGrid(){
   if(!S||!r||!iv){ grid.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see expiry pricing</div>'; return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
-  var bd=window._budgetData||{};
-  var remaining=bd.remaining||0;
+
+  // Calculate remaining budget directly — same formula as calc() and renderBudgetPanel()
+  var st=getState();
+  var capital=st?st.capital:CURRENT_SESSION.phylaxCapital;
+  var navForBudget=window._ladderNAV?window._ladderNAV.totalNAV:capital;
+  var annualBudget=navForBudget*(r/(1+r));
+  var quarterlyBudget=annualBudget/4;
+  var ladder=getLadder();
+  var premiumsPaid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+  var remaining=Math.max(0,quarterlyBudget-premiumsPaid);
+
   var selectedExpiry=window._selectedExpiry||expiries[0].toISOString().slice(0,10);
   var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
   var html='';
@@ -2063,14 +2072,15 @@ function renderExpiryGrid(){
       +'<div class="ec-tte">'+tteDays+' days · Strike '+K.toLocaleString('en-ZA')+'</div>'
       +'<div class="ec-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract</div>'
       +'<div class="ec-delta">Δ '+delta.toFixed(4)+' · T '+T.toFixed(4)+'yr</div>'
-      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Budget: '+affordable+' contracts</div>'
+      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Remaining budget: '+affordable+' contracts</div>'
       +'</div>';
   });
   grid.innerHTML=html;
   // Set default selection if not yet set
   if(!window._selectedExpiry){
+    var T0=Math.max(0,(expiries[0]-today)/(365*24*60*60*1000));
     window._selectedExpiry=expiries[0].toISOString().slice(0,10);
-    window._selectedPutR=bsPutRepriceR(S,Math.round(S*(1-otm)),r,q,iv,Math.max(0,(expiries[0]-today)/(365*24*60*60*1000)));
+    window._selectedPutR=bsPutRepriceR(S,Math.round(S*(1-otm)),r,q,iv,T0);
     window._selectedK=Math.round(S*(1-otm));
   }
 }
