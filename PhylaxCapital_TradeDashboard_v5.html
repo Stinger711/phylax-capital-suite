@@ -791,15 +791,15 @@ textarea:focus{border-color:var(--teal2)}
     <div class="modal-actions" style="margin-top:8px">
       <button class="btn btn-green" id="mc-confirm-btn" onclick="morningChecklistConfirm()"
         disabled style="opacity:.4;cursor:not-allowed">
-        ✓ &nbsp;Confirm — Open Dashboard
+        ✓ &nbsp;Confirm &amp; Lock Today's Inputs
       </button>
       <button class="btn btn-ghost" onclick="morningChecklistSkip()"
         style="font-size:8.5px;opacity:.6">
-        Skip (use yesterday's values)
+        Skip (inputs unchanged — use as-is)
       </button>
     </div>
     <div style="font-size:8px;color:var(--muted);margin-top:8px;text-align:center">
-      Skipping uses carried-forward values — ensure they are still valid before trading
+      Always click Confirm to lock inputs for the day — even if numbers are unchanged. Skip only if you need to check something first and will confirm shortly.
     </div>
   </div>
 </div>
@@ -2043,15 +2043,23 @@ function renderExpiryGrid(){
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
 
-  // Calculate remaining budget directly — same formula as calc() and renderBudgetPanel()
-  var st=getState();
-  var capital=st?st.capital:CURRENT_SESSION.phylaxCapital;
-  var navForBudget=window._ladderNAV?window._ladderNAV.totalNAV:capital;
-  var annualBudget=navForBudget*(r/(1+r));
-  var quarterlyBudget=annualBudget/4;
-  var ladder=getLadder();
-  var premiumsPaid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
-  var remaining=Math.max(0,quarterlyBudget-premiumsPaid);
+  // Use pre-calculated remaining budget from renderBudgetPanel if available
+  // otherwise calculate directly — must subtract premiums already paid
+  var remaining=0;
+  if(window._budgetData&&window._budgetData.remaining!=null){
+    remaining=window._budgetData.remaining;
+  } else {
+    var st=getState();
+    var capital=st?st.capital:(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
+    var ldr=getLadder();
+    var hasTr=ldr.tranches&&ldr.tranches.length>0;
+    var cashBase=hasTr&&ldr.cashBalance>0?ldr.cashBalance:capital;
+    var navForBudget=cashBase;
+    var annualBudget=navForBudget*(r/(1+r));
+    var quarterlyBudget=annualBudget/4;
+    var premiumsPaid=(ldr.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+    remaining=Math.max(0,quarterlyBudget-premiumsPaid);
+  }
 
   var selectedExpiry=window._selectedExpiry||expiries[0].toISOString().slice(0,10);
   var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
@@ -2181,6 +2189,20 @@ function calc(){
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
   if(T<=0){ showWarn('Option has expired — update expiry date to next SAFEX quarterly'); return; }
   var K=Math.round(S*(1-otm));
+
+  // Pre-calculate budget data so renderExpiryGrid always has correct remaining budget
+  (function(){
+    var st=getState();
+    var capital=st?st.capital:(CURRENT_SESSION.phylaxCapital||0);
+    var ldr=getLadder();
+    var hasTr=ldr.tranches&&ldr.tranches.length>0;
+    var cashBase=hasTr&&ldr.cashBalance>0?ldr.cashBalance:capital;
+    var annBudget=cashBase*(r/(1+r));
+    var qBudget=annBudget/4;
+    var paid=(ldr.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+    var rem=Math.max(0,qBudget-paid);
+    window._budgetData={quarterlyBudget:qBudget,paid:paid,remaining:rem,putR:0,blended:0,totalContracts:0,affordable:0};
+  })();
 
   // BS
   var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
@@ -4251,7 +4273,11 @@ function openMorningChecklist(){
   c('mc-confirm-btn').style.opacity='.4';
   c('mc-confirm-btn').style.cursor='not-allowed';
   c('morning-modal').classList.remove('hidden');
-  setTimeout(function(){ c('mc-alsi').focus(); },300);
+  // Run validation immediately so confirm button enables if fields are pre-filled
+  setTimeout(function(){
+    mcValidate();
+    c('mc-alsi').focus();
+  },300);
 }
 
 function mcValidate(){
