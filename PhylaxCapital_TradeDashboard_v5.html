@@ -2076,8 +2076,6 @@ function renderExpiryGrid(){
     var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(Math.max(T,1e-6)));
     var delta=Math.exp(-q*T)*(normCDF(d1)-1);
     var affordable=putR>0?Math.floor(remaining/putR):0;
-    var ladderHeld=window._calcLadderHeld||0;
-    var stillNeeded=Math.max(0,affordable-ladderHeld);
     var isSelected=expStr===selectedExpiry;
     html+='<div class="expiry-card'+(isSelected?' selected':'')+'" onclick="selectExpiry(\''+expStr+'\','+putR+','+K+')">'
       +'<div class="ec-label">'+labels[i]+'</div>'
@@ -2085,8 +2083,7 @@ function renderExpiryGrid(){
       +'<div class="ec-tte">'+tteDays+' days · Strike '+K.toLocaleString('en-ZA')+'</div>'
       +'<div class="ec-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract</div>'
       +'<div class="ec-delta">Δ '+delta.toFixed(4)+' · T '+T.toFixed(4)+'yr</div>'
-      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Budget funds: '+affordable+' contracts</div>'
-      +'<div class="ec-affordable" style="color:'+(stillNeeded>0?'var(--amber)':'var(--green2)')+'">Still to buy: '+(stillNeeded>0?stillNeeded:'✓ Target met')+'</div>'
+      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Can buy: <strong>'+affordable+'</strong> contracts from remaining budget</div>'
       +'</div>';
   });
   grid.innerHTML=html;
