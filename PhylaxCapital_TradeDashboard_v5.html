@@ -3104,7 +3104,7 @@ function renderInlineAlloc(){
 
     var canExec=recommended>0&&Math.abs(totalPct-100)<1;
     exHtml+='<button class="alloc-exec-btn" '+(canExec?'':'disabled ')
-      +'onclick="execAllocTranche(''+expStr+'','+putR+','+K+','+recommended+')">'
+      +'onclick="execAllocTranche(\''+expStr+'\','+putR+','+K+','+recommended+')">'
       +'<div style="font-size:8px;color:var(--muted);margin-bottom:2px">'+labels[i]+'</div>'
       +'<div style="font-size:14px;color:'+colors[i]+';font-weight:700">'+recommended+'</div>'
       +'<div style="font-size:8px;color:var(--muted)">contracts</div>'
