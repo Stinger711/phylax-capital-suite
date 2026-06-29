@@ -4857,6 +4857,7 @@ function mcValidate(){
     var ladder=getLadder();
     var held=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
 
+    try{
     setText('mc-s-alsi',Math.round(alsi).toLocaleString('en-ZA')+' pts');
     setText('mc-s-savi',savi.toFixed(2)+'%');
     setText('mc-s-jibar',jibar.toFixed(2)+'% (ZARONIA: '+(zaronia*100).toFixed(2)+'%)');
@@ -4869,6 +4870,10 @@ function mcValidate(){
     c('mc-confirm-btn').disabled=false;
     c('mc-confirm-btn').style.opacity='1';
     c('mc-confirm-btn').style.cursor='pointer';
+    }catch(e){ console.error('mcValidate summary error:',e);
+    c('mc-confirm-btn').disabled=false;
+    c('mc-confirm-btn').style.opacity='1';
+    c('mc-confirm-btn').style.cursor='pointer'; }
   } else {
     c('mc-summary').style.display='none';
     c('mc-confirm-btn').disabled=true;
@@ -4987,14 +4992,13 @@ function dashboardInit(){
                 var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
               });
               try{ calc(); }catch(e){}
-              // Don't show checklist — already done today
-              return;
+              return; // already done today — no checklist
             }
           }catch(e){}
         }
-        // Show morning checklist if inputs not yet entered today
+        // Show morning checklist after a longer delay to ensure session is fully rendered
         if(morningChecklistNeeded()){
-          setTimeout(function(){ openMorningChecklist(); },600);
+          setTimeout(function(){ openMorningChecklist(); },1200);
         }
       } else {
         // No session in Firebase — show setup modal
