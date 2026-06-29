@@ -1235,7 +1235,10 @@ textarea:focus{border-color:var(--teal2)}
   <!-- LEFT: INPUTS -->
   <div>
     <div class="panel bt">
-      <div class="sh c-gold">Market Inputs — Update Each Morning</div>
+      <div class="sh c-gold" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Market Inputs — Update Each Morning</span>
+        <button onclick="forceOpenMorningChecklist()" style="font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 10px;background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);color:var(--amber);border-radius:2px;cursor:pointer">↺ Update</button>
+      </div>
       <div class="fi">
         <div class="fi-l">ALSI Spot (J200 Index Points) <span class="fi-badge">✎ Daily</span></div>
         <input type="text" id="i-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
@@ -4240,6 +4243,12 @@ function refreshAllDisplays(){
 // ════════════════════════════════════════════════════════════════════
 // MORNING CHECKLIST
 // ════════════════════════════════════════════════════════════════════
+function forceOpenMorningChecklist(){
+  // Clear today's lock so checklist treats this as a fresh open
+  localStorage.removeItem('phylax_morning_'+todayStr());
+  openMorningChecklist();
+}
+
 function morningChecklistNeeded(){
   var raw=localStorage.getItem('phylax_morning_'+todayStr());
   if(!raw) return true;
@@ -4249,11 +4258,24 @@ function morningChecklistNeeded(){
 }
 
 function openMorningChecklist(){
-  // Pre-fill with yesterday's carried values so user can see what changed
-  var alsi=FVAL['i-spot']||0;
-  var savi=(FVAL['i-iv']||0)*100;
-  var jibar=(FVAL['i-jibar']||0)*100;
-  var dy=(FVAL['i-dY']||0)*100;
+  // Pre-fill from saved morning data, then session config, then FVAL
+  var prevMorning=null;
+  try{
+    var yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+    var yk=yesterday.toISOString().slice(0,10);
+    var raw=localStorage.getItem('phylax_morning_'+yk);
+    if(raw&&raw!=='skipped') prevMorning=JSON.parse(raw);
+  }catch(e){}
+
+  var alsi=prevMorning?prevMorning.alsi:(FVAL['i-spot']||0);
+  var savi=prevMorning?(prevMorning.savi*100):((FVAL['i-iv']||0)*100);
+  var jibar=prevMorning?(prevMorning.jibar*100):((FVAL['i-jibar']||0)*100);
+  var dy=prevMorning?(prevMorning.dy*100):((FVAL['i-dY']||0)*100);
+
+  // Also try session config as fallback
+  if(!alsi&&CURRENT_SESSION&&CURRENT_SESSION.alsiInception) alsi=CURRENT_SESSION.alsiInception;
+  if(!jibar&&CURRENT_SESSION&&CURRENT_SESSION.jibar) jibar=CURRENT_SESSION.jibar*100;
+  if(!dy&&CURRENT_SESSION&&CURRENT_SESSION.dY) dy=CURRENT_SESSION.dY*100;
 
   c('mc-alsi').value=alsi>0?Math.round(alsi):'';
   c('mc-savi').value=savi>0?savi.toFixed(2):'';
@@ -4261,10 +4283,10 @@ function openMorningChecklist(){
   c('mc-dy').value=dy>0?dy.toFixed(2):'';
 
   // Show carried labels
-  if(alsi>0) setText('mc-alsi-prev','← yesterday: '+Math.round(alsi).toLocaleString('en-ZA'));
-  if(savi>0) setText('mc-savi-prev','← yesterday: '+savi.toFixed(2)+'%');
-  if(jibar>0) setText('mc-jibar-prev','← yesterday: '+jibar.toFixed(2)+'%');
-  if(dy>0) setText('mc-dy-prev','← yesterday: '+dy.toFixed(2)+'%');
+  if(alsi>0) setText('mc-alsi-prev','← prev: '+Math.round(alsi).toLocaleString('en-ZA'));
+  if(savi>0) setText('mc-savi-prev','← prev: '+savi.toFixed(2)+'%');
+  if(jibar>0) setText('mc-jibar-prev','← prev: '+jibar.toFixed(2)+'%');
+  if(dy>0) setText('mc-dy-prev','← prev: '+dy.toFixed(2)+'%');
 
   // Reset progress pips
   [1,2,3,4].forEach(function(i){
