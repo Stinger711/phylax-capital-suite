@@ -2431,16 +2431,17 @@ function calc(){
     ldrNow.tranches.forEach(function(t){
       var exp2=new Date(t.expiry);
       var T2=Math.max(0.0001,(exp2-today2)/(365*24*60*60*1000));
+      // bsThetaPerDay already returns rand/contract/day (includes R10 multiplier)
       var th=Math.abs(bsThetaPerDay(S,t.strikeLevel,r,q,iv,T2));
       totalTheta+=th*t.contracts;
       totalContracts2+=t.contracts;
     });
-    blendedThetaPerDay=totalContracts2>0?totalTheta/totalContracts2:thetaBleedPC/10;
+    blendedThetaPerDay=totalContracts2>0?totalTheta/totalContracts2:thetaBleedPC;
   } else {
-    blendedThetaPerDay=thetaBleedPC/10; // fallback to Q1 estimate
+    blendedThetaPerDay=thetaBleedPC; // fallback: thetaBleedPC already in rand/contract/day
   }
-  var blendedThetaPC=blendedThetaPerDay*10; // per contract × R10
-  var maxCarryContracts=blendedThetaPC>0?Math.floor(dailyYield/blendedThetaPC):9999;
+  // blendedThetaPerDay is already in rand/contract/day — no further multiplier needed
+  var maxCarryContracts=blendedThetaPerDay>0?Math.floor(dailyYield/blendedThetaPerDay):9999;
 
   // ── Unified budget: annual convexity budget NAV − NAV/(1+ZARONIA×T_annual) ──
   var zaronia=getZaronia();
