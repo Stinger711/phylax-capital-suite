@@ -1509,38 +1509,39 @@ textarea:focus{border-color:var(--teal2)}
       <div class="dec-details" id="dec-details"></div>
 
       <div class="exec-panel" id="exec-panel" style="display:none">
-        <!-- Integrated allocator: expiry grid + sliders + execute -->
-        <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:8px">
-          Step 2 — Choose how many to buy today &amp; allocate across expiries
-        </div>
-        <!-- Total contracts input -->
-        <div class="exec-row" style="margin-bottom:10px">
-          <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">Buy today:</span>
-          <input type="number" class="exec-input" id="exec-qty" min="0" step="1"
-            oninput="onExecQtyInput()" placeholder="0"/>
-          <span class="exec-meta" id="exec-meta">contracts total</span>
-        </div>
-        <div class="exec-warn" id="exec-warn" style="margin-bottom:10px"></div>
+        <!-- SAVI signal banner -->
+        <div id="savi-signal-banner" style="padding:8px 12px;border-radius:2px;margin-bottom:10px;font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em"></div>
 
         <!-- Expiry pricing grid -->
-        <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 3 — Select expiry &amp; review pricing</div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 2 — Current pricing across expiries</div>
         <div class="expiry-grid" id="expiry-grid"></div>
 
-        <!-- Allocation sliders (only shown when qty > 0) -->
-        <div id="inline-alloc-section" style="display:none">
+        <!-- Yield allocation section -->
+        <div id="inline-alloc-section">
+          <!-- Preset buttons -->
+          <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:10px 0 6px">Step 3 — Allocate daily yield across expiries</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="alloc-preset" onclick="applyInlinePreset([20,25,30,25])">Low Vol (&lt;18%)</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([40,35,15,10])">Moderate (18–25%) ★</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([55,30,10,5])">Elevated (25–32%)</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([70,20,10,0])">High Vol (&gt;32%)</button>
             <button class="alloc-preset" onclick="applyInlinePreset([100,0,0,0])">100% Near</button>
-            <button class="alloc-preset" onclick="applyInlinePreset([60,40,0,0])">60/40</button>
-            <button class="alloc-preset" onclick="applyInlinePreset([40,35,15,10])">40/35/15/10 ★</button>
-            <button class="alloc-preset" onclick="applyInlinePreset([25,35,25,15])">Balanced</button>
-            <button class="alloc-preset" onclick="applyInlinePreset([20,30,30,20])">Far-weighted</button>
+            <button class="alloc-preset" onclick="applySaviPreset()">★ Apply SAVI Signal</button>
           </div>
-          <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:10px 0 6px">Step 4 — Split across expiries</div>
+          <!-- Sliders -->
           <div class="alloc-sliders" id="inline-alloc-sliders"></div>
           <div class="alloc-pct-total" id="inline-alloc-pct-total" style="margin-bottom:8px"></div>
-          <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 5 — Execute each tranche (double confirmation required)</div>
+          <!-- Totals summary -->
+          <div class="alloc-totals" id="inline-alloc-summary" style="margin-bottom:10px"></div>
+          <!-- Execute buttons -->
+          <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 4 — Execute each tranche (double confirmation required)</div>
           <div class="alloc-execute-grid" id="inline-alloc-execute-grid"></div>
         </div>
+
+        <!-- Legacy single-tranche qty for backward compat (hidden) -->
+        <input type="number" id="exec-qty" style="display:none" oninput="onExecQtyInput()"/>
+        <span id="exec-meta" style="display:none"></span>
+        <div class="exec-warn" id="exec-warn" style="display:none"></div>
       </div>
     </div>
 
@@ -2510,17 +2511,22 @@ function calc(){
     num.textContent=tradeRequiredLadder; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
     det.innerHTML='Increase from <strong>'+ladderHeld+'</strong> → <strong>'+recommended+'</strong><br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);
     execPanel.style.display='block';
-    // Pre-fill with recommended gap only if user hasn't already typed something
-    if(!execQty.dataset.userEdited){
-      execQty.value=tradeRequiredLadder;
-      execQty.dataset.recommended=tradeRequiredLadder;
-      execQty.dataset.putPriceR=putPriceR;
-      execQty.dataset.strike=K;
-      window._selectedExpiry=null; // reset expiry selection
-      renderExpiryGrid();
-      renderInlineAlloc(tradeRequiredLadder);
-      c('inline-alloc-section').style.display=tradeRequiredLadder>0?'block':'none';
+    // Apply SAVI-conditioned preset automatically unless user has manually adjusted
+    if(!window._allocUserOverride){
+      var saviRec=saviConditionedPreset(iv);
+      window._allocYieldPcts=saviRec.pcts.slice();
+      window._allocPcts=saviRec.pcts.slice();
     }
+    // Show SAVI signal banner
+    var saviNow=saviConditionedPreset(iv);
+    var banner=c('savi-signal-banner');
+    if(banner){
+      banner.innerHTML='★ SAVI Signal (SAVI '+(iv*100).toFixed(1)+'%): '+saviNow.label;
+      banner.style.cssText='padding:8px 12px;border-radius:2px;margin-bottom:10px;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;background:rgba(0,0,0,.2);border:1px solid;border-color:'+saviNow.color+';color:'+saviNow.color;
+    }
+    window._selectedExpiry=null;
+    renderExpiryGrid();
+    renderInlineAlloc();
   } else if(tradeRequiredLadder<0){
     box.className='decision-box sell'; action.textContent='REDUCE'; action.style.color='var(--red)';
     num.textContent=Math.abs(tradeRequiredLadder); num.style.color='var(--red)'; lbl.textContent='Contracts to Reduce';
@@ -3025,85 +3031,132 @@ function onExecQtyInput(){
   renderInlineAlloc(qty);
 }
 
-// ── Inline allocator: renders inside the advisory box ─────────────
-function renderInlineAlloc(totalQty){
+// ── SAVI-conditioned preset recommendation ────────────────────────
+function saviConditionedPreset(iv){
+  var savi=iv*100;
+  if(savi<18)  return {pcts:[20,25,30,25], label:'Vol LOW (<18%) — skew far, vega is cheap', color:'var(--teal2)'};
+  if(savi<25)  return {pcts:[40,35,15,10], label:'Vol MODERATE (18–25%) — balanced ladder', color:'var(--green2)'};
+  if(savi<32)  return {pcts:[55,30,10,5],  label:'Vol ELEVATED (25–32%) — skew near, limit long-dated cost', color:'var(--amber)'};
+  return         {pcts:[70,20,10,0],        label:'Vol HIGH (>32%) — near-dated only, puts expensive', color:'var(--red2)'};
+}
+
+// ── Inline allocator: yield-allocation based ──────────────────────
+function renderInlineAlloc(){
   var sliderDiv=c('inline-alloc-sliders');
   var execDiv=c('inline-alloc-execute-grid');
   var pctDiv=c('inline-alloc-pct-total');
   if(!sliderDiv||!execDiv) return;
-
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var otm=FVAL['i-otm']||0.10;
-  if(!S||!r||!iv){ sliderDiv.innerHTML='<div style="color:var(--muted);font-size:9px">Enter market inputs to see allocation</div>'; return; }
-
+  if(!S||!r||!iv){ sliderDiv.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see allocation</div>'; return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
-  var pcts=window._allocPcts||[40,35,15,10];
+  var pcts=window._allocYieldPcts||[40,35,15,10];
   var totalPct=pcts.reduce(function(s,p){return s+p;},0);
   var colors=['var(--teal2)','var(--green2)','var(--amber)','var(--purple)'];
   var labels=['Q1 Near','Q2','Q3','Q4 Far'];
+  var NAV=window._ladderNAV?window._ladderNAV.totalNAV:(getState().capital||0);
+  var zaronia=getZaronia();
+  var dailyYield=NAV*zaronia/365;
+  var bd=window._budgetData||{};
+  var remaining=bd.remaining||0;
 
-  // Update pct total
   if(Math.abs(totalPct-100)<1){
-    pctDiv.textContent='✓ Allocation sums to 100%';
+    pctDiv.textContent='✓ Yield allocation sums to 100%';
     pctDiv.style.background='rgba(64,200,128,.08)'; pctDiv.style.border='1px solid rgba(64,200,128,.2)'; pctDiv.style.color='var(--green2)';
   } else {
-    pctDiv.textContent='⚠ Sums to '+totalPct+'% — adjust to 100%';
+    pctDiv.textContent='⚠ Sums to '+totalPct+'% — adjust to reach 100%';
     pctDiv.style.background='rgba(232,160,32,.08)'; pctDiv.style.border='1px solid rgba(232,160,32,.2)'; pctDiv.style.color='var(--amber)';
   }
 
   var slHtml='', exHtml='';
+  var totalContracts=0, totalCost=0, totalTheta=0, totalDeltaWt=0;
+
   expiries.forEach(function(exp,i){
     var expStr=exp.toISOString().slice(0,10);
     var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
+    var tteDays=Math.round(T*365);
     var K=Math.round(S*(1-otm));
     var putR=bsPutRepriceR(S,K,r,q,iv,T);
     var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
     var delta=Math.exp(-q*T)*(normCDF(d1)-1);
-    // Contracts = floor(totalQty × pct/100), last expiry gets remainder
-    var contracts=i<3?Math.floor(totalQty*pcts[i]/100):totalQty-[0,1,2].reduce(function(s,j){return s+Math.floor(totalQty*pcts[j]/100);},0);
-    contracts=Math.max(0,contracts);
-    var cost=contracts*putR;
-    var canExec=contracts>0&&Math.abs(totalPct-100)<1;
+    var thetaPerContract=Math.abs(bsThetaPerDay(S,K,r,q,iv,T));
+    var yieldSlice=dailyYield*pcts[i]/100;
+    var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
+    var maxBudget=putR>0?Math.floor(remaining/putR):0;
+    var recommended=Math.min(maxCarry,maxBudget);
+    var bindingConstraint=maxCarry<=maxBudget?'carry-neutral':'budget';
+    totalContracts+=recommended; totalCost+=recommended*putR;
+    totalTheta+=thetaPerContract*recommended; totalDeltaWt+=Math.abs(delta)*recommended;
+    var constraintColor=bindingConstraint==='carry-neutral'?'var(--amber)':'var(--teal2)';
+    var constraintLabel=bindingConstraint==='carry-neutral'?'Yield/theta limit':'Budget limit';
 
     slHtml+='<div class="alloc-slider-card">'
       +'<div class="alloc-sl-label" style="color:'+colors[i]+'">'+labels[i]+'</div>'
-      +'<div class="alloc-sl-expiry">'+expStr+'</div>'
+      +'<div class="alloc-sl-expiry">'+expStr+' · '+tteDays+'d</div>'
+      +'<div style="font-family:'DM Mono',monospace;font-size:8.5px;color:var(--muted);margin-bottom:4px">Yield: R'+Math.round(yieldSlice).toLocaleString('en-ZA')+'/day · Θ R'+Math.round(thetaPerContract)+'/c/day</div>'
       +'<div class="alloc-sl-pct" style="color:'+colors[i]+'" id="ia-pct-'+i+'">'+pcts[i]+'%</div>'
       +'<input type="range" class="alloc-sl-input" min="0" max="100" step="5" value="'+pcts[i]+'" oninput="onInlineAllocSlider('+i+',this.value)" style="accent-color:'+colors[i]+'">'
-      +'<div class="alloc-sl-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/c · Δ '+delta.toFixed(4)+'</div>'
-      +'<div class="alloc-sl-contracts" style="color:'+colors[i]+'">'+contracts+' contracts</div>'
-      +'<div class="alloc-sl-cost">R '+Math.round(cost).toLocaleString('en-ZA')+'</div>'
+      +'<div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:'+colors[i]+';text-align:center;margin:4px 0">'+recommended+' contracts</div>'
+      +'<div style="font-size:8px;color:'+constraintColor+';text-align:center;margin-bottom:4px">'+constraintLabel+'</div>'
+      +'<div class="alloc-sl-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract · Δ '+delta.toFixed(4)+'</div>'
+      +'<div class="alloc-sl-cost">Cost: R '+Math.round(recommended*putR).toLocaleString('en-ZA')+'</div>'
       +'</div>';
 
+    var canExec=recommended>0&&Math.abs(totalPct-100)<1;
     exHtml+='<button class="alloc-exec-btn" '+(canExec?'':'disabled ')
-      +'onclick="execAllocTranche(\''+expStr+'\','+putR+','+K+','+contracts+')">'
+      +'onclick="execAllocTranche(''+expStr+'','+putR+','+K+','+recommended+')">'
       +'<div style="font-size:8px;color:var(--muted);margin-bottom:2px">'+labels[i]+'</div>'
-      +'<div style="font-size:11px;color:'+colors[i]+'">'+contracts+' contracts</div>'
+      +'<div style="font-size:14px;color:'+colors[i]+';font-weight:700">'+recommended+'</div>'
+      +'<div style="font-size:8px;color:var(--muted)">contracts</div>'
       +'<div style="font-size:8px;color:var(--muted);margin-top:2px">'+expStr+'</div>'
-      +'<div style="font-size:9px;color:var(--plat);margin-top:3px">R '+Math.round(cost).toLocaleString('en-ZA')+'</div>'
+      +'<div style="font-size:9px;color:var(--plat);margin-top:2px">R '+Math.round(recommended*putR).toLocaleString('en-ZA')+'</div>'
       +'</button>';
   });
 
   sliderDiv.innerHTML=slHtml;
   execDiv.innerHTML=exHtml;
+
+  var summaryEl=c('inline-alloc-summary');
+  if(summaryEl){
+    var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
+    var budgetUsedPct=remaining>0?(totalCost/remaining*100):0;
+    var ladderHeld=window._calcLadderHeld||0;
+    summaryEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'
+      +'<div><div class="alloc-total-label">Total Contracts</div><div class="alloc-total-val" style="color:var(--teal2)">'+totalContracts+'</div></div>'
+      +'<div><div class="alloc-total-label">Total Cost</div><div class="alloc-total-val" style="color:var(--red2)">R '+Math.round(totalCost).toLocaleString('en-ZA')+'</div></div>'
+      +'<div><div class="alloc-total-label">Budget Used</div><div class="alloc-total-val" style="color:'+(budgetUsedPct>90?'var(--red2)':budgetUsedPct>70?'var(--amber)':'var(--green2)')+'">'+budgetUsedPct.toFixed(1)+'%</div></div>'
+      +'<div><div class="alloc-total-label">Wt Avg |Δ|</div><div class="alloc-total-val" style="color:var(--blue2)">'+avgDelta.toFixed(4)+'</div></div>'
+      +'<div><div class="alloc-total-label">New Held Total</div><div class="alloc-total-val" style="color:var(--green2)">'+(ladderHeld+totalContracts)+' (+'+(totalContracts)+')</div></div>'
+      +'</div>';
+  }
+  window._inlineAllocData={totalContracts,totalCost,remaining};
 }
 
-function onInlineAllocSlider(idx, val){
-  var pcts=window._allocPcts||[40,35,15,10];
+function applySaviPreset(){
+  var iv=FVAL['i-iv']||0.24;
+  var rec=saviConditionedPreset(iv);
+  window._allocYieldPcts=rec.pcts.slice();
+  window._allocPcts=rec.pcts.slice();
+  window._allocUserOverride=false; // reset — this is a signal-based preset
+  renderInlineAlloc(); renderAllocPanel();
+}
+
+function onInlineAllocSlider(idx,val){
+  var pcts=window._allocYieldPcts||[40,35,15,10];
   pcts[idx]=parseInt(val);
-  window._allocPcts=pcts;
+  window._allocYieldPcts=pcts; window._allocPcts=pcts.slice();
+  window._allocUserOverride=true; // user manually adjusted — don't auto-reset
   var el=c('ia-pct-'+idx); if(el) el.textContent=val+'%';
-  var qty=parseInt((c('exec-qty')||{}).value)||0;
-  if(qty>0) renderInlineAlloc(qty);
-  renderAllocPanel(); // keep hidden reference in sync
+  renderInlineAlloc(); renderAllocPanel();
 }
+
 function applyInlinePreset(pcts){
-  window._allocPcts=pcts.slice();
-  var qty=parseInt((c('exec-qty')||{}).value)||0;
-  if(qty>0) renderInlineAlloc(qty);
-  renderAllocPanel();
+  window._allocYieldPcts=pcts.slice(); window._allocPcts=pcts.slice();
+  window._allocUserOverride=true;
+  renderInlineAlloc(); renderAllocPanel();
 }
+
 
 function openBuyConfirmModal(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
@@ -3741,11 +3794,10 @@ function applyAllocPreset(pcts){
 
 function execAllocTranche(expStr, putR, K, contracts){
   if(contracts<=0){ alert('No contracts allocated to this expiry.'); return; }
-  // Pre-populate the exec panel and open buy confirm modal
   window._selectedExpiry=expStr;
   window._selectedPutR=putR;
   window._selectedK=K;
-  // Set the exec qty
+  // Set exec qty for the confirm modal
   var execQty=c('exec-qty');
   if(execQty){
     execQty.value=contracts;
@@ -3753,7 +3805,6 @@ function execAllocTranche(expStr, putR, K, contracts){
     execQty.dataset.recommended=window._calcRecommended||contracts;
     execQty.dataset.putPriceR=putR;
   }
-  // Open the buy confirm modal directly
   openBuyConfirmModal();
 }
 
