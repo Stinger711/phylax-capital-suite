@@ -2505,7 +2505,7 @@ function calc(){
 
   // ── Decision box ───────────────────────────────────────────────────
   var box=c('decision-box'),action=c('dec-action'),num=c('dec-contracts'),lbl=c('dec-label'),det=c('dec-details');
-  var execPanel=c('exec-panel'), execQty=c('exec-qty'), execBtn=c('exec-btn');
+  var execPanel=c('exec-panel'), execQty=c('exec-qty');
   if(tradeRequiredLadder>0){
     box.className='decision-box buy'; action.textContent='BUY'; action.style.color='var(--teal2)';
     num.textContent=tradeRequiredLadder; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
@@ -3006,7 +3006,6 @@ function onExecQtyInput(){
   if(qty<=0){
     warnEl.style.display='none';
     meta.textContent='contracts total (0 = skip today)';
-    c('inline-alloc-section').style.display='none';
     return;
   }
   var totalCost=qty*putR;
@@ -3684,97 +3683,9 @@ function renderLadderPanel(){
 window._allocPcts=[40,35,15,10]; // default recommended split
 
 function renderAllocPanel(){
-  var grid=c('alloc-sliders'); if(!grid) return;
-  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
-  var otm=FVAL['i-otm']||0.10;
-  if(!S||!r||!iv) return;
-
-  var today=new Date(); today.setHours(0,0,0,0);
-  var expiries=getSAFEXExpiries(4);
-  var labels=['Q1 Near','Q2','Q3','Q4 Far'];
-  var colors=['var(--teal2)','var(--green2)','var(--amber)','var(--purple)'];
-
-  // Get remaining budget
-  var remaining=window._budgetData?window._budgetData.remaining:0;
-  setText('alloc-budget-display','Remaining budget: R '+Math.round(remaining).toLocaleString('en-ZA'));
-
-  var pcts=window._allocPcts||[40,35,15,10];
-  var totalPct=pcts.reduce(function(s,p){return s+p;},0);
-
-  // Update pct total indicator
-  var ptEl=c('alloc-pct-total');
-  if(Math.abs(totalPct-100)<1){
-    ptEl.textContent='✓ Allocation sums to 100%';
-    ptEl.style.background='rgba(64,200,128,.08)';
-    ptEl.style.border='1px solid rgba(64,200,128,.2)';
-    ptEl.style.color='var(--green2)';
-  } else {
-    ptEl.textContent='⚠ Allocation sums to '+totalPct+'% — adjust sliders to reach 100%';
-    ptEl.style.background='rgba(232,160,32,.08)';
-    ptEl.style.border='1px solid rgba(232,160,32,.2)';
-    ptEl.style.color='var(--amber)';
-  }
-
-  // Calculate per-expiry data
-  var sliderHtml='', execHtml='';
-  var totalContracts=0, totalCost=0, totalDeltaWeighted=0;
-  var expiryData=[];
-
-  expiries.forEach(function(exp,i){
-    var expStr=exp.toISOString().slice(0,10);
-    var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
-    var tteDays=Math.round(T*365);
-    var K=Math.round(S*(1-otm));
-    var putR=bsPutRepriceR(S,K,r,q,iv,T);
-    var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
-    var delta=Math.exp(-q*T)*(normCDF(d1)-1);
-    var thetaD=Math.abs((S*Math.exp(-q*T)*normPDF(d1)*iv/(2*Math.sqrt(T))-r*K*Math.exp(-r*T)*(1-normCDF(d1-iv*Math.sqrt(T)))+q*S*Math.exp(-q*T)*(1-normCDF(d1)))/365)*10;
-
-    var budget=remaining*pcts[i]/100;
-    var contracts=putR>0?Math.floor(budget/putR):0;
-    var cost=contracts*putR;
-
-    totalContracts+=contracts;
-    totalCost+=cost;
-    totalDeltaWeighted+=Math.abs(delta)*contracts;
-    expiryData.push({expStr,K,putR,T,contracts,cost,delta,thetaD,tteDays,budget,i});
-
-    sliderHtml+='<div class="alloc-slider-card">'
-      +'<div class="alloc-sl-label" style="color:'+colors[i]+'">'+labels[i]+'</div>'
-      +'<div class="alloc-sl-expiry">'+expStr+' · '+tteDays+'d</div>'
-      +'<div class="alloc-sl-pct" style="color:'+colors[i]+'" id="alloc-pct-'+i+'">'+pcts[i]+'%</div>'
-      +'<input type="range" class="alloc-sl-input" min="0" max="100" step="5" value="'+pcts[i]+'"'
-      +' oninput="onAllocSlider('+i+',this.value)" style="accent-color:'+colors[i]+'">'
-      +'<div class="alloc-sl-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract</div>'
-      +'<div class="alloc-sl-contracts" style="color:'+colors[i]+'">'+(contracts>0?contracts+' contracts':'0 contracts')+'</div>'
-      +'<div class="alloc-sl-cost">R '+Math.round(cost).toLocaleString('en-ZA')+'</div>'
-      +'<div class="alloc-sl-delta">Δ '+delta.toFixed(4)+' · Θ R'+Math.round(thetaD*contracts)+'/day</div>'
-      +'</div>';
-
-    var canExec=contracts>0&&totalPct===100;
-    execHtml+='<button class="alloc-exec-btn" '+(canExec?'':'disabled ')
-      +'onclick="execAllocTranche(\''+expStr+'\','+putR+','+K+','+contracts+')">'
-      +'<div style="font-size:8px;color:var(--muted);margin-bottom:2px">'+labels[i]+'</div>'
-      +'<div style="font-size:11px;color:'+colors[i]+'">'+contracts+' contracts</div>'
-      +'<div style="font-size:8px;color:var(--muted);margin-top:2px">'+expStr+'</div>'
-      +'<div style="font-size:9px;color:var(--plat);margin-top:3px">R '+Math.round(cost).toLocaleString('en-ZA')+'</div>'
-      +'</button>';
-  });
-
-  grid.innerHTML=sliderHtml;
-  c('alloc-execute-grid').innerHTML=execHtml;
-
-  // Update totals
-  var avgDelta=totalContracts>0?totalDeltaWeighted/totalContracts:0;
-  var budgetUsedPct=remaining>0?(totalCost/remaining*100):0;
-  var ladderHeld=window._calcLadderHeld||0;
-
-  setText('alloc-total-contracts',totalContracts);
-  setText('alloc-total-cost','R '+Math.round(totalCost).toLocaleString('en-ZA'));
-  setText('alloc-budget-used',budgetUsedPct.toFixed(1)+'%');
-  c('alloc-budget-used').style.color=budgetUsedPct>95?'var(--red2)':budgetUsedPct>75?'var(--amber)':'var(--green2)';
-  setText('alloc-avg-delta',(-avgDelta).toFixed(4));
-  setText('alloc-new-held',ladderHeld+totalContracts+' (+'+(totalContracts)+')');
+  // Allocation rendering is now handled by renderInlineAlloc() inside the advisory box.
+  // This function is retained for backward compatibility but does nothing.
+  return;
 }
 
 function onAllocSlider(idx, val){
