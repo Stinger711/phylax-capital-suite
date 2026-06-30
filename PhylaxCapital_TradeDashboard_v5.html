@@ -1871,7 +1871,7 @@ function bsBlack76(S,K,r,q,iv,T){
     var disc0=Math.exp(-r*T);
     var fwdIntrinsic=Math.max(K-F,0)*disc0;
     return {F:F,d1:0,d2:0,putPoints:fwdIntrinsic,putPriceR:fwdIntrinsic*10,
-      delta:-disc0*(K>F?1:0),gamma:0,thetaPerDayR:0,vegaR:0};
+      delta:(K>F?-1:0),gamma:0,thetaPerDayR:0,vegaR:0};
   }
   var sqrtT=Math.sqrt(T);
   var d1=(Math.log(F/K)+(iv*iv/2)*T)/(iv*sqrtT);
@@ -3204,7 +3204,10 @@ function renderInlineAlloc(){
     var thetaPerContract=g76a.thetaPerDayR;
     var yieldSlice=dailyYield*pcts[i]/100;
     var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
-    var maxBudget=putR>0?Math.floor(remaining/putR):0;
+    // Budget constraint sliced by the same allocation %, so the four
+    // expiries' recommendations can never sum to more than `remaining`.
+    var budgetSlice=remaining*pcts[i]/100;
+    var maxBudget=putR>0?Math.floor(budgetSlice/putR):0;
     var recommended=Math.min(maxCarry,maxBudget);
     var bindingConstraint=maxCarry<=maxBudget?'carry-neutral':'budget';
     totalContracts+=recommended; totalCost+=recommended*putR;
@@ -4263,6 +4266,14 @@ function onRedeemInput(){
   var cashAfter=ln.effectiveCash-redemptionValue;
   c('rd-value').value='R '+Math.round(redemptionValue).toLocaleString('en-ZA');
   setText('rd-cash-after','R '+Math.round(cashAfter).toLocaleString('en-ZA')); if(c('rd-cash-after')) c('rd-cash-after').style.color=cashAfter>0?'var(--teal2)':'var(--red2)';
+  if(redemptionValue>ln.effectiveCash){
+    c('rd-summary').innerHTML='<span style="color:var(--red2)">⚠ Insufficient call-account cash for this redemption — value R'+Math.round(redemptionValue).toLocaleString('en-ZA')+' exceeds available cash R'+Math.round(ln.effectiveCash).toLocaleString('en-ZA')+'. Unit price reflects total NAV (cash + option book); redemptions are paid from cash only. Close tranches first to raise cash, or reduce the unit count.</span>';
+    c('rd-rebalance-warn').style.display='none';
+    c('rd-confirm-input').value='';
+    var blockBtn=c('rd-confirm-btn'); blockBtn.disabled=true; blockBtn.style.opacity='.4'; blockBtn.style.cursor='not-allowed';
+    window._pendingRedemption=null;
+    return;
+  }
   var bd=calcConvexityBudget();
   var newBudget=newNAV-newNAV/(1+bd.zaronia*bd.T_annual);
   var rebalanceNeeded=bd.paid>newBudget;
@@ -4284,6 +4295,18 @@ function onRedeemConfirmInput(){
 async function executeRedemption(){
   if(c('rd-confirm-input').value.trim().toUpperCase()!=='REDEEM'){ alert('Type REDEEM to confirm.'); return; }
   var pr=window._pendingRedemption; if(!pr){ alert('No redemption pending.'); return; }
+  // Defensive re-check: state (cash balance, NAV, ladder) could have
+  // changed between the preview computing pr.redemptionValue and this
+  // confirm click — e.g. another tab closed a tranche, or the market
+  // moved and recalculated NAV. Re-validate against current cash before
+  // committing, rather than trusting the stale preview snapshot.
+  var ldrCheck=getLadder();
+  var lnCheck=window._ladderNAV;
+  var currentCash=lnCheck?lnCheck.effectiveCash:(ldrCheck.cashBalance||0);
+  if(pr.redemptionValue>currentCash){
+    alert('⚠ Redemption blocked — call-account cash has changed since this was previewed.\n\nRedemption value: R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+'\nCurrent available cash: R'+Math.round(currentCash).toLocaleString('en-ZA')+'\n\nClose the redemption modal and try again with updated figures.');
+    return;
+  }
   var up=window._unitData||calcUnitPrice();
   var investor=c('rd-investor').value||'Unnamed investor';
   var ldr=getLadder(); ldr.cashBalance=Math.max(0,(ldr.cashBalance||0)-pr.redemptionValue); saveLadder(ldr);
