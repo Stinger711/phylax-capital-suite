@@ -3199,6 +3199,24 @@ function renderInlineAlloc(){
   var bd=calcConvexityBudget();
   var remaining=bd.remaining||0;
 
+  // ── Net out theta already being paid by the existing book ──────────
+  // dailyYield above is the fund's GROSS daily ZARONIA accrual. Without
+  // this step, every quarter's slider treated the FULL gross yield as
+  // "available to finance new contracts" even when most of it is
+  // already committed to servicing tranches already held — which could
+  // recommend buying many multiples more than the book can actually
+  // carry-neutrally support. Net against the existing ladder's total
+  // daily theta bleed (using each held tranche's own strike/expiry, via
+  // the same Black-76 engine) before any of it gets sliced by quarter.
+  var existingLadder=getLadder();
+  var totalExistingThetaBleed=0;
+  (existingLadder.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry);
+    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
+    totalExistingThetaBleed+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+  });
+  var netDailyYield=Math.max(0,dailyYield-totalExistingThetaBleed);
+
   if(Math.abs(totalPct-100)<1){
     pctDiv.textContent='✓ Yield allocation sums to 100%';
     pctDiv.style.background='rgba(64,200,128,.08)'; pctDiv.style.border='1px solid rgba(64,200,128,.2)'; pctDiv.style.color='var(--green2)';
@@ -3219,7 +3237,7 @@ function renderInlineAlloc(){
     var putR=g76a.putPriceR;
     var delta=g76a.delta;
     var thetaPerContract=g76a.thetaPerDayR;
-    var yieldSlice=dailyYield*pcts[i]/100;
+    var yieldSlice=netDailyYield*pcts[i]/100;
     var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
     // Budget constraint sliced by the same allocation %, so the four
     // expiries' recommendations can never sum to more than `remaining`.
@@ -3263,7 +3281,9 @@ function renderInlineAlloc(){
     var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
     var budgetUsedPct=remaining>0?(totalCost/remaining*100):0;
     var ladderHeld=window._calcLadderHeld||0;
-    summaryEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'
+    var netYieldPct=dailyYield>0?(netDailyYield/dailyYield*100):0;
+    summaryEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">'
+      +'<div><div class="alloc-total-label">Net Yield Avail.</div><div class="alloc-total-val" style="color:'+(netYieldPct<10?'var(--red2)':netYieldPct<40?'var(--amber)':'var(--green2)')+'" title="Gross daily yield R'+Math.round(dailyYield).toLocaleString('en-ZA')+' minus R'+Math.round(totalExistingThetaBleed).toLocaleString('en-ZA')+'/day already committed to the existing ladder">R '+Math.round(netDailyYield).toLocaleString('en-ZA')+' ('+netYieldPct.toFixed(0)+'%)</div></div>'
       +'<div><div class="alloc-total-label">Total Contracts</div><div class="alloc-total-val" style="color:var(--teal2)">'+totalContracts+'</div></div>'
       +'<div><div class="alloc-total-label">Total Cost</div><div class="alloc-total-val" style="color:var(--red2)">R '+Math.round(totalCost).toLocaleString('en-ZA')+'</div></div>'
       +'<div><div class="alloc-total-label">Budget Used</div><div class="alloc-total-val" style="color:'+(budgetUsedPct>90?'var(--red2)':budgetUsedPct>70?'var(--amber)':'var(--green2)')+'">'+budgetUsedPct.toFixed(1)+'%</div></div>'
