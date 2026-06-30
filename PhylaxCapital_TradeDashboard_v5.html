@@ -230,6 +230,17 @@ textarea:focus{border-color:var(--teal2)}
 .tdd-itm{background:rgba(64,200,128,.15);color:var(--green2);border:1px solid rgba(64,200,128,.3)}
 .tdd-near{background:rgba(232,160,32,.12);color:var(--amber);border:1px solid rgba(232,160,32,.25)}
 .tdd-otm{background:rgba(90,120,136,.1);color:var(--muted);border:1px solid rgba(90,120,136,.2)}
+.tdd-roll{background:rgba(232,160,32,.18);color:var(--amber);border:1px solid rgba(232,160,32,.4)}
+.tdd-roll-overdue{background:rgba(232,120,32,.22);color:#f0a050;border:1px solid rgba(232,120,32,.5)}
+.tdd-roll-critical{background:rgba(232,64,64,.25);color:var(--red2);border:1px solid rgba(232,64,64,.6);animation:pulse 2s infinite}
+
+/* ── ROLL-DUE ALERT BANNER ──────────────────────────────────────── */
+.roll-alert{display:none;margin-bottom:12px;padding:10px 14px;border-radius:2px;
+  font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;line-height:1.7}
+.roll-alert.tier1{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
+.roll-alert.tier2{background:rgba(232,120,32,.1);border:1px solid rgba(232,120,32,.4);color:#f0a050}
+.roll-alert.tier3{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.4);color:var(--red2)}
 
 /* ── BUTTONS ───────────────────────────────────────────────────── */
 .btn{border:none;border-radius:2px;cursor:pointer;font-family:'Rajdhani',sans-serif;
@@ -1278,6 +1289,7 @@ textarea:focus{border-color:var(--teal2)}
       <button class="btn btn-ghost btn-sm" onclick="exportLadderCSV()" style="font-size:9px">↓ Ladder CSV</button>
     </div>
   </div>
+  <div id="roll-alert" class="roll-alert"></div>
   <div style="overflow-x:auto">
     <table class="ladder-table">
       <thead>
@@ -3758,6 +3770,7 @@ function renderLadderPanel(){
   }
 
   var rows='',totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0,totalPnl=0;
+  var rollFlags=[]; // tranches at or past the 50%-of-life roll point, for the summary banner
   ladder.tranches.forEach(function(t){
     var expiry=new Date(t.expiry);
     var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
@@ -3780,7 +3793,28 @@ function renderLadderPanel(){
 
     var isITM=S<t.strikeLevel, isNear=!isITM&&(t.strikeLevel-S)/S<0.03;
     var rowCls=isITM?'tranche-itm':isNear?'tranche-near':'tranche-otm';
-    var badge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':isNear?'<span class="tdd-badge tdd-near">Near</span>':'<span class="tdd-badge tdd-otm">OTM</span>';
+    var moneynessBadge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':isNear?'<span class="tdd-badge tdd-near">Near</span>':'<span class="tdd-badge tdd-otm">OTM</span>';
+
+    // ── Progressive roll-due escalation ─────────────────────────────
+    // Policy: close out at least 50% of the way through a tranche's
+    // original tenor, well ahead of the gamma/liquidity "cliff" near
+    // expiry. This escalates in three tiers rather than a single flag,
+    // since a manager may deliberately choose to hold an ITM tranche
+    // past the normal 50% point while a real market move is in
+    // progress — the escalation makes that an increasingly visible,
+    // conscious choice rather than something that gets overlooked.
+    var totalLifeDays=Math.max(1,Math.round((expiry-buyDate)/86400000));
+    var pctLifeElapsed=daysHeld/totalLifeDays;
+    var rollTier=0;
+    if(pctLifeElapsed>=0.90||tteDays<=10) rollTier=3;
+    else if(pctLifeElapsed>=0.75) rollTier=2;
+    else if(pctLifeElapsed>=0.50) rollTier=1;
+    var rollBadge='';
+    if(rollTier===1) rollBadge='<span class="tdd-badge tdd-roll" title="'+Math.round(pctLifeElapsed*100)+'% of tenor elapsed — past the normal 50% roll point">ROLL DUE</span>';
+    else if(rollTier===2) rollBadge='<span class="tdd-badge tdd-roll-overdue" title="'+Math.round(pctLifeElapsed*100)+'% of tenor elapsed">ROLL OVERDUE</span>';
+    else if(rollTier===3) rollBadge='<span class="tdd-badge tdd-roll-critical" title="'+tteDays+'d to expiry, '+Math.round(pctLifeElapsed*100)+'% of tenor elapsed">⚠ EXPIRY RISK</span>';
+    var badge=moneynessBadge+rollBadge;
+    if(rollTier>0) rollFlags.push({id:t.id,tier:rollTier,isITM:isITM,tteDays:tteDays,pctLifeElapsed:pctLifeElapsed,contracts:t.contracts});
 
     // Roll warning on TTE
     var tteCol=tteDays<14?'var(--red2)':tteDays<45?'var(--amber)':'var(--muted)';
@@ -3809,6 +3843,29 @@ function renderLadderPanel(){
       +'</tr>';
   });
   tbody.innerHTML=rows;
+
+  // ── Roll-due summary banner ────────────────────────────────────────
+  var rollAlertEl=c('roll-alert');
+  if(rollAlertEl){
+    if(rollFlags.length===0){
+      rollAlertEl.style.display='none';
+    } else {
+      var maxTier=Math.max.apply(null,rollFlags.map(function(f){return f.tier;}));
+      var tierClass='tier'+maxTier;
+      var tier3=rollFlags.filter(function(f){return f.tier===3;});
+      var tier2=rollFlags.filter(function(f){return f.tier===2;});
+      var tier1=rollFlags.filter(function(f){return f.tier===1;});
+      var itmHeld=rollFlags.filter(function(f){return f.isITM;});
+      var lines=[];
+      if(tier3.length) lines.push('⚠ EXPIRY RISK — '+tier3.length+' tranche'+(tier3.length>1?'s':'')+' within 10 days of expiry or 90%+ through tenor: '+tier3.map(function(f){return f.id+' ('+f.tteDays+'d left)';}).join(', ')+'. Close or roll now — do not let these run to expiry.');
+      if(tier2.length) lines.push('⚠ ROLL OVERDUE — '+tier2.length+' tranche'+(tier2.length>1?'s':'')+' past 75% of tenor: '+tier2.map(function(f){return f.id;}).join(', ')+'. Review today.');
+      if(tier1.length) lines.push('ℹ ROLL DUE — '+tier1.length+' tranche'+(tier1.length>1?'s':'')+' past the normal 50% roll point: '+tier1.map(function(f){return f.id;}).join(', ')+'.');
+      if(itmHeld.length) lines.push('<span style="font-weight:400;opacity:.85">'+itmHeld.length+' of the above '+(itmHeld.length>1?'are':'is')+' currently ITM — if you\'re deliberately holding past the normal roll point because the market is moving in your favour, that\'s a valid call, but confirm it\'s intentional rather than overlooked. The gamma/liquidity risk near expiry applies whether ITM or OTM.</span>');
+      rollAlertEl.innerHTML=lines.join('<br>');
+      rollAlertEl.className='roll-alert '+tierClass;
+      rollAlertEl.style.display='block';
+    }
+  }
 
   var pnlTotalColor=totalPnl>=0?'var(--green2)':'var(--red2)';
   c('ladder-totals').innerHTML=
