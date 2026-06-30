@@ -1547,6 +1547,7 @@ textarea:focus{border-color:var(--teal2)}
           </div>
           <div class="alloc-sliders" id="inline-alloc-sliders"></div>
           <div class="alloc-pct-total" id="inline-alloc-pct-total" style="margin-bottom:8px"></div>
+          <div id="inline-net-yield-banner" style="margin-bottom:8px"></div>
           <div class="alloc-totals" id="inline-alloc-summary" style="margin-bottom:10px"></div>
           <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 4 — Execute each tranche (double confirmation required)</div>
           <div class="alloc-execute-grid" id="inline-alloc-execute-grid"></div>
@@ -3304,13 +3305,20 @@ function renderInlineAlloc(){
   execDiv.innerHTML=exHtml;
 
   var summaryEl=c('inline-alloc-summary');
+  var netYieldEl=c('inline-net-yield-banner');
+  if(netYieldEl){
+    var netYieldPct=dailyYield>0?(netDailyYield/dailyYield*100):0;
+    var nyColor=netYieldPct<10?'var(--red2)':netYieldPct<40?'var(--amber)':'var(--green2)';
+    var nyBg=netYieldPct<10?'rgba(232,64,64,.08)':netYieldPct<40?'rgba(232,160,32,.08)':'rgba(64,200,128,.08)';
+    var nyBorder=netYieldPct<10?'rgba(232,64,64,.25)':netYieldPct<40?'rgba(232,160,32,.25)':'rgba(64,200,128,.25)';
+    netYieldEl.style.cssText='background:'+nyBg+';border:1px solid '+nyBorder+';border-radius:2px;padding:8px 14px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:'+nyColor+';text-align:center';
+    netYieldEl.innerHTML='Net yield available to finance new contracts: <strong>'+fRk(netDailyYield)+'/day</strong> ('+netYieldPct.toFixed(0)+'% of gross) — gross <strong>'+fRk(dailyYield)+'/day</strong> minus <strong>'+fRk(totalExistingThetaBleed)+'/day</strong> already committed to your existing '+(window._calcLadderHeld||0)+'-contract book';
+  }
   if(summaryEl){
     var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
     var budgetUsedPct=remaining>0?(totalCost/remaining*100):0;
     var ladderHeld=window._calcLadderHeld||0;
-    var netYieldPct=dailyYield>0?(netDailyYield/dailyYield*100):0;
-    summaryEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">'
-      +'<div><div class="alloc-total-label">Net Yield</div><div class="alloc-total-val" style="color:'+(netYieldPct<10?'var(--red2)':netYieldPct<40?'var(--amber)':'var(--green2)')+'" title="Gross daily yield R'+Math.round(dailyYield).toLocaleString('en-ZA')+' minus R'+Math.round(totalExistingThetaBleed).toLocaleString('en-ZA')+'/day already committed to the existing ladder">R '+Math.round(netDailyYield).toLocaleString('en-ZA')+'</div><div style="font-size:8px;color:var(--muted);margin-top:1px">'+netYieldPct.toFixed(0)+'% of gross</div></div>'
+    summaryEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'
       +'<div><div class="alloc-total-label">Total Contracts</div><div class="alloc-total-val" style="color:var(--teal2)">'+totalContracts+'</div></div>'
       +'<div><div class="alloc-total-label">Total Cost</div><div class="alloc-total-val" style="color:var(--red2)">R '+Math.round(totalCost).toLocaleString('en-ZA')+'</div></div>'
       +'<div><div class="alloc-total-label">Budget Used</div><div class="alloc-total-val" style="color:'+(budgetUsedPct>90?'var(--red2)':budgetUsedPct>70?'var(--amber)':'var(--green2)')+'">'+budgetUsedPct.toFixed(1)+'%</div></div>'
