@@ -2554,7 +2554,22 @@ function calc(){
   var zaronia=getZaronia();
   var dailyYield=NAV*zaronia/365;
   var thetaBleedPC=Math.abs(thetaD)*10;
-  var maxCarryContracts=thetaBleedPC>0?Math.floor(dailyYield/thetaBleedPC):9999;
+  // Net gross yield against the existing ladder's actual theta bleed
+  // (each tranche priced at its own strike/expiry) before computing how
+  // many MORE contracts the truly-uncommitted yield can support. Without
+  // this, maxCarryContracts only "accidentally" looked sane via the
+  // held-subtraction trick below — it was still built on gross yield,
+  // same root cause as the multi-quarter allocator bug fixed earlier.
+  var ladderForCarry=getLadder();
+  var ladderHeldForCarry=(ladderForCarry.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
+  var totalExistingThetaBleedSingle=0;
+  (ladderForCarry.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry);
+    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
+    totalExistingThetaBleedSingle+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+  });
+  var netDailyYieldSingle=Math.max(0,dailyYield-totalExistingThetaBleedSingle);
+  var maxCarryContracts=thetaBleedPC>0?(ladderHeldForCarry+Math.floor(netDailyYieldSingle/thetaBleedPC)):9999;
 
   // ── Unified budget: remaining after premiums already paid ──────────
   // Uses calcConvexityBudget() — the corrected PV-based annual formula,
