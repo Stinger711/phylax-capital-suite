@@ -3318,13 +3318,12 @@ function renderInlineAlloc(){
     var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
     var budgetUsedPct=remaining>0?(totalCost/remaining*100):0;
     var ladderHeld=window._calcLadderHeld||0;
-    summaryEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">'
+    summaryEl.innerHTML=''
       +'<div><div class="alloc-total-label">Total Contracts</div><div class="alloc-total-val" style="color:var(--teal2)">'+totalContracts+'</div></div>'
       +'<div><div class="alloc-total-label">Total Cost</div><div class="alloc-total-val" style="color:var(--red2)">R '+Math.round(totalCost).toLocaleString('en-ZA')+'</div></div>'
       +'<div><div class="alloc-total-label">Budget Used</div><div class="alloc-total-val" style="color:'+(budgetUsedPct>90?'var(--red2)':budgetUsedPct>70?'var(--amber)':'var(--green2)')+'">'+budgetUsedPct.toFixed(1)+'%</div></div>'
       +'<div><div class="alloc-total-label">Wt Avg |Δ|</div><div class="alloc-total-val" style="color:var(--blue2)">'+avgDelta.toFixed(4)+'</div></div>'
-      +'<div><div class="alloc-total-label">New Held Total</div><div class="alloc-total-val" style="color:var(--green2)">'+(ladderHeld+totalContracts)+' (+'+(totalContracts)+')</div></div>'
-      +'</div>';
+      +'<div><div class="alloc-total-label">New Held Total</div><div class="alloc-total-val" style="color:var(--green2)">'+(ladderHeld+totalContracts)+' (+'+(totalContracts)+')</div></div>';
   }
 }
 
