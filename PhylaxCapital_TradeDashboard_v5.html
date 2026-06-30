@@ -1959,6 +1959,17 @@ function fmtRand(n){ return 'R '+Math.round(n).toString().replace(/\B(?=(\d{3})+
 function fmtPct(n,dp){ return (n*100).toFixed(dp==null?2:dp)+'%'; }
 function fmtPctAbs(n,dp){ return Math.abs(n).toFixed(dp==null?2:dp); }
 function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+// Escape user-supplied free text (investor names, trade notes, session
+// names) before interpolating it into innerHTML templates. These fields
+// are typed by the operator and persisted to Firebase — if the dashboard
+// is ever shared with a second viewer (a DFM, an auditor, another
+// session on the same Firestore doc), unescaped text here would execute
+// as live HTML/JS when the table re-renders.
+function escapeHtml(s){
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function c(id){ return document.getElementById(id); }
 
 // ════════════════════════════════════════════════════════════════════
@@ -4040,10 +4051,14 @@ function renderLiquidityStress(){
   function stressScenario(shockPct,barEl,navEl,itmEl,netEl){
     var sS=S*(1+shockPct);
     var optNewBook=0;
+    // Vol spike under shock — same model used in renderHedgeView's
+    // stressHedge(), so both panels answer the same question for a given
+    // shock size rather than one assuming static vol and the other not.
+    var ivStress=calcCrashVol(iv,Math.abs(shockPct));
     (ladder.tranches||[]).forEach(function(t){
       var exp=new Date(t.expiry);
       var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
-      var mtmNew=bsPutRepriceR(sS,t.strikeLevel,r,q,iv,T);
+      var mtmNew=bsPutRepriceR(sS,t.strikeLevel,r,q,ivStress,T);
       optNewBook+=mtmNew*t.contracts;
     });
     var navNew=ln.effectiveCash+optNewBook;
@@ -4120,7 +4135,7 @@ function renderLog(){
       +'<td style="color:var(--muted)">'+e.navM+'m</td>'
       +'<td style="color:'+(Number(e.netCarry)>=0?'var(--green)':'var(--red)')+'">'+fRk(Number(e.netCarry))+'</td>'
       +'<td style="color:var(--amber)">'+e.hedgeMultiple+'×</td>'
-      +'<td style="text-align:left;font-size:9.5px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.notes.replace(/"/g,'&quot;')+'">'+e.notes+'</td>'
+      +'<td style="text-align:left;font-size:9.5px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escapeHtml(e.notes)+'">'+escapeHtml(e.notes)+'</td>'
       +'</tr>';
   });
   tbody.innerHTML=html;
@@ -4348,14 +4363,14 @@ function renderInflowLog(){
     var typeLabel=isSub?'SUB':'REDEEM';
     html+='<tr>'
       +'<td style="color:var(--muted)">'+e.date+'</td>'
-      +'<td style="color:var(--plat);text-align:left">'+(e.investor||'—')+'</td>'
+      +'<td style="color:var(--plat);text-align:left">'+escapeHtml(e.investor||'—')+'</td>'
       +'<td style="color:'+typeColor+';font-family:\'Rajdhani\',sans-serif;font-weight:700;text-align:center">'+typeLabel+'</td>'
       +'<td style="color:'+(isSub?'var(--green2)':'var(--red2)')+'">'+(isSub?'+':'')+fRk(e.amount)+'</td>'
       +'<td style="color:var(--purple)">R '+(e.unitPrice?e.unitPrice.toFixed(4):'—')+'</td>'
       +'<td style="color:'+(isSub?'var(--teal2)':'var(--red2)')+'">'+(isSub?'+':'')+Math.round(e.units||0).toLocaleString('en-ZA')+'</td>'
       +'<td style="color:var(--plat)">'+Math.round(e.runningUnits||0).toLocaleString('en-ZA')+'</td>'
       +'<td style="color:var(--teal2)">'+fRk(e.navAfter||0)+'</td>'
-      +'<td style="text-align:left;color:var(--muted);font-size:9px">'+(e.notes||'')+'</td>'
+      +'<td style="text-align:left;color:var(--muted);font-size:9px">'+escapeHtml(e.notes||'')+'</td>'
       +'</tr>';
   });
 
@@ -4381,7 +4396,7 @@ function openSessionList(){
         +'<div style="flex:1;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="loadSessionById(\''+s.sessionId+'\')">'
         +(isActive?'<span style="font-family:\'Rajdhani\',sans-serif;font-size:8px;font-weight:700;color:var(--teal2);text-transform:uppercase;letter-spacing:.1em;background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.2);padding:2px 6px;border-radius:2px;flex-shrink:0">Active</span>':'')
         +'<div style="flex:1">'
-        +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+(s.config?s.config.sessionName:s.sessionId)+'</div>'
+        +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+escapeHtml(s.config?s.config.sessionName:s.sessionId)+'</div>'
         +'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--muted)">'
         +(s.config?fRk(s.config.phylaxCapital)+' sleeve · '+fRk(s.config.totalPortfolio)+' portfolio · inception '+s.config.inceptionDate:'—')
         +'</div>'
@@ -4714,7 +4729,7 @@ function exportMonthlyReport(){
     +'</style></head><body>'
     +'<h1>Phylax Capital — Macro Protector Fund</h1>'
     +'<p style="font-size:11px;color:#666">Monthly Performance Report · Generated '+new Date().toLocaleDateString('en-ZA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</p>'
-    +'<p style="font-size:11px;color:#666">Session: '+CURRENT_SESSION.sessionName+' · Inception: '+CURRENT_SESSION.inceptionDate+'</p>'
+    +'<p style="font-size:11px;color:#666">Session: '+escapeHtml(CURRENT_SESSION.sessionName)+' · Inception: '+CURRENT_SESSION.inceptionDate+'</p>'
     +'<h2>Portfolio Overview</h2>'
     +'<div class="kpi">'
     +'<div class="kc"><div class="kl">Phylax NAV</div><div class="kv">'+fRk(lastH.nav)+'</div></div>'
