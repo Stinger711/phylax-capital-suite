@@ -1871,7 +1871,7 @@ function bsBlack76(S,K,r,q,iv,T){
     var disc0=Math.exp(-r*T);
     var fwdIntrinsic=Math.max(K-F,0)*disc0;
     return {F:F,d1:0,d2:0,putPoints:fwdIntrinsic,putPriceR:fwdIntrinsic*10,
-      delta:(K>F?-1:0),gamma:0,thetaPerDayR:0,vegaR:0};
+      delta:-disc0*(K>F?1:0),gamma:0,thetaPerDayR:0,vegaR:0};
   }
   var sqrtT=Math.sqrt(T);
   var d1=(Math.log(F/K)+(iv*iv/2)*T)/(iv*sqrtT);
@@ -2549,7 +2549,13 @@ function calc(){
   var dailyThetaBleed=thetaBleedPC*held;
   var netCarry=dailyYield-dailyThetaBleed;
   var carryRatio=dailyThetaBleed>0?dailyYield/dailyThetaBleed:Infinity;
-  var hedgeMultiple=NAV>0?(S*10*held*delta)/NAV:0;
+  // bsBlack76's `delta` is the forward delta (∂P/∂F). Convert to spot
+  // delta (∂P/∂S = ∂P/∂F × e^((r-q)T)) before using it as a spot-notional
+  // hedge ratio — multiplying forward delta by spot S directly understates
+  // or overstates hedge notional by the forward/spot conversion factor
+  // whenever r ≠ q.
+  var deltaSpot=delta*Math.exp((r-q)*T);
+  var hedgeMultiple=NAV>0?(S*10*held*deltaSpot)/NAV:0;
   var bookValue=putPriceR*held;
   var daysLeft=Math.round(T*365);
 
@@ -3874,11 +3880,13 @@ function renderHedgeView(){
     var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
     var g76h=bsBlack76(S,t.strikeLevel,r,q,iv,Math.max(T,1e-6));
     var mtm=g76h.putPriceR;
-    var delta=g76h.delta;
+    // Convert this tranche's forward delta to spot delta before using it
+    // as a spot-notional hedge ratio (see deltaSpot note in calc()).
+    var delta=g76h.delta*Math.exp((r-q)*Math.max(T,1e-6));
     totalContracts+=t.contracts;
     totalCost+=t.premiumTotal;
     totalMTM+=mtm*t.contracts;
-    // Delta-adjusted notional: |delta| × contracts × R10 × ALSI
+    // Delta-adjusted notional: |delta_spot| × contracts × R10 × ALSI
     totalDeltaNotional+=Math.abs(delta)*t.contracts*10*S;
   });
 
@@ -5019,6 +5027,89 @@ function dashboardInit(){
               try{ calc(); }catch(e){}
               // Don't show checklist — already done today
               return;
+            }
+          }catch(e){}
+        }
+        // Show morning checklist if inputs not yet entered today
+        if(morningChecklistNeeded()){
+          setTimeout(function(){ openMorningChecklist(); },600);
+        }
+      } else {
+        // No session in Firebase — show setup modal
+        setFBStatus('error','No saved session');
+        openSetupModal();
+      }
+    }).catch(function(e){
+      console.error('Firebase load error:',e);
+      setFBStatus('error','Firebase error');
+      openSetupModal();
+    });
+  } else {
+    // First time — show setup
+    openSetupModal();
+  }
+}
+</script>
+<!-- Firebase v10 compat SDK — loaded after main script so all functions are defined -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+// Bootstrap Firebase, then sign in anonymously, then start the dashboard.
+// Every step degrades gracefully: if the SDK is blocked or offline, the
+// dashboard still runs from localStorage and never throws.
+(function bootstrapFirebase(){
+  function startDashboard(){
+    try{ dashboardInit(); }catch(e){ console.error('dashboardInit error:',e); }
+  }
+
+  if(typeof firebase === 'undefined'){
+    console.warn('Firebase SDK not available — running in local-only mode.');
+    window.db = null; window.fbConnected = false;
+    var ind = document.getElementById('fb-indicator');
+    var txt = document.getElementById('fb-status-text');
+    if(ind) ind.className='fb-indicator error';
+    if(txt) txt.textContent='Local mode (cloud unavailable)';
+    startDashboard();
+    return;
+  }
+
+  try {
+    if(!firebase.apps.length){ firebase.initializeApp(window._fbConfig); }
+    window.db = firebase.firestore();
+    window.fbConnected = false;
+  } catch(e){
+    console.error('Firebase init error:', e);
+    window.db = null;
+    startDashboard();
+    return;
+  }
+
+  // Anonymous auth — gives each browser an authenticated identity so the
+  // Firestore security rules can require auth != null. Silent, no login UI.
+  var authReady = false;
+  function proceedOnce(){
+    if(authReady) return; authReady = true;
+    startDashboard();
+  }
+  try {
+    firebase.auth().signInAnonymously().catch(function(e){
+      console.warn('Anonymous auth failed (continuing):', e.code||e.message);
+    });
+    firebase.auth().onAuthStateChanged(function(user){
+      if(user){ console.log('Auth OK (uid '+user.uid.slice(0,6)+'…)'); }
+      proceedOnce();
+    });
+    // Safety: never wait more than 4s on auth before starting anyway.
+    setTimeout(proceedOnce, 4000);
+  } catch(e){
+    console.warn('Auth unavailable (continuing):', e);
+    startDashboard();
+  }
+})();
+</script>
+</body>
+</html>     return;
             }
           }catch(e){}
         }
