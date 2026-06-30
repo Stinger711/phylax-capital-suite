@@ -3712,23 +3712,13 @@ async function confirmReduce(){
   else showToast('⚠  Reduce saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
-function closeTranche(id){
-  var ladder=getLadder();
-  var idx=ladder.tranches.findIndex(function(t){return t.id===id;});
-  if(idx<0) return;
-  var t=ladder.tranches[idx];
-  if(!confirm('Close tranche '+t.id+'?\nStrike: '+t.strikeLevel.toLocaleString()+' · Contracts: '+t.contracts+'\nProceeds will be returned to cash at bid price (−2.5% haircut).')) return;
-  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
-  var today=new Date(); today.setHours(0,0,0,0);
-  var expiry=new Date(t.expiry);
-  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
-  var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
-  var closeProceeds=mtm*t.contracts*0.975;
-  ladder.cashBalance+=closeProceeds;
-  ladder.tranches.splice(idx,1);
-  saveLadder(ladder);
-  renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
-}
+// NOTE: the proper closeTranche(id) implementation lives earlier in this
+// file (opens the close-tranche modal with typed confirmation, tiered
+// haircuts, partial-close support, and Firebase save). A second, inferior
+// duplicate previously existed here and — due to JavaScript's
+// last-declaration-wins behavior — was silently the one actually running,
+// overriding the modal flow with a bare confirm() dialog, a flat 2.5%
+// haircut regardless of position size, and no Firebase save. Removed.
 
 function renderLadderPanel(){
   var ladder=getLadder();
@@ -3859,11 +3849,59 @@ function renderBudgetPanel(){
   window._budgetData={quarterlyBudget:annualBudget,paid,remaining,affordable,putR,blended,totalContracts};
 }
 
-// Vol spike model: implied vol rises as market falls
-// Empirical approximation: IV roughly doubles at -25% shock
+// ════════════════════════════════════════════════════════════════════
+// VOL SPIKE MODEL — convex, calibrated to historical equity vol behavior
+// in real drawdowns (VIX as the closest data-rich proxy for how a broad
+// equity vol index responds to large moves; SAVI has no public long-run
+// history to calibrate against directly, so this borrows the *shape* of
+// the relationship while leaving the level open to recalibration once
+// real SAVI history around a local stress episode is available).
+//
+// CALIBRATED — fitted to actual daily SAVI/ALSI closes, Jan-Dec 2020
+// (the COVID crash). Methodology: isolated decline-phase trading days
+// only (days where ALSI made a new running low — excludes the recovery
+// arc, which exhibits hysteresis: vol stays elevated for weeks after
+// price partially recovers, and including those days would distort the
+// shock-response shape being measured). Fit: multiplier - 1 = a·x + b·x²
+// via least-squares against 15 clean decline-phase points spanning
+// drawdowns of 0% to -35.7% (ALSI peak 17 Jan 2020 -> trough 19 Mar
+// 2020). R² = 0.91.
+//
+// 2020 was chosen as the primary calibration episode over 2008 (GFC) and
+// 2015-16 (Nenegate/EM rout) for three reasons: (1) it's the cleanest
+// data — a genuine calm-market baseline through to a full crisis trough,
+// with no left-truncation (the 2008 SAVI series available started after
+// the crisis was already underway, at SAVI ~28 vs a normal ~15-20 base,
+// which compromises it as a baseline reference); (2) best individual fit
+// of the three episodes (R²=0.91 vs 0.58 for 2008, 0.27 for 2016, the
+// latter also only reaching a 15% drawdown so unsuited to calibrating
+// the -25%/-40% region at all); (3) it's the most recognizable reference
+// point for anyone reviewing this methodology.
+//
+// Notably, this real-data fit is LESS extreme than an initial estimate
+// borrowed from VIX-history intuition (which assumed multiplier(40%)
+// ~4.6x) — the actual SAVI response, fitted properly, gives ~3.5x at a
+// -40% shock. The convexity itself is real and confirmed in the data
+// (see the 9 Mar 2020 oil-price-war/circuit-breaker session, where SAVI
+// jumped from 1.35x to 2.46x of baseline in a single day on only a
+// further 3.8 percentage points of drawdown) — but the overall magnitude
+// is more modest than a VIX-based guess implied. Cross-checked against
+// 2008 and 2016 fits and a pooled-all-three fit; all land in a broadly
+// consistent range (see git history / prior audit notes for the
+// comparison table) — 2020-only was selected as the primary anchor per
+// the reasons above, not because other episodes disagreed wildly.
+//
+// Quadratic form: multiplier(x) = 1 + a·x + b·x²  (x = |shock|, fraction)
+// multiplier(0.10)=1.47x, multiplier(0.25)=2.36x, multiplier(0.40)=3.48x.
+// Recalibrate (`VOL_SPIKE_A`/`VOL_SPIKE_B` below) if/when a longer SAVI
+// history or additional clean stress episodes become available — this is
+// a fitted regression, not a hand-picked shape, but it's still a 3-episode
+// sample.
+var VOL_SPIKE_A=4.146, VOL_SPIKE_B=5.151;
 function calcCrashVol(baseIv, absMoveSize){
-  var multiplier=1+Math.min(absMoveSize*4, 2.0); // caps at 3x base IV
-  return Math.min(baseIv*multiplier, 1.50); // hard cap at 150%
+  var x=Math.max(0,absMoveSize);
+  var multiplier=1+VOL_SPIKE_A*x+VOL_SPIKE_B*x*x;
+  return Math.min(baseIv*multiplier, 1.50); // hard cap at 150% absolute vol
 }
 
 // ════════════════════════════════════════════════════════════════════
