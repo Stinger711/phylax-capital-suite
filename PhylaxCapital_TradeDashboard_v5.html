@@ -346,6 +346,7 @@ textarea:focus{border-color:var(--teal2)}
 .ec-affordable.zero{color:var(--red2)}
 .expiry-select-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
   text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:8px}
+.ref-price-card{border-radius:2px;padding:12px;border:1px solid var(--border);background:rgba(0,0,0,.2)}
 .budget-panel{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
   background:linear-gradient(135deg,rgba(160,96,240,.07),rgba(0,196,212,.03));
   border:1px solid rgba(160,96,240,.25);border-radius:2px;margin-bottom:14px;overflow:hidden}
@@ -1090,6 +1091,14 @@ textarea:focus{border-color:var(--teal2)}
     <div class="up-label">Redemption Price</div>
     <div class="up-val" id="up-redeem" style="color:var(--gold)">—</div>
     <div class="up-sub">T+1 at today's unit price</div>
+  </div>
+</div>
+
+<!-- ══ REFERENCE PRICING — ALL EXPIRIES (ALWAYS VISIBLE) ═════════════ -->
+<div class="panel" style="margin-bottom:14px;border-color:rgba(0,196,212,.22)">
+  <div class="sh c-teal">Reference Pricing — All SAFEX Expiries</div>
+  <div style="font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.5">Live pricing across all four quarterly expiries at the current OTM target — visible regardless of trade recommendation (BUY, HOLD, or REDUCE), for assessing rolls or reallocation. Informational only; does not affect the ladder or any trade.</div>
+  <div class="expiry-grid" id="ref-pricing-grid">
   </div>
 </div>
 
@@ -2329,6 +2338,45 @@ function renderExpiryGrid(){
   }
 }
 
+// ── Read-only reference pricing across all four expiries. Unlike
+//    renderExpiryGrid() (which only renders inside the exec panel when a
+//    BUY signal is active), this always renders regardless of decision
+//    state — so pricing stays visible when fully hedged, overhedged, or
+//    carry-negative, none of which currently open the execution panel.
+//    Purely informational: no onclick, no selection state, no effect on
+//    exec-qty or window._selected*. ─────────────────────────────────────
+function renderReferencePricingGrid(){
+  var grid=c('ref-pricing-grid'); if(!grid) return;
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var otm=FVAL['i-otm']||0.10;
+  if(!S||!r||!iv){ grid.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see reference pricing</div>'; return; }
+  var today=new Date(); today.setHours(0,0,0,0);
+  var expiries=getSAFEXExpiries(4);
+  var bd=calcConvexityBudget();
+  var remaining=bd.remaining;
+  var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
+  var html='';
+  expiries.forEach(function(exp,i){
+    var expStr=exp.toISOString().slice(0,10);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var tteDays=Math.round(T*365);
+    var K=Math.round(S*(1-otm));
+    var g76r=bsBlack76(S,K,r,q,iv,Math.max(T,1e-6));
+    var putR=g76r.putPriceR;
+    var delta=g76r.delta;
+    var affordable=putR>0?Math.floor(remaining/putR):0;
+    html+='<div class="ref-price-card">'
+      +'<div class="ec-label">'+labels[i]+'</div>'
+      +'<div class="ec-expiry">'+expStr+'</div>'
+      +'<div class="ec-tte">'+tteDays+' days · Strike '+K.toLocaleString('en-ZA')+'</div>'
+      +'<div class="ec-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract</div>'
+      +'<div class="ec-delta">Δ '+delta.toFixed(4)+' · T '+T.toFixed(4)+'yr</div>'
+      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Remaining budget: '+affordable+' contracts</div>'
+      +'</div>';
+  });
+  grid.innerHTML=html;
+}
+
 function selectExpiry(expStr, putR, K){
   window._selectedExpiry=expStr;
   window._selectedPutR=putR;
@@ -2611,6 +2659,7 @@ function calc(){
   renderLiquidityStress();
   renderUnitPriceBar();
   renderBudgetPanel();
+  renderReferencePricingGrid();
   renderHedgeView();
   updatePortfolio();
 }
