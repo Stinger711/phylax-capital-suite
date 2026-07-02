@@ -6,6 +6,7 @@
 <title>Phylax Capital — Trade Dashboard v5</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -26,6 +27,8 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;mi
   background-size:100%,48px 48px,48px 48px}
 input,button,textarea,select{font-family:inherit}
 .page{max-width:1400px;margin:0 auto;padding:20px 22px 80px}
+
+/* ── MODAL OVERLAY ─────────────────────────────────────────────── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;
   display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .modal-box{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;
@@ -52,6 +55,8 @@ input,button,textarea,select{font-family:inherit}
 .modal-calc .mc-row{display:flex;justify-content:space-between}
 .mc-row .mc-k{color:var(--muted)}
 .mc-row .mc-v{color:var(--teal2);font-weight:500}
+
+/* ── SESSION MANAGER BAR ───────────────────────────────────────── */
 .session-bar{background:linear-gradient(135deg,rgba(160,96,240,.08),rgba(0,196,212,.04));
   border:1px solid rgba(160,96,240,.2);border-radius:2px;margin-bottom:14px;
   padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -65,6 +70,8 @@ input,button,textarea,select{font-family:inherit}
   display:inline-block;margin-right:5px;animation:pulse 3s infinite}
 .sync-dot.syncing{background:var(--amber);animation:pulse .8s infinite}
 .sync-dot.error{background:var(--red);animation:none}
+
+/* ── TOP BAR ───────────────────────────────────────────────────── */
 .topbar{display:flex;align-items:center;justify-content:space-between;
   padding-bottom:14px;border-bottom:2px solid var(--teal);margin-bottom:16px;gap:16px}
 .brand-row{display:flex;align-items:center;gap:14px;flex-shrink:0}
@@ -80,6 +87,8 @@ input,button,textarea,select{font-family:inherit}
 .live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
   background:var(--teal2);animation:pulse 2s infinite;margin-right:5px;vertical-align:middle}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 4px currentColor}50%{opacity:.3}}
+
+/* ── PERF SUMMARY WIDGET ───────────────────────────────────────── */
 .perf-summary{display:flex;align-items:center;gap:2px;background:rgba(0,0,0,.3);
   border:1px solid var(--border2);border-radius:2px;padding:0;overflow-x:auto;flex-shrink:1}
 .ps-item{padding:6px 14px;text-align:center;border-right:1px solid var(--border)}
@@ -88,6 +97,8 @@ input,button,textarea,select{font-family:inherit}
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px}
 .ps-value{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;white-space:nowrap}
 .ps-pos{color:var(--green2)}.ps-neg{color:var(--red2)}.ps-neu{color:var(--plat)}
+
+/* ── PORTFOLIO COMPARISON BANNER ───────────────────────────────── */
 .port-banner{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:0;
   background:linear-gradient(135deg,rgba(200,168,74,.07),rgba(0,196,212,.03));
   border:1px solid rgba(200,168,74,.25);border-radius:2px;margin-bottom:14px;overflow:hidden}
@@ -99,6 +110,8 @@ input,button,textarea,select{font-family:inherit}
 .pb-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
 .pb-alsi{font-size:9px;color:var(--muted);padding:12px 16px;display:flex;
   flex-direction:column;justify-content:center;gap:4px;border-left:1px solid rgba(200,168,74,.12)}
+
+/* ── LIVE NAV BANNER ───────────────────────────────────────────── */
 .nav-banner{display:grid;grid-template-columns:auto 1fr repeat(4,auto);gap:0;
   background:linear-gradient(135deg,rgba(0,196,212,.08),rgba(0,196,212,.03));
   border:1px solid rgba(0,196,212,.28);border-radius:2px;margin-bottom:14px;overflow:hidden}
@@ -117,6 +130,8 @@ input,button,textarea,select{font-family:inherit}
   text-transform:uppercase;letter-spacing:.1em;color:var(--amber);
   background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);
   padding:2px 8px;border-radius:2px}
+
+/* ── SECTION HEADINGS ──────────────────────────────────────────── */
 .sh{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;
   letter-spacing:.18em;display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .sh::before{content:'';width:3px;height:13px;background:currentColor;flex-shrink:0}
@@ -124,6 +139,8 @@ input,button,textarea,select{font-family:inherit}
 .c-teal{color:var(--teal)}.c-gold{color:var(--amber)}.c-red{color:var(--red2)}
 .c-green{color:var(--green)}.c-plat{color:var(--plat)}.c-blue{color:var(--blue2)}
 .c-purple{color:var(--purple)}
+
+/* ── PANELS ────────────────────────────────────────────────────── */
 .panel{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);
   border-radius:2px;padding:18px;margin-bottom:14px}
 .panel.br{border-color:rgba(232,64,64,.18)}.panel.bt{border-color:var(--border2)}
@@ -133,6 +150,8 @@ input,button,textarea,select{font-family:inherit}
 .panel.bperf{border-color:rgba(96,200,80,.2);background:linear-gradient(135deg,rgba(64,200,128,.05),rgba(0,196,212,.03))}
 .panel.bport{border-color:rgba(200,168,74,.25);background:linear-gradient(135deg,rgba(200,168,74,.06),rgba(0,196,212,.02))}
 .panel.bpurple{border-color:rgba(160,96,240,.2);background:linear-gradient(135deg,rgba(160,96,240,.05),var(--bg3))}
+
+/* ── ZARONIA STRIP ─────────────────────────────────────────────── */
 .zaronia-strip{display:flex;align-items:center;gap:20px;padding:10px 16px;
   background:linear-gradient(135deg,rgba(64,200,128,.07),rgba(64,200,128,.02));
   border:1px solid rgba(64,200,128,.2);border-radius:2px;margin-bottom:14px;flex-wrap:wrap}
@@ -141,11 +160,15 @@ input,button,textarea,select{font-family:inherit}
 .zs-rate{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--green2)}
 .zs-daily{font-family:'DM Mono',monospace;font-size:12px;color:var(--green)}
 .zs-meta{font-size:9px;color:var(--muted);line-height:1.6;flex:1;min-width:200px}
+
+/* ── LAYOUT ────────────────────────────────────────────────────── */
 .main-grid{display:grid;grid-template-columns:320px 1fr;gap:14px;margin-bottom:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .g5{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+
+/* ── INPUTS ────────────────────────────────────────────────────── */
 .fi{margin-bottom:10px}
 .fi-l{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:600;color:var(--muted);
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;
@@ -165,6 +188,8 @@ textarea{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(0,196,212,.2
   border-radius:2px;padding:8px 10px;color:var(--white);font-family:'DM Sans',sans-serif;
   font-size:11px;outline:none;resize:vertical;min-height:60px}
 textarea:focus{border-color:var(--teal2)}
+
+/* ── METRIC CARDS ──────────────────────────────────────────────── */
 .mc{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:12px;position:relative;overflow:hidden}
 .mc::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--teal)}
 .mc.r::before{background:var(--red)}.mc.g::before{background:var(--green)}
@@ -174,6 +199,8 @@ textarea:focus{border-color:var(--teal2)}
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .mc-v{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--white)}
 .mc-s{font-size:8.5px;color:var(--muted);margin-top:3px}
+
+/* ── DECISION BOX ──────────────────────────────────────────────── */
 .decision-box{border-radius:2px;padding:20px;text-align:center;margin-bottom:14px;
   border:1px solid;transition:all .3s}
 .decision-box.buy{background:rgba(0,196,212,.07);border-color:rgba(0,196,212,.35)}
@@ -185,6 +212,8 @@ textarea:focus{border-color:var(--teal2)}
 .dec-contracts{font-family:'Rajdhani',sans-serif;font-size:44px;font-weight:700;line-height:1}
 .dec-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 10px}
 .dec-details{font-size:10.5px;color:var(--plat);line-height:1.6}
+
+/* ── LADDER TABLE ──────────────────────────────────────────────── */
 .ladder-table{width:100%;border-collapse:separate;border-spacing:0 3px}
 .ladder-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;
   letter-spacing:.08em;color:var(--muted);padding:6px 10px;text-align:right;font-weight:600}
@@ -204,12 +233,16 @@ textarea:focus{border-color:var(--teal2)}
 .tdd-roll{background:rgba(232,160,32,.18);color:var(--amber);border:1px solid rgba(232,160,32,.4)}
 .tdd-roll-overdue{background:rgba(232,120,32,.22);color:#f0a050;border:1px solid rgba(232,120,32,.5)}
 .tdd-roll-critical{background:rgba(232,64,64,.25);color:var(--red2);border:1px solid rgba(232,64,64,.6);animation:pulse 2s infinite}
+
+/* ── ROLL-DUE ALERT BANNER ──────────────────────────────────────── */
 .roll-alert{display:none;margin-bottom:12px;padding:10px 14px;border-radius:2px;
   font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;
   text-transform:uppercase;letter-spacing:.1em;line-height:1.7}
 .roll-alert.tier1{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
 .roll-alert.tier2{background:rgba(232,120,32,.1);border:1px solid rgba(232,120,32,.4);color:#f0a050}
 .roll-alert.tier3{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.4);color:var(--red2)}
+
+/* ── BUTTONS ───────────────────────────────────────────────────── */
 .btn{border:none;border-radius:2px;cursor:pointer;font-family:'Rajdhani',sans-serif;
   font-weight:700;letter-spacing:.06em;text-transform:uppercase;transition:all .2s}
 .btn-sm{padding:6px 12px;font-size:9px}
@@ -238,12 +271,16 @@ textarea:focus{border-color:var(--teal2)}
   font-weight:700;cursor:pointer;border-radius:2px;letter-spacing:.06em;text-transform:uppercase}
 .btn-close-tranche:hover{background:rgba(232,64,64,.18)}
 .hidden{display:none!important}
+
+/* ── CARRY STRIP ───────────────────────────────────────────────── */
 .carry-ok{background:rgba(64,200,128,.08);border:1px solid rgba(64,200,128,.2);border-radius:2px;
   padding:8px 12px;font-size:10.5px;color:var(--green);font-family:'Rajdhani',sans-serif;
   font-weight:700;letter-spacing:.04em;margin-bottom:14px}
 .carry-bad{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.2);border-radius:2px;
   padding:8px 12px;font-size:10.5px;color:var(--red);font-family:'Rajdhani',sans-serif;
   font-weight:700;letter-spacing:.04em;margin-bottom:14px}
+
+/* ── DAILY NAV CARDS ───────────────────────────────────────────── */
 .dnav-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
 .dnav-card{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:12px}
 .dc-green{border-color:rgba(64,200,128,.2)}.dc-amber{border-color:rgba(232,160,32,.2)}
@@ -252,6 +289,8 @@ textarea:focus{border-color:var(--teal2)}
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .dnav-v{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;margin-bottom:3px}
 .dnav-s{font-size:8.5px;color:var(--muted)}
+
+/* ── LIQUIDITY STRESS ──────────────────────────────────────────── */
 .lstress-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
 .lstress-card{background:var(--card);border:1px solid var(--border);border-radius:2px;padding:12px}
 .lsc-green{border-color:rgba(64,200,128,.2)}.lsc-teal{border-color:rgba(0,196,212,.2)}
@@ -269,6 +308,8 @@ textarea:focus{border-color:var(--teal2)}
   letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:2px;margin-top:6px;display:inline-block}
 .bn90-ok{background:rgba(64,200,128,.12);color:var(--green2);border:1px solid rgba(64,200,128,.25)}
 .bn90-fail{background:rgba(232,64,64,.12);color:var(--red2);border:1px solid rgba(232,64,64,.25)}
+
+/* ── EOD ───────────────────────────────────────────────────────── */
 .eod-note{font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:14px}
 .eod-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
 .eod-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
@@ -277,14 +318,20 @@ textarea:focus{border-color:var(--teal2)}
 .eb-l{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .eb-v{font-family:'DM Mono',monospace;font-size:12px}
+
+/* ── PORTFOLIO CHART WRAPPER ───────────────────────────────────── */
 .chart-wrap{position:relative;height:280px;margin:12px 0}
 .chart-wrap canvas{position:absolute;inset:0}
+
+/* ── PERF STATS ────────────────────────────────────────────────── */
 .perf-stats{display:flex;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:14px}
 .pstat{flex:1;padding:10px;border-right:1px solid var(--border);text-align:center}
 .pstat:last-child{border-right:none}
 .pstat-l{font-family:'Rajdhani',sans-serif;font-size:8px;color:var(--muted);
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .pstat-v{font-family:'DM Mono',monospace;font-size:12px}
+
+/* ── BS TABLE ──────────────────────────────────────────────────── */
 .bs-table{width:100%;border-collapse:collapse;font-size:10px}
 .bs-table td{padding:4px 8px;border-bottom:1px solid rgba(0,196,212,.05);font-family:'DM Mono',monospace}
 .bs-table td:first-child{color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:9px;
@@ -294,6 +341,8 @@ textarea:focus{border-color:var(--teal2)}
 .toggle-btn{font-family:'Rajdhani',sans-serif;font-size:9px;background:rgba(0,196,212,.08);
   border:1px solid var(--border2);color:var(--teal);padding:3px 10px;border-radius:2px;
   cursor:pointer;transition:all .2s}
+
+/* ── LOG TABLE ─────────────────────────────────────────────────── */
 .log-table{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:10px}
 .log-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;
   letter-spacing:.08em;color:var(--muted);padding:5px 8px;text-align:right;font-weight:600}
@@ -306,6 +355,8 @@ textarea:focus{border-color:var(--teal2)}
 .sell-row td{border-color:rgba(232,64,64,.12)}
 .log-controls{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .log-count{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-left:auto}
+
+/* ── NAV TABLE ─────────────────────────────────────────────────── */
 .nav-table{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:10px}
 .nav-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;
   letter-spacing:.08em;color:var(--muted);padding:5px 8px;text-align:right;font-weight:600}
@@ -314,6 +365,8 @@ textarea:focus{border-color:var(--teal2)}
   background:var(--card);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
 .nav-table td:first-child{text-align:left;border-left:1px solid var(--border);border-radius:2px 0 0 2px}
 .nav-table td:last-child{border-right:1px solid var(--border);border-radius:0 2px 2px 0}
+
+/* ── INFLOW LOG ────────────────────────────────────────────────── */
 .inflow-table{width:100%;border-collapse:separate;border-spacing:0 2px;font-size:10px}
 .inflow-table th{font-family:'Rajdhani',sans-serif;font-size:9px;text-transform:uppercase;
   letter-spacing:.08em;color:var(--muted);padding:5px 8px;text-align:right;font-weight:600}
@@ -322,12 +375,18 @@ textarea:focus{border-color:var(--teal2)}
   background:rgba(160,96,240,.05);border:1px solid rgba(160,96,240,.12);border-left:none;border-right:none}
 .inflow-table td:first-child{text-align:left;border-left:1px solid rgba(160,96,240,.12);border-radius:2px 0 0 2px}
 .inflow-table td:last-child{border-right:1px solid rgba(160,96,240,.12);border-radius:0 2px 2px 0}
+
+/* ── WARN NOTE ─────────────────────────────────────────────────── */
 .warn-note{font-size:9px;color:var(--amber);margin-top:4px;font-family:'Rajdhani',sans-serif}
+
+/* ── FIREBASE STATUS ───────────────────────────────────────────── */
 .fb-status{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;
   font-size:9px;color:var(--muted)}
 .fb-indicator{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
 .fb-indicator.connecting{background:var(--amber);animation:pulse 1s infinite}
 .fb-indicator.error{background:var(--red)}
+
+/* ── MULTI-EXPIRY ADVISORY GRID ─────────────────────────────────── */
 .expiry-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
 .expiry-card{border-radius:2px;padding:12px;border:1px solid var(--border);
   background:rgba(0,0,0,.2);cursor:pointer;transition:all .2s;position:relative}
@@ -346,7 +405,6 @@ textarea:focus{border-color:var(--teal2)}
 .ec-affordable.zero{color:var(--red2)}
 .expiry-select-label{font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;
   text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:8px}
-.ref-price-card{border-radius:2px;padding:12px;border:1px solid var(--border);background:rgba(0,0,0,.2)}
 .budget-panel{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
   background:linear-gradient(135deg,rgba(160,96,240,.07),rgba(0,196,212,.03));
   border:1px solid rgba(160,96,240,.25);border-radius:2px;margin-bottom:14px;overflow:hidden}
@@ -356,6 +414,8 @@ textarea:focus{border-color:var(--teal2)}
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .bp-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
 .bp-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
+
+/* ── PORTFOLIO HEDGE VIEW ───────────────────────────────────────── */
 .hedge-panel{background:linear-gradient(135deg,rgba(0,196,212,.06),rgba(0,196,212,.02));
   border:1px solid rgba(0,196,212,.28);border-radius:2px;padding:18px;margin-bottom:14px}
 .hedge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
@@ -375,6 +435,8 @@ textarea:focus{border-color:var(--teal2)}
 .shg-row{display:flex;justify-content:space-between;margin-bottom:3px;font-size:9.5px}
 .shg-k{color:var(--muted);font-family:'Rajdhani',sans-serif;font-size:8.5px;text-transform:uppercase;letter-spacing:.05em}
 .shg-v{font-family:'DM Mono',monospace;font-size:9.5px}
+
+/* ── MORNING CHECKLIST ──────────────────────────────────────────── */
 .mc-step{display:flex;align-items:flex-start;gap:14px;padding:12px 0;
   border-bottom:1px solid var(--border)}
 .mc-step:last-child{border-bottom:none}
@@ -426,11 +488,15 @@ textarea:focus{border-color:var(--teal2)}
 .exec-warn.over{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:var(--red2)}
 .exec-warn.under{background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
 .exec-warn.ok{background:rgba(64,200,128,.08);border:1px solid rgba(64,200,128,.25);color:var(--green2)}
+
+/* ── HEDGE STATUS ALERT ─────────────────────────────────────────── */
 .hedge-alert{display:none;margin-bottom:12px;padding:10px 14px;border-radius:2px;
   font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;
   text-transform:uppercase;letter-spacing:.1em;line-height:1.6}
 .hedge-alert.overhedged{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.3);color:var(--red2)}
 .hedge-alert.underhedged{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
+
+/* ── REDUCE MODAL ───────────────────────────────────────────────── */
 .reduce-tranche-row{display:flex;align-items:center;gap:10px;padding:8px 10px;
   border-radius:2px;background:rgba(232,64,64,.05);border:1px solid rgba(232,64,64,.15);
   margin-bottom:6px}
@@ -443,6 +509,8 @@ textarea:focus{border-color:var(--teal2)}
 .reduce-qty-input:disabled{opacity:.35;cursor:not-allowed}
 .reduce-summary{padding:10px 12px;border-radius:2px;background:rgba(232,64,64,.07);
   border:1px solid rgba(232,64,64,.2);margin:12px 0;font-family:'DM Mono',monospace;font-size:10px;line-height:1.8}
+
+/* ── UNIT PRICE PANEL ───────────────────────────────────────────── */
 .unit-price-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:0;
   background:linear-gradient(135deg,rgba(160,96,240,.08),rgba(0,196,212,.04));
   border:1px solid rgba(160,96,240,.3);border-radius:2px;margin-bottom:10px;overflow:hidden}
@@ -452,6 +520,8 @@ textarea:focus{border-color:var(--teal2)}
   text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:3px}
 .up-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700}
 .up-sub{font-size:8px;color:var(--muted);margin-top:2px}
+
+/* ── REDEMPTION MODAL ───────────────────────────────────────────── */
 .inv-row{display:flex;align-items:center;gap:10px;padding:8px 10px;
   border-radius:2px;background:rgba(160,96,240,.05);border:1px solid rgba(160,96,240,.15);
   margin-bottom:6px}
@@ -459,6 +529,8 @@ textarea:focus{border-color:var(--teal2)}
 .inv-redeem-input{width:100px;background:rgba(0,0,0,.4);border:1px solid rgba(232,64,64,.3);
   border-radius:2px;padding:5px 8px;color:var(--white);font-family:'DM Mono',monospace;
   font-size:11px;text-align:center;outline:none}
+
+/* ── INVESTOR REGISTER ──────────────────────────────────────────── */
 .inv-register{width:100%;border-collapse:collapse;font-size:9.5px}
 .inv-register th{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
   text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:6px 10px;
@@ -467,6 +539,8 @@ textarea:focus{border-color:var(--teal2)}
 .inv-register td{padding:7px 10px;border-bottom:1px solid rgba(0,196,212,.05);
   font-family:'DM Mono',monospace;font-size:9.5px;text-align:right}
 .inv-register td:first-child{text-align:left;color:var(--plat)}
+
+/* ── MULTI-QUARTER YIELD ALLOCATOR ──────────────────────────────── */
 .alloc-sliders{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
 .alloc-slider-card{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:2px;padding:12px}
 .alloc-sl-label{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;
@@ -497,6 +571,7 @@ textarea:focus{border-color:var(--teal2)}
   cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.04);
   color:var(--muted);transition:all .2s}
 .alloc-preset:hover{border-color:var(--teal2);color:var(--teal2);background:rgba(0,196,212,.06)}
+
 @media(max-width:900px){
   .main-grid{grid-template-columns:1fr}
   .g4{grid-template-columns:1fr 1fr}
@@ -515,6 +590,7 @@ textarea:focus{border-color:var(--teal2)}
 <div class="modal-overlay hidden" id="setup-modal">
   <div class="modal-box" style="max-width:600px">
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      <!-- Phylax Hexagon Logo -->
       <svg width="44" height="44" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Phylax">
         <defs>
           <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -547,6 +623,7 @@ textarea:focus{border-color:var(--teal2)}
       </div>
     </div>
     <div class="modal-sub">Configure your portfolio parameters. These are locked at inception and form the basis of your 6-month auditable demo record.</div>
+
     <div class="modal-section">Session Identity</div>
     <div class="mfi">
       <label>Session Name</label>
@@ -557,6 +634,7 @@ textarea:focus{border-color:var(--teal2)}
       <input type="date" id="setup-inception" value="2026-07-01"/>
       <div class="hint">Use 1 July 2026 for a clean quarter start aligned to SAFEX Q3 expiry.</div>
     </div>
+
     <div class="modal-section">Portfolio Structure</div>
     <div class="modal-row">
       <div class="mfi">
@@ -578,6 +656,7 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc-row"><span class="mc-k">Quarterly Tranche Budget (est.)</span><span class="mc-v" id="prev-tranche">—</span></div>
       <div class="mc-row"><span class="mc-k">Call Account (ZARONIA est.)</span><span class="mc-v" id="prev-fi">—</span></div>
     </div>
+
     <div class="modal-section">Rate Parameters</div>
     <div class="modal-row">
       <div class="mfi">
@@ -591,6 +670,7 @@ textarea:focus{border-color:var(--teal2)}
         <div class="hint">Typically −15bps. Call account may be 0bps.</div>
       </div>
     </div>
+
     <div class="modal-section">Option Strategy</div>
     <div class="modal-row">
       <div class="mfi">
@@ -604,18 +684,21 @@ textarea:focus{border-color:var(--teal2)}
         <div class="hint">~3.80% p.a. Update quarterly from JSE data.</div>
       </div>
     </div>
+
     <div class="modal-section">Inception Benchmark</div>
     <div class="mfi">
       <label>Inception ALSI Level (J200 Index Points)</label>
       <input type="text" id="setup-alsi-inception" placeholder="e.g. 88000"/>
-      <div class="hint" style="color:var(--teal2)">Locked at inception. This is the baseline the JSE tracker sleeve measures its return from — enter the actual ALSI close on your inception date.</div>
+      <div class="hint" style="color:var(--teal2)">Locked at inception. This is the baseline the JSE tracker sleeve measures its return from \u2014 enter the actual ALSI close on your inception date.</div>
     </div>
+
     <div class="modal-section">Storage</div>
     <div class="mfi">
       <label>Session Storage ID (auto-generated)</label>
       <input type="text" id="setup-session-id" readonly style="color:var(--muted);font-size:10px"/>
       <div class="hint">Used as the Firestore document ID. Cannot be changed after creation.</div>
     </div>
+
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm hidden" id="setup-cancel-btn" onclick="closeSetupModal()" style="flex:1">✕ Cancel</button>
       <button class="btn btn-ghost btn-sm" onclick="openExistingSession()" style="flex:1">↩ Load Existing Session</button>
@@ -748,6 +831,8 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc-pip" id="mc-pip-3"></div>
       <div class="mc-pip" id="mc-pip-4"></div>
     </div>
+
+    <!-- Step 1: ALSI Spot -->
     <div class="mc-step">
       <div class="mc-num" id="mc-num-1">1</div>
       <div class="mc-body">
@@ -760,6 +845,8 @@ textarea:focus{border-color:var(--teal2)}
         </div>
       </div>
     </div>
+
+    <!-- Step 2: SAVI (Implied Vol) -->
     <div class="mc-step">
       <div class="mc-num" id="mc-num-2">2</div>
       <div class="mc-body">
@@ -772,6 +859,8 @@ textarea:focus{border-color:var(--teal2)}
         </div>
       </div>
     </div>
+
+    <!-- Step 3: JIBAR (monthly) -->
     <div class="mc-step">
       <div class="mc-num" id="mc-num-3">3</div>
       <div class="mc-body">
@@ -784,6 +873,8 @@ textarea:focus{border-color:var(--teal2)}
         </div>
       </div>
     </div>
+
+    <!-- Step 4: Dividend Yield (quarterly) -->
     <div class="mc-step">
       <div class="mc-num" id="mc-num-4">4</div>
       <div class="mc-body">
@@ -796,6 +887,8 @@ textarea:focus{border-color:var(--teal2)}
         </div>
       </div>
     </div>
+
+    <!-- Summary -->
     <div class="mc-summary" id="mc-summary">
       <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--teal2);margin-bottom:8px">Input Summary — Review Before Confirming</div>
       <div class="mc-summary-row"><span class="mc-summary-k">ALSI Spot</span><span class="mc-summary-v" id="mc-s-alsi">—</span></div>
@@ -809,6 +902,7 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc-summary-row"><span class="mc-summary-k">Contracts Held</span><span class="mc-summary-v" id="mc-s-held">—</span></div>
       <div class="mc-summary-row"><span class="mc-summary-k">Daily ZARONIA Yield</span><span class="mc-summary-v" id="mc-s-carry">—</span></div>
     </div>
+
     <div class="modal-actions" style="margin-top:8px">
       <button class="btn btn-green" id="mc-confirm-btn" onclick="morningChecklistConfirm()"
         disabled style="opacity:.4;cursor:not-allowed">
@@ -922,6 +1016,7 @@ textarea:focus{border-color:var(--teal2)}
 <!-- ══ TOP BAR ═══════════════════════════════════════════════════════ -->
 <div class="topbar">
   <div class="brand-row">
+    <!-- Phylax Hexagon Logo -->
     <svg width="48" height="48" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Phylax">
       <defs>
         <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -999,7 +1094,7 @@ textarea:focus{border-color:var(--teal2)}
     <div class="mfi" style="margin:0">
       <input type="text" id="pb-alsi-entry" class="auto-field" readonly placeholder="Set at session creation" style="font-size:11px;padding:5px 8px" title="Locked at inception. To change it, create a new session."/>
     </div>
-    <div style="font-size:8.5px;color:var(--muted);margin-top:3px">Baseline — tracker measures return from here</div>
+    <div style="font-size:8.5px;color:var(--muted);margin-top:3px">Baseline \u2014 tracker measures return from here</div>
   </div>
 </div>
 
@@ -1091,14 +1186,6 @@ textarea:focus{border-color:var(--teal2)}
     <div class="up-label">Redemption Price</div>
     <div class="up-val" id="up-redeem" style="color:var(--gold)">—</div>
     <div class="up-sub">T+1 at today's unit price</div>
-  </div>
-</div>
-
-<!-- ══ REFERENCE PRICING — ALL EXPIRIES (ALWAYS VISIBLE) ═════════════ -->
-<div class="panel" style="margin-bottom:14px;border-color:rgba(0,196,212,.22)">
-  <div class="sh c-teal">Reference Pricing — All SAFEX Expiries</div>
-  <div style="font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.5">Live pricing across all four quarterly expiries at the current OTM target — visible regardless of trade recommendation (BUY, HOLD, or REDUCE), for assessing rolls or reallocation. Informational only; does not affect the ladder or any trade.</div>
-  <div class="expiry-grid" id="ref-pricing-grid">
   </div>
 </div>
 
@@ -1251,6 +1338,85 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ THETA / CARRY SNAPSHOT ═════════════════════════════════════ -->
+<div class="panel" id="theta-snapshot-panel" style="margin-bottom:14px;border-color:rgba(160,96,240,.2);background:linear-gradient(135deg,rgba(160,96,240,.05),var(--bg3))">
+  <div class="sh c-purple" style="margin-bottom:12px">Option Book P&amp;L &amp; Carry Snapshot</div>
+  <div style="display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;gap:0">
+
+    <!-- Option Book P&L -->
+    <div style="padding:0 18px 0 4px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--purple);margin-bottom:10px">Option Book P&amp;L</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Cost Basis</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--plat)" id="tsp-cost">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">MTM Today</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--amber)" id="tsp-mtm">—</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Unrealised P&amp;L</span>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700" id="tsp-pnl">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">P&amp;L %</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px" id="tsp-pnl-pct">—</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="background:var(--border)"></div>
+
+    <!-- Daily Carry -->
+    <div style="padding:0 18px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--green);margin-bottom:10px">Daily Carry</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Gross ZARONIA Yield</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--green2)" id="tsp-yield">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Total Theta Bleed</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--red2)" id="tsp-theta">—</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Net Daily Carry</span>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700" id="tsp-net-carry">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Carry Ratio</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px" id="tsp-carry-ratio">—</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="background:var(--border)"></div>
+
+    <!-- Cumulative Theta -->
+    <div style="padding:0 4px 0 18px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--amber);margin-bottom:10px">Cumulative Theta (est.)</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Est. Theta Consumed</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--amber)" id="tsp-cumtheta">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Since</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted)" id="tsp-since">—</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Theta vs P&amp;L</span>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700" id="tsp-theta-vs-pnl">—</span>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:8px;color:var(--muted);margin-top:4px;line-height:1.4">
+        ⚠ Approximation: current theta rate × days held per tranche. Exact totals require daily history — improves as EOD closes accumulate.
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- ══ LIQUIDITY STRESS ══════════════════════════════════════════════ -->
 <div class="panel" style="margin-bottom:14px;border-color:rgba(64,200,128,.2)">
   <div class="sh c-green">BN90 Liquidity Stress Test — T+1 Redemption Capacity</div>
@@ -1299,11 +1465,6 @@ textarea:focus{border-color:var(--teal2)}
   <div>
     <div class="panel bt">
       <div class="sh c-gold">Market Inputs — Update Each Morning</div>
-      <div id="inputs-lock-badge" class="hidden" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:6px 10px;background:rgba(0,196,212,.06);border:1px solid rgba(0,196,212,.2);border-radius:2px">
-        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;color:var(--teal2);text-transform:uppercase;letter-spacing:.08em">🔒 Locked for today</span>
-        <button class="btn btn-ghost btn-xs" id="inputs-unlock-btn" onclick="requestUnlockMorningInputs()" style="margin-left:auto">✎ Unlock to Correct</button>
-        <button class="btn btn-amber btn-xs hidden" id="inputs-relock-btn" onclick="relockMorningInputs()">🔒 Re-lock</button>
-      </div>
       <div class="fi">
         <div class="fi-l">ALSI Spot (J200 Index Points) <span class="fi-badge">✎ Daily</span></div>
         <input type="text" id="i-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
@@ -1426,9 +1587,13 @@ textarea:focus{border-color:var(--teal2)}
       <div class="dec-details" id="dec-details"></div>
 
       <div class="exec-panel" id="exec-panel" style="display:none">
+        <!-- Step 1: Expiry selection with BS pricing per tenor -->
         <div class="expiry-select-label">Step 2 — Select expiry &amp; review pricing across tenors</div>
         <div class="expiry-grid" id="expiry-grid">
+          <!-- populated by renderExpiryGrid() -->
         </div>
+
+        <!-- Step 2: Quantity input (single-expiry manual buy) -->
         <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px;margin-top:4px">
           Step 3 — How many contracts do you want to buy today? (selected expiry above)
         </div>
@@ -1442,7 +1607,11 @@ textarea:focus{border-color:var(--teal2)}
           </button>
         </div>
         <div class="exec-warn" id="exec-warn"></div>
+
+        <!-- SAVI signal banner -->
         <div id="savi-signal-banner" style="padding:8px 12px;border-radius:2px;margin:14px 0 10px;font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em"></div>
+
+        <!-- Multi-quarter yield allocator -->
         <div id="inline-alloc-section">
           <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:6px 0 6px;border-top:1px solid var(--border);padding-top:12px">
             Or — Step 3b: allocate today's daily yield across all four quarters at once
@@ -1715,6 +1884,7 @@ textarea:focus{border-color:var(--teal2)}
 // ════════════════════════════════════════════════════════════════════
 // FIREBASE CONFIG — YOUR PROJECT
 // ════════════════════════════════════════════════════════════════════
+// Firebase config stored on window — SDK initialises after scripts load (see bottom of file)
 window._fbConfig = {
   apiKey: "AIzaSyDZAIzqzY4ntQy_wjnMuEmHcb8wt0z28UY",
   authDomain: "phylax-demonstation.firebaseapp.com",
@@ -1723,7 +1893,7 @@ window._fbConfig = {
   messagingSenderId: "124961194919",
   appId: "1:124961194919:web:64a3b4ce0ba81c7ac32c82"
 };
-var db = null;
+var db = null;        // set by bootstrapFirebase() once SDK loads
 var fbConnected = false;
 
 function setFBStatus(state, msg){
@@ -1738,12 +1908,14 @@ function setFBStatus(state, msg){
 // ════════════════════════════════════════════════════════════════════
 // SESSION STATE
 // ════════════════════════════════════════════════════════════════════
-var CURRENT_SESSION = null;
+var CURRENT_SESSION = null; // full session config object
 var SESSION_KEY = 'phylax_v5_active_session_id';
 
 function getActiveSessionId(){ return localStorage.getItem(SESSION_KEY)||null; }
 function setActiveSessionId(id){ localStorage.setItem(SESSION_KEY, id); }
 
+// Mirror the session config to localStorage so the dashboard works fully
+// offline (and in preview sandboxes where the Firebase CDN may be blocked).
 function saveSessionConfigLocal(){
   if(!CURRENT_SESSION) return;
   try{ localStorage.setItem('phylax_v5_config_'+CURRENT_SESSION.sessionId, JSON.stringify(CURRENT_SESSION)); }catch(e){}
@@ -1768,11 +1940,18 @@ function normPDF(x){ return Math.exp(-.5*x*x)/Math.sqrt(2*Math.PI); }
 // BLACK-76 PRICING ENGINE — single source of truth for ALL option math.
 // SAFEX ALSI options are futures-style; priced off the fair forward
 // F = S * e^((r-q)T) rather than spot, per the Black-76 migration plan.
+// Every renderer in this file (ladder, hedge view, expiry grid, liquidity
+// stress, inline allocator, EOD close, audit log) calls through the
+// bsCalcPutPrice / bsPutRepriceR / bsThetaPerDay / bsDelta / bsGamma /
+// bsVega wrappers below — so centralizing the math here upgrades every
+// call site at once and eliminates the renderer-level duplication that
+// was the single highest-risk item in the migration audit.
 // ════════════════════════════════════════════════════════════════════
 var PRICING_MODEL_VERSION = 'black76';
 
 function bsForward(S,r,q,T){ return S*Math.exp((r-q)*T); }
 
+// Bundled Black-76 price + Greeks for a put. Returns points and Rand.
 function bsBlack76(S,K,r,q,iv,T){
   var F=bsForward(S,r,q,T);
   if(T<=0||F<=0||K<=0){
@@ -1794,12 +1973,19 @@ function bsBlack76(S,K,r,q,iv,T){
   var putPoints=disc*(K*Nnd2-F*Nnd1);
   var delta=-disc*Nnd1;
   var gamma=nd1*disc/(F*iv*sqrtT);
+  // Black-76 theta — two rate-driven terms (not the three-term spot-BS/
+  // Merton form used previously, which is structurally wrong for a
+  // futures-style underlying).
   var thetaAnn=-(F*nd1*iv*disc)/(2*sqrtT)+r*K*disc*Nnd2-r*F*disc*Nnd1;
   var vegaR=F*sqrtT*nd1*disc*0.01*10;
   return {F:F,d1:d1,d2:d2,putPoints:putPoints,putPriceR:Math.max(0,putPoints*10),
     delta:delta,gamma:gamma,thetaPerDayR:Math.abs(thetaAnn/365)*10,vegaR:vegaR};
 }
 
+// ── Drop-in compatible wrappers — identical call signatures to the old
+//    spot-BS functions, so every existing call site (ladder, hedge view,
+//    expiry grid, liquidity stress, inline allocator, EOD close, exports,
+//    morning checklist) is upgraded to Black-76 with zero edits there. ──
 function bsCalcPutPrice(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).putPoints; }
 function bsPutRepriceR(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).putPriceR; }
 function bsThetaPerDay(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).thetaPerDayR; }
@@ -1807,6 +1993,9 @@ function bsDelta(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).delta; }
 function bsGamma(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).gamma; }
 function bsVega(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).vegaR; }
 
+// ── Implied volatility solver — Newton-Raphson with bisection fallback.
+//    Not yet wired into any UI control; available for future SAVI
+//    cross-validation. Returns null if no solution found in bounds. ──
 function bsImpliedVol(targetPriceR,S,K,r,q,T){
   if(targetPriceR<=0||T<=0) return null;
   var iv=0.20;
@@ -1814,7 +2003,7 @@ function bsImpliedVol(targetPriceR,S,K,r,q,T){
     var g=bsBlack76(S,K,r,q,iv,T);
     var diff=g.putPriceR-targetPriceR;
     if(Math.abs(diff)<1e-6*Math.max(1,targetPriceR)) return iv;
-    var vegaPerVol=g.vegaR*100;
+    var vegaPerVol=g.vegaR*100; // vegaR is per 1% vol; convert to per unit vol
     if(!vegaPerVol||vegaPerVol<1e-8) break;
     var next=iv-diff/vegaPerVol;
     if(!isFinite(next)||next<=0||next>3) break;
@@ -1843,6 +2032,7 @@ function fRk(n){
   if(a>=1e3) return s+'R '+(a/1e3).toFixed(0)+'k';
   return s+'R '+Math.round(a).toLocaleString('en-ZA');
 }
+// Full precision — used in ladder table where exact values matter
 function fRfull(n){
   var a=Math.abs(n),s=(n<0?'−':'');
   if(a>=1e6) return s+'R '+(a/1e6).toFixed(3)+'m';
@@ -1861,6 +2051,12 @@ function fmtRand(n){ return 'R '+Math.round(n).toString().replace(/\B(?=(\d{3})+
 function fmtPct(n,dp){ return (n*100).toFixed(dp==null?2:dp)+'%'; }
 function fmtPctAbs(n,dp){ return Math.abs(n).toFixed(dp==null?2:dp); }
 function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+// Escape user-supplied free text (investor names, trade notes, session
+// names) before interpolating it into innerHTML templates. These fields
+// are typed by the operator and persisted to Firebase — if the dashboard
+// is ever shared with a second viewer (a DFM, an auditor, another
+// session on the same Firestore doc), unescaped text here would execute
+// as live HTML/JS when the table re-renders.
 function escapeHtml(s){
   if(s==null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -1897,6 +2093,8 @@ var ZARONIA_SPREAD_BPS = -15;
 
 function getZaronia(){ return (FVAL['i-jibar']||0.075) + ZARONIA_SPREAD_BPS/10000; }
 
+// Inception ALSI is locked at session creation. Read from session config,
+// falling back to the (legacy) banner field for sessions created before this existed.
 function getInceptionALSI(){
   if(CURRENT_SESSION && CURRENT_SESSION.alsiInception>0) return CURRENT_SESSION.alsiInception;
   var el=document.getElementById('pb-alsi-entry');
@@ -1906,64 +2104,6 @@ function paintInceptionALSI(){
   var v=getInceptionALSI();
   var el=document.getElementById('pb-alsi-entry');
   if(el) el.value = v>0 ? fmtInt(v)+' pts' : '';
-}
-
-// ════════════════════════════════════════════════════════════════════
-// MARKET INPUT LOCK — once the morning checklist is confirmed (or
-// skipped) for the day, the five fields that drive every calculation
-// (spot, JIBAR, dividend yield, IV, OTM target) are locked read-only so
-// they cannot be fat-fingered mid-session. Correcting a genuine error
-// requires an explicit double-confirmed unlock, and any value actually
-// changed while unlocked is written to the corrections log with a
-// timestamp and before/after value, then automatically re-locked.
-// ════════════════════════════════════════════════════════════════════
-var LOCK_FIELDS=['i-spot','i-jibar','i-dY','i-otm','i-iv'];
-var marketInputsUnlocked=false;
-
-function lockMorningInputs(){
-  LOCK_FIELDS.forEach(function(id){
-    var el=c(id); if(!el) return;
-    el.readOnly=true; el.classList.add('auto-field');
-  });
-  marketInputsUnlocked=false;
-  var badge=c('inputs-lock-badge'); if(badge) badge.classList.remove('hidden');
-  var unlockBtn=c('inputs-unlock-btn'); if(unlockBtn) unlockBtn.classList.remove('hidden');
-  var relockBtn=c('inputs-relock-btn'); if(relockBtn) relockBtn.classList.add('hidden');
-}
-
-function requestUnlockMorningInputs(){
-  if(!confirm('Unlock today\'s market inputs to correct an error?\n\nAny trades already executed today used the values you are about to change — they will NOT be repriced retroactively, but every LIVE calculation (ladder MTM, Greeks, stress tests) will immediately start using the corrected values.\n\nA second confirmation will follow.')) return;
-  var typed=prompt('Type UNLOCK to confirm you want to edit today\'s locked market inputs:');
-  if(typed!=='UNLOCK'){ if(typed!==null) alert('Not unlocked — you must type UNLOCK exactly.'); return; }
-  window._preUnlockSnapshot={};
-  LOCK_FIELDS.forEach(function(id){ window._preUnlockSnapshot[id]=FVAL[id]; });
-  LOCK_FIELDS.forEach(function(id){
-    var el=c(id); if(!el) return;
-    el.readOnly=false; el.classList.remove('auto-field');
-  });
-  marketInputsUnlocked=true;
-  var badge=c('inputs-lock-badge'); if(badge) badge.classList.add('hidden');
-  var relockBtn=c('inputs-relock-btn'); if(relockBtn) relockBtn.classList.remove('hidden');
-  showToast('⚠ Market inputs unlocked — editing today\'s locked values','error',6000);
-}
-
-function relockMorningInputs(){
-  var snap=window._preUnlockSnapshot||{};
-  var fieldLabels={'i-spot':'ALSI Spot','i-jibar':'JIBAR','i-dY':'Dividend Yield','i-otm':'OTM Target','i-iv':'IV (SAVI)'};
-  var changes=[];
-  LOCK_FIELDS.forEach(function(id){
-    var before=snap[id], after=FVAL[id];
-    if(before!=null && before!==after){ changes.push({field:id,label:fieldLabels[id]||id,before:before,after:after}); }
-  });
-  if(changes.length){
-    var log=getCorrectionsLog();
-    log.push({ts:ts(),date:todayStr(),changes:changes});
-    saveCorrectionsLog(log);
-    if(CURRENT_SESSION) fbSaveSession(buildSessionData());
-  }
-  window._preUnlockSnapshot=null;
-  lockMorningInputs();
-  showToast(changes.length?('✓ Re-locked — '+changes.length+' correction'+(changes.length>1?'s':'')+' logged'):'✓ Re-locked (no values were changed)','success',5000);
 }
 
 function fFocus(el){
@@ -2039,12 +2179,13 @@ async function fbSaveSession(data){
   }
 }
 
+// ── Toast notification ─────────────────────────────────────────────
 var _toastTimer=null;
 function showToast(msg, type, duration){
   var el=c('trade-toast'); if(!el) return;
   el.textContent=msg;
   el.className='trade-toast '+(type||'success');
-  void el.offsetWidth;
+  void el.offsetWidth; // force reflow
   el.classList.add('show');
   if(_toastTimer) clearTimeout(_toastTimer);
   _toastTimer=setTimeout(function(){
@@ -2052,6 +2193,7 @@ function showToast(msg, type, duration){
   }, duration||4000);
 }
 
+// ── Trade-specific save: waits for Firestore then shows toast ──────
 async function fbSaveTrade(label){
   if(!CURRENT_SESSION) return;
   saveSessionConfigLocal();
@@ -2076,6 +2218,7 @@ async function fbSaveTrade(label){
 
 async function fbLoadSession(id){
   if(!fbReady()){
+    // Reconstruct from localStorage when the cloud is unavailable.
     var cfg=loadSessionConfigLocal(id);
     if(cfg){ setFBStatus('error','Offline — loaded from this device'); return {config:cfg}; }
     setFBStatus('error','Offline — no local copy');
@@ -2085,6 +2228,7 @@ async function fbLoadSession(id){
   try{
     var doc = await sessionDoc(id).get();
     if(doc.exists){ setFBStatus('ok','Loaded'); return doc.data(); }
+    // Not in cloud — try local
     var cfg2=loadSessionConfigLocal(id);
     if(cfg2){ setFBStatus('ok','Loaded from this device'); return {config:cfg2}; }
     setFBStatus('error','Session not found');
@@ -2106,6 +2250,7 @@ async function fbListSessions(){
   }catch(e){ return localSessionList(); }
 }
 
+// Build a session list from localStorage config mirrors (offline fallback)
 function localSessionList(){
   var out=[];
   for(var i=0;i<localStorage.length;i++){
@@ -2128,7 +2273,6 @@ function buildSessionData(){
   var log = getLog();
   var inflowLog = getInflowLog();
   var unitState = getUnitState();
-  var correctionsLog = getCorrectionsLog();
   return {
     config: CURRENT_SESSION,
     state: st,
@@ -2137,7 +2281,6 @@ function buildSessionData(){
     auditLog: log,
     inflowLog: inflowLog,
     unitState: unitState,
-    correctionsLog: correctionsLog,
     lastSaved: new Date().toISOString(),
     createdAt: CURRENT_SESSION.createdAt || new Date().toISOString()
   };
@@ -2173,16 +2316,11 @@ function getInflowLog(){ try{ var v=localStorage.getItem(lsKey('inflowlog')); re
 function saveInflowLog(l){ try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(l)); }catch(e){} }
 
 // ════════════════════════════════════════════════════════════════════
-// CORRECTIONS LOG — audit trail for any edit made to a locked market
-// input via the explicit unlock flow (see LOCK_FIELDS / requestUnlock-
-// MorningInputs / relockMorningInputs above). Kept separate from the
-// trade audit log since these are price-input corrections, not trades.
-// ════════════════════════════════════════════════════════════════════
-function getCorrectionsLog(){ try{ var v=localStorage.getItem(lsKey('correctionslog')); return v?JSON.parse(v):[]; }catch(e){ return []; } }
-function saveCorrectionsLog(l){ try{ localStorage.setItem(lsKey('correctionslog'),JSON.stringify(l)); }catch(e){} }
-
-// ════════════════════════════════════════════════════════════════════
-// UNIT PRICE ENGINE
+// UNIT PRICE ENGINE — units in issue, NAV per unit, redemption pricing.
+// Units are issued at the current unit price whenever new capital
+// subscribes, and burned at the current unit price on redemption — this
+// is what was missing for "new investor data" to flow through correctly
+// when money enters the fund mid-quarter.
 // ════════════════════════════════════════════════════════════════════
 var UNIT_INCEPTION_PRICE=100.00;
 
@@ -2233,11 +2371,16 @@ function renderUnitPriceBar(){
   window._unitData=up;
 }
 
+// Restore session from Firebase data into localStorage
 function restoreSessionFromFirebase(data){
   if(!CURRENT_SESSION||!data) return;
   if(data.state){
     var st=data.state;
+    // Migration: zero out residualCash — it was double-counting the option budget
+    // Ladder cashBalance is now the single source of cash truth
     st.residualCash=0;
+    // Also reset cashCoreInit so it gets correctly recalculated on next EOD
+    // from ladder.cashBalance rather than gross capital
     if(data.ladder&&data.ladder.tranches&&data.ladder.tranches.length>0&&data.ladder.cashBalance>0){
       st.cashCoreInit=data.ladder.cashBalance;
     }
@@ -2248,7 +2391,6 @@ function restoreSessionFromFirebase(data){
   if(data.auditLog)   saveLog(data.auditLog);
   if(data.inflowLog)  saveInflowLog(data.inflowLog);
   if(data.unitState)  saveUnitState(data.unitState);
-  if(data.correctionsLog) saveCorrectionsLog(data.correctionsLog);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2266,6 +2408,17 @@ function nextSAFEXExpiry(fromDate){
 }
 function safexExpiryStr(fromDate){ return nextSAFEXExpiry(fromDate).toISOString().slice(0,10); }
 
+// Get next N SAFEX quarterly expiry dates from today
+// ════════════════════════════════════════════════════════════════════
+// CONVEXITY BUDGET — single source of truth
+// Annual: NAV − NAV/(1 + ZARONIA × T_to_4th_expiry)
+// This is the correct PV-based formula (the FI leg compounds at ZARONIA
+// to exactly NAV by the 4th expiry; the budget is the gap between that
+// and today's NAV) — NOT a naive NAV×r/(1+r)/4 quarterly approximation,
+// which understates available convexity budget as rates/tenor change.
+// calc(), renderBudgetPanel(), and renderExpiryGrid() all call this so
+// the three panels can never silently disagree.
+// ════════════════════════════════════════════════════════════════════
 function calcConvexityBudget(){
   var zaronia=getZaronia();
   var ln=window._ladderNAV;
@@ -2286,6 +2439,7 @@ function getSAFEXExpiries(n){
   var results=[], d=new Date(); d.setHours(0,0,0,0);
   var m=d.getMonth(), y=d.getFullYear();
   var quarters=[2,5,8,11];
+  // Find starting quarter
   var qi=quarters.findIndex(function(q){return q>m;});
   if(qi===-1){qi=0;y++;}
   for(var i=0;i<n;i++){
@@ -2298,6 +2452,7 @@ function getSAFEXExpiries(n){
   return results;
 }
 
+// Render the 4-expiry comparison grid in the exec panel
 function renderExpiryGrid(){
   var grid=c('expiry-grid'); if(!grid) return;
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
@@ -2305,8 +2460,11 @@ function renderExpiryGrid(){
   if(!S||!r||!iv){ grid.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see expiry pricing</div>'; return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
+
+  // Remaining budget — shared single source of truth (calcConvexityBudget)
   var bd=calcConvexityBudget();
   var remaining=bd.remaining;
+
   var selectedExpiry=window._selectedExpiry||expiries[0].toISOString().slice(0,10);
   var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
   var html='';
@@ -2330,6 +2488,7 @@ function renderExpiryGrid(){
       +'</div>';
   });
   grid.innerHTML=html;
+  // Set default selection if not yet set
   if(!window._selectedExpiry){
     var T0=Math.max(0,(expiries[0]-today)/(365*24*60*60*1000));
     window._selectedExpiry=expiries[0].toISOString().slice(0,10);
@@ -2338,60 +2497,23 @@ function renderExpiryGrid(){
   }
 }
 
-// ── Read-only reference pricing across all four expiries. Unlike
-//    renderExpiryGrid() (which only renders inside the exec panel when a
-//    BUY signal is active), this always renders regardless of decision
-//    state — so pricing stays visible when fully hedged, overhedged, or
-//    carry-negative, none of which currently open the execution panel.
-//    Purely informational: no onclick, no selection state, no effect on
-//    exec-qty or window._selected*. ─────────────────────────────────────
-function renderReferencePricingGrid(){
-  var grid=c('ref-pricing-grid'); if(!grid) return;
-  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
-  var otm=FVAL['i-otm']||0.10;
-  if(!S||!r||!iv){ grid.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see reference pricing</div>'; return; }
-  var today=new Date(); today.setHours(0,0,0,0);
-  var expiries=getSAFEXExpiries(4);
-  var bd=calcConvexityBudget();
-  var remaining=bd.remaining;
-  var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
-  var html='';
-  expiries.forEach(function(exp,i){
-    var expStr=exp.toISOString().slice(0,10);
-    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
-    var tteDays=Math.round(T*365);
-    var K=Math.round(S*(1-otm));
-    var g76r=bsBlack76(S,K,r,q,iv,Math.max(T,1e-6));
-    var putR=g76r.putPriceR;
-    var delta=g76r.delta;
-    var affordable=putR>0?Math.floor(remaining/putR):0;
-    html+='<div class="ref-price-card">'
-      +'<div class="ec-label">'+labels[i]+'</div>'
-      +'<div class="ec-expiry">'+expStr+'</div>'
-      +'<div class="ec-tte">'+tteDays+' days · Strike '+K.toLocaleString('en-ZA')+'</div>'
-      +'<div class="ec-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract</div>'
-      +'<div class="ec-delta">Δ '+delta.toFixed(4)+' · T '+T.toFixed(4)+'yr</div>'
-      +'<div class="ec-affordable'+(affordable===0?' zero':'')+'">Remaining budget: '+affordable+' contracts</div>'
-      +'</div>';
-  });
-  grid.innerHTML=html;
-}
-
 function selectExpiry(expStr, putR, K){
   window._selectedExpiry=expStr;
   window._selectedPutR=putR;
   window._selectedK=K;
+  // Update exec-qty recommended based on selected expiry
   var bd=window._budgetData||{};
   var remaining=bd.remaining||0;
   var affordable=putR>0?Math.floor(remaining/putR):0;
   var execQty=c('exec-qty');
   if(!execQty.dataset.userEdited) execQty.value=Math.min(affordable, window._calcRecommended||0);
+  // Re-render grid to show new selection
   renderExpiryGrid();
   onExecQtyInput();
 }
 
 // ════════════════════════════════════════════════════════════════════
-// NAV CALCULATION ENGINE
+// NAV CALCULATION ENGINE (call account, daily accrual)
 // ════════════════════════════════════════════════════════════════════
 function computeNAVFromState(spotOverride,ivOverride){
   var st=getState();
@@ -2401,10 +2523,18 @@ function computeNAVFromState(spotOverride,ivOverride){
   var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
   var zaronia=getZaronia();
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
+
+  // Cash base: use ladder cashBalance if set (premium already deducted),
+  // otherwise fall back to full capital (no tranches yet)
   var ladder=getLadder();
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
   var cashBase=hasTranches&&ladder.cashBalance>0 ? ladder.cashBalance : capital;
+
+  // Call account accrual on cash base
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
+  // residualCash eliminated — ladder cashBalance is single cash source of truth
+
+  // Option book MTM using per-tranche ladder pricing
   var S=spotOverride||FVAL['i-spot'];
   var iv=ivOverride||FVAL['i-iv'];
   var r=FVAL['i-jibar'],q=FVAL['i-dY'];
@@ -2416,7 +2546,8 @@ function computeNAVFromState(spotOverride,ivOverride){
       optBook+=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T)*t.contracts;
     });
   }
-  var totalNAV=cashCore+optBook;
+
+  var totalNAV=cashCore+optBook; // residual eliminated — ladder cashBalance is cash source of truth
   return {cashCore,residual:0,optBook,total:totalNAV,daysElapsed,zaronia,cashBase};
 }
 
@@ -2463,22 +2594,25 @@ function calc(){
   if(T<=0){ showWarn('Option has expired — update expiry date to next SAFEX quarterly'); return; }
   var K=Math.round(S*(1-otm));
 
+  // ── Black-76 pricing (single source of truth via bsBlack76) ──
   var g76=bsBlack76(S,K,r,q,iv,T);
   var fwdF=g76.F, d1=g76.d1, d2=g76.d2;
   var Nd1=normCDF(d1),Nd2=normCDF(d2),Nnd1=1-Nd1,Nnd2=1-Nd2,nd1=normPDF(d1);
   var putPrice=g76.putPoints;
   var putPriceR=g76.putPriceR;
   var delta=g76.delta;
-  var thetaD=g76.thetaPerDayR/10;
+  var thetaD=g76.thetaPerDayR/10; // points/day, for display parity with BS table
   var thetaA=thetaD*365;
   var gamma=g76.gamma;
   var vega=g76.vegaR;
 
+  // NAV
   var NAV, navData=computeNAVFromState();
   if(navOverrideActive && FVAL['i-nav']>0){ NAV=FVAL['i-nav']; }
   else if(navData){ NAV=navData.total; FVAL['i-nav']=NAV; c('i-nav').value=fmtRand(NAV); }
   else { NAV=FVAL['i-nav']||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:70000000); }
 
+  // NAV Banner
   if(navData){
     var history=getNavHistory();
     var st=getState();
@@ -2496,9 +2630,16 @@ function calc(){
     pnlEl.style.color=pnl>=0?'var(--green2)':'var(--red2)';
   }
 
+  // Use ZARONIA for carry (call account)
   var zaronia=getZaronia();
   var dailyYield=NAV*zaronia/365;
   var thetaBleedPC=Math.abs(thetaD)*10;
+  // Net gross yield against the existing ladder's actual theta bleed
+  // (each tranche priced at its own strike/expiry) before computing how
+  // many MORE contracts the truly-uncommitted yield can support. Without
+  // this, maxCarryContracts only "accidentally" looked sane via the
+  // held-subtraction trick below — it was still built on gross yield,
+  // same root cause as the multi-quarter allocator bug fixed earlier.
   var ladderForCarry=getLadder();
   var ladderHeldForCarry=(ladderForCarry.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
   var totalExistingThetaBleedSingle=0;
@@ -2510,26 +2651,37 @@ function calc(){
   var netDailyYieldSingle=Math.max(0,dailyYield-totalExistingThetaBleedSingle);
   var maxCarryContracts=thetaBleedPC>0?(ladderHeldForCarry+Math.floor(netDailyYieldSingle/thetaBleedPC)):9999;
 
+  // ── Unified budget: remaining after premiums already paid ──────────
+  // Uses calcConvexityBudget() — the corrected PV-based annual formula,
+  // shared with renderBudgetPanel() and renderExpiryGrid() so all three
+  // panels always agree.
   var bdCalc=calcConvexityBudget();
   var annualBudgetCalc=bdCalc.annual;
   var ladder=getLadder();
   var premiumsPaid=bdCalc.paid;
   var remainingBudget=bdCalc.remaining;
-  var convexityBudget=remainingBudget;
+  var convexityBudget=remainingBudget; // keep name for BS table display
   var budgetContracts=putPriceR>0?Math.floor(remainingBudget/putPriceR):0;
   var recommended=Math.max(0,Math.min(budgetContracts,maxCarryContracts));
   var tradeRequired=recommended-held;
   var dailyThetaBleed=thetaBleedPC*held;
   var netCarry=dailyYield-dailyThetaBleed;
   var carryRatio=dailyThetaBleed>0?dailyYield/dailyThetaBleed:Infinity;
+  // bsBlack76's `delta` is the forward delta (∂P/∂F). Convert to spot
+  // delta (∂P/∂S = ∂P/∂F × e^((r-q)T)) before using it as a spot-notional
+  // hedge ratio — multiplying forward delta by spot S directly understates
+  // or overstates hedge notional by the forward/spot conversion factor
+  // whenever r ≠ q.
   var deltaSpot=delta*Math.exp((r-q)*T);
   var hedgeMultiple=NAV>0?(S*10*held*deltaSpot)/NAV:0;
   var bookValue=putPriceR*held;
   var daysLeft=Math.round(T*365);
 
+  // Strike & TTE
   c('i-strike-show').value=fmtInt(K)+' pts';
   c('i-t-show').value=T.toFixed(4)+' yrs ('+daysLeft+' days)';
 
+  // KPI strip
   c('o-hm').textContent=hedgeMultiple.toFixed(2)+'×';
   c('o-carry').textContent=fRk(netCarry);
   c('o-theta-bleed').textContent=fRk(dailyThetaBleed);
@@ -2537,15 +2689,18 @@ function calc(){
   c('o-carry').style.color=netCarry>=0?'var(--green)':'var(--red)';
   c('mc-carry').className='mc'+(netCarry>=0?'':' r');
 
+  // ── Derive held from ladder (single source of truth) ──────────────
   var ladder=getLadder();
   var ladderHeld=(ladder.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
   var tradeRequiredLadder=recommended-ladderHeld;
 
+  // Carry status — use ladderHeld not the stale manual held field
   var cs=c('carry-status');
   if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts held — carry N/A until first purchase'; }
   else if(netCarry>=0){ cs.className='carry-ok'; cs.innerHTML='✓ &nbsp;Carry POSITIVE — self-financing at '+ladderHeld+' contracts ('+fRk(netCarry)+'/day net)'; }
   else { cs.className='carry-bad'; cs.innerHTML='⚠ &nbsp;Carry NEGATIVE — theta bleed exceeds yield at '+ladderHeld+' contracts. Max carry-neutral: '+maxCarryContracts; }
 
+  // ── Hedge alert (overhedge / underhedge carry-forward) ─────────────
   var alertEl=c('hedge-alert');
   if(ladderHeld>recommended){
     var excess=ladderHeld-recommended;
@@ -2562,6 +2717,7 @@ function calc(){
     alertEl.style.display='none';
   }
 
+  // ── Decision box ───────────────────────────────────────────────────
   var box=c('decision-box'),action=c('dec-action'),num=c('dec-contracts'),lbl=c('dec-label'),det=c('dec-details');
   var execPanel=c('exec-panel'), execQty=c('exec-qty'), execBtn=c('exec-btn');
   if(tradeRequiredLadder>0){
@@ -2570,13 +2726,16 @@ function calc(){
     det.innerHTML='Increase from <strong>'+ladderHeld+'</strong> → <strong>'+recommended+'</strong><br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);
     execPanel.style.display='block';
     execBtn.style.display='inline-block';
+    // Pre-fill with recommended gap only if user hasn't already typed something
     if(!execQty.dataset.userEdited) execQty.value=tradeRequiredLadder;
     execQty.dataset.recommended=tradeRequiredLadder;
     execQty.dataset.putPriceR=putPriceR;
     execQty.dataset.strike=K;
+    // Reset selected expiry to default quarterly when advisory refreshes
     if(!execQty.dataset.userEdited) window._selectedExpiry=null;
     renderExpiryGrid();
     onExecQtyInput();
+    // SAVI-conditioned allocation preset (unless user has manually adjusted)
     if(!window._allocUserOverride){
       var saviRec=saviConditionedPreset(iv);
       window._allocYieldPcts=saviRec.pcts.slice();
@@ -2601,17 +2760,21 @@ function calc(){
     execPanel.style.display='none';
   }
 
+  // Store for use in execution
   window._calcRecommended=recommended;
   window._calcPutPriceR=putPriceR;
   window._calcK=K;
   window._calcLadderHeld=ladderHeld;
 
+  // If position is now at target, reset userEdited so next gap pre-fills cleanly
   if(tradeRequiredLadder===0){
     var eq=c('exec-qty'); if(eq) delete eq.dataset.userEdited;
   }
 
+  // tradeRequired in _calc still uses manual held for audit log compatibility
   var tradeRequired=recommended-held;
 
+  // Metrics
   c('o-price').textContent=f2(putPrice)+' pts';
   c('o-price-r').textContent=fR(putPriceR);
   c('o-rec').textContent=recommended;
@@ -2622,6 +2785,7 @@ function calc(){
   c('o-maxc').textContent=maxCarryContracts;
   c('o-budget').textContent=fRk(convexityBudget);
 
+  // BS table
   c('b-S').textContent=S.toLocaleString();c('b-F').textContent=Math.round(fwdF).toLocaleString();c('b-K').textContent=K.toLocaleString();
   c('b-T').textContent=T.toFixed(6);c('b-r').textContent=fP(r,2);
   c('b-iv').textContent=fP(iv,2);c('b-dY').textContent=fP(q,2);
@@ -2635,13 +2799,11 @@ function calc(){
   c('b-c-budget').textContent=budgetContracts;c('b-c-carry').textContent=maxCarryContracts;
   c('b-c-rec').textContent=recommended;
 
-  // Pre-fill EOD — only the first time today (once the closing fields
-  // hold a value for today, further calc() runs must NOT overwrite them.
-  // Previously this ran unconditionally on every keystroke, so eod-spot/
-  // eod-iv silently tracked the live morning inputs all day, including
-  // after a formal close had already been recorded.
-  if(!c('eod-spot').value || c('eod-spot').value==='0 pts'){ FVAL['eod-spot']=S; c('eod-spot').value=FCFG['eod-spot'].fmt(S); }
-  if(!c('eod-iv').value || c('eod-iv').value==='0.00%'){ FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv); }
+  // Pre-fill EOD
+  FVAL['eod-spot']=S; FVAL['eod-iv']=iv;
+  c('eod-spot').value=FCFG['eod-spot'].fmt(S);
+  c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
+  // Pre-fill opening ALSI from the morning spot, unless already entered for today
   if(!c('eod-open').value || c('eod-open').value==='0 pts'){ FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S); }
   if(!c('eod-alsi-tracker').value || c('eod-alsi-tracker').value==='0 pts') c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(S);
 
@@ -2654,12 +2816,12 @@ function calc(){
     navM:(NAV/1e6).toFixed(2),expiry:expiryStr,
     pricingModel:PRICING_MODEL_VERSION,forwardPrice:Math.round(fwdF)};
 
+  // Refresh ladder panels
   renderLadderPanel();
   renderDailyNAV();
   renderLiquidityStress();
   renderUnitPriceBar();
   renderBudgetPanel();
-  renderReferencePricingGrid();
   renderHedgeView();
   updatePortfolio();
 }
@@ -2695,15 +2857,19 @@ function updatePortfolio(){
   var phylaxCapital=st.capital||CURRENT_SESSION.phylaxCapital;
   var trackerCapital=totalPort-phylaxCapital;
 
+  // Tracker sleeve tracks ALSI from entry
   var trackerNAV=alsiEntry>0?trackerCapital*(currentALSI/alsiEntry):trackerCapital;
   var trackerRet=alsiEntry>0?((currentALSI-alsiEntry)/alsiEntry*100):0;
 
+  // Blended portfolio NAV
   var blendedNAV=phylaxNAV+trackerNAV;
   var blendedRet=(blendedNAV-totalPort)/totalPort*100;
 
+  // Counterfactual: what if 100% tracker (no Phylax)
   var counterfactualNAV=alsiEntry>0?totalPort*(currentALSI/alsiEntry):totalPort;
   var counterfactualRet=(counterfactualNAV-totalPort)/totalPort*100;
 
+  // Net benefit of Phylax
   var benefit=blendedNAV-counterfactualNAV;
   var phylaxRet=(phylaxNAV-phylaxCapital)/phylaxCapital*100;
 
@@ -2724,6 +2890,7 @@ function updatePortfolio(){
   c('pb-benefit').textContent=(benefit>=0?'+':'')+fRk(benefit);
   c('pb-benefit').style.color=benefit>=0?'var(--green2)':'var(--red2)';
 
+  // Perf summary bar
   c('ps-ret').textContent=(phylaxRet>=0?'+':'')+phylaxRet.toFixed(2)+'%';
   c('ps-ret').className='ps-value '+(phylaxRet>=0?'ps-pos':'ps-neg');
   c('ps-vs-tracker').textContent=(phylaxRet-trackerRet>=0?'+':'')+((phylaxRet-trackerRet).toFixed(2))+'%';
@@ -2752,11 +2919,14 @@ async function endOfDay(){
 
   var st=getState();
 
+  // First EOD — initialise fund structure
   if(!st.cashCoreInit||st.cashCoreInit===0){
     st.inceptionDate=CURRENT_SESSION.inceptionDate||today;
     st.capital=CURRENT_SESSION.phylaxCapital;
     st.totalPortfolio=CURRENT_SESSION.totalPortfolio;
     st.jibarAtInception=r;
+    // cashCoreInit = ladder cash balance (capital minus premiums paid)
+    // residualCash = 0 — ladder cashBalance is the single source of cash truth
     var ldr=getLadder();
     var hasTr=ldr.tranches&&ldr.tranches.length>0;
     st.cashCoreInit=hasTr&&ldr.cashBalance>0?ldr.cashBalance:st.capital;
@@ -2769,12 +2939,15 @@ async function endOfDay(){
   var todayDate=new Date(); todayDate.setHours(0,0,0,0);
   var daysElapsed=Math.max(0,Math.round((todayDate-inception)/86400000));
 
+  // ── Unified NAV: Cash (after premiums) + Accrual + Per-tranche MTM ──
+  // Same formula as renderDailyNAV and computeNAVFromState
   var ldrClose=getLadder();
   var hasTrClose=ldrClose.tranches&&ldrClose.tranches.length>0;
   var cashBaseClose=hasTrClose&&ldrClose.cashBalance>0?ldrClose.cashBalance:(st.cashCoreInit||st.capital);
   var cashCoreClose=cashBaseClose*(1+zaronia*daysElapsed/365);
-  var residualClose=0;
+  var residualClose=0; // eliminated — ladder cashBalance is source of truth
 
+  // Option book: sum across all ladder tranches at closing prices
   var expiryD=new Date(expiryStr);
   var T=Math.max(0,(expiryD-todayDate)/(365*24*60*60*1000));
   var optBookClose=0;
@@ -2783,14 +2956,18 @@ async function endOfDay(){
     var tT=Math.max(0,(tExp-todayDate)/(365*24*60*60*1000));
     optBookClose+=bsPutRepriceR(eodSpot,t.strikeLevel,r,q,eodIV,tT)*t.contracts;
   });
+  // Fallback if no tranches: use single-strike estimate
   if(!hasTrClose&&held>0){
     var K=Math.round(eodSpot*(1-otm));
     optBookClose=bsCalcPutPrice(eodSpot,K,r,q,eodIV,T)*10*held;
   }
 
   var closingNAV=cashCoreClose+optBookClose;
+
+  // Carry today = interest on cash base only (no residual)
   var carryToday=cashBaseClose*zaronia/365;
 
+  // Tracker NAV calculation
   var alsiEntry=getInceptionALSI()||eodTrackerLevel;
   var trackerCapital=st.totalPortfolio-(st.capital||CURRENT_SESSION.phylaxCapital);
   var trackerNAV=alsiEntry>0?trackerCapital*(eodTrackerLevel/alsiEntry):trackerCapital;
@@ -2801,6 +2978,7 @@ async function endOfDay(){
   var dayPnl=closingNAV-prevNAV;
   var optionPnl=dayPnl-carryToday;
 
+  // Unit price at EOD close
   var us=getOrInitUnitState();
   var closingUnitPrice=us.unitsInIssue>0?closingNAV/us.unitsInIssue:UNIT_INCEPTION_PRICE;
   var totalIntrinsicClose=(ldrClose.tranches||[]).reduce(function(s,t){return s+Math.max(0,t.strikeLevel-eodSpot)*10*t.contracts;},0);
@@ -2819,6 +2997,7 @@ async function endOfDay(){
   if(existing>=0) history[existing]=entry; else history.push(entry);
   saveNavHistory(history);
 
+  // Display breakdown
   var eodBD=c('eod-breakdown'); eodBD.style.display='grid';
   c('eb-nav').textContent=fRk(closingNAV);
   c('eb-cash').textContent=fRk(cashCoreClose);
@@ -2829,18 +3008,11 @@ async function endOfDay(){
   c('eb-vs').style.color=closingNAV>=st.capital?'var(--green2)':'var(--red2)';
   c('fb-save-status').textContent='';
 
+  // Firebase sync
   var fullData=buildSessionData();
   fullData.lastEODDate=today;
   await fbSaveSession(fullData);
   c('fb-save-status').textContent='✓ Synced to Firebase · ' + new Date().toLocaleTimeString('en-ZA');
-
-  // Reset the EOD closing fields so tomorrow's calc() can pre-fill them
-  // fresh from the new morning inputs, instead of silently keeping
-  // today's already-recorded close in the boxes.
-  ['eod-open','eod-spot','eod-iv','eod-alsi-tracker'].forEach(function(id){
-    var el=c(id); if(el) el.value='';
-  });
-  FVAL['eod-open']=0; FVAL['eod-spot']=0; FVAL['eod-iv']=0; FVAL['eod-alsi-tracker']=0;
 
   updateSimState();
   updatePerfSummary();
@@ -2879,12 +3051,14 @@ function calcPerfMetrics(){
   var today=new Date(); today.setHours(0,0,0,0);
   var daysRunning=Math.round((today-inception)/86400000);
 
+  // Tracker return
   var trackerRet=0;
   if(history.length>0&&history[0].alsiTracker&&history[history.length-1].alsiTracker){
     var firstALSI=history[0].alsiTracker;
     var lastALSI=history[history.length-1].alsiTracker;
     trackerRet=(lastALSI-firstALSI)/firstALSI*100;
   }
+  // Blended return
   var lastEntry=history[history.length-1];
   var blendedRet=lastEntry.blendedNAV&&st.totalPortfolio
     ?(lastEntry.blendedNAV-st.totalPortfolio)/st.totalPortfolio*100
@@ -2933,20 +3107,10 @@ function renderPerfChart(){
   }
   emptyEl.style.display='none'; canvas.style.display='block';
   var labels=history.map(function(h){return h.date;});
-  // Index every series to its OWN first data point (100 = inception),
-  // matching the axis label. Previously navIdx/blendedIdx divided by the
-  // fund's configured capital/totalPortfolio instead of the series'
-  // actual day-0 value — those can differ from day 0 (e.g. day-0 P&L
-  // already nonzero, or totalPortfolio drifting after a later inflow),
-  // which made the Phylax and Blended lines start away from 100 while
-  // the Tracker line (already indexed to its own first value) started
-  // exactly at 100. All three now use the same convention.
-  var firstNav=history[0].nav||capital;
-  var navIdx=history.map(function(h){return +((h.nav/firstNav*100).toFixed(3));});
+  var navIdx=history.map(function(h){return +((h.nav/capital*100).toFixed(3));});
   var firstALSI=history[0].alsiTracker||history[0].alsi;
   var trackerIdx=history.map(function(h){var a=h.alsiTracker||h.alsi;return +((a/firstALSI*100).toFixed(3));});
-  var firstBlended=history[0].blendedNAV||totalPort;
-  var blendedIdx=history.map(function(h){return h.blendedNAV?+((h.blendedNAV/firstBlended*100).toFixed(3)):null;});
+  var blendedIdx=history.map(function(h){return h.blendedNAV?+((h.blendedNAV/totalPort*100).toFixed(3)):null;});
 
   Chart.defaults.color='#5a7888';
   Chart.defaults.font.family="'DM Mono', monospace";
@@ -3037,6 +3201,8 @@ function updateSimState(){
   var history=getNavHistory();
   c('sim-points').textContent=history.length;
   c('sim-last-eod').textContent=history.length>0?history[history.length-1].date:'None yet';
+
+  // Update perf summary days
   if(st.inceptionDate){
     var inception=new Date(st.inceptionDate);
     var today=new Date(); today.setHours(0,0,0,0);
@@ -3048,6 +3214,7 @@ function updateSimState(){
 // ════════════════════════════════════════════════════════════════════
 // LADDER ENGINE
 // ════════════════════════════════════════════════════════════════════
+// ── STEP 2/3: qty input validation ────────────────────────────────
 function onExecQtyInput(){
   var execQty=c('exec-qty');
   execQty.dataset.userEdited='1';
@@ -3081,10 +3248,13 @@ function onExecQtyInput(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// MULTI-QUARTER YIELD ALLOCATOR
+// MULTI-QUARTER YIELD ALLOCATOR — allocate today's daily ZARONIA yield
+// across all four SAFEX quarterly expiries simultaneously, with
+// SAVI-conditioned presets and a per-expiry execute grid.
 // ════════════════════════════════════════════════════════════════════
-window._allocYieldPcts=[40,35,15,10];
+window._allocYieldPcts=[40,35,15,10]; // default: Moderate vol preset
 
+// SAVI-conditioned preset recommendation
 function saviConditionedPreset(iv){
   var savi=iv*100;
   if(savi<18)  return {pcts:[20,25,30,25], label:'Vol LOW (<18%) — skew far, vega is cheap', color:'var(--teal2)'};
@@ -3136,6 +3306,15 @@ function renderInlineAlloc(){
   var bd=calcConvexityBudget();
   var remaining=bd.remaining||0;
 
+  // ── Net out theta already being paid by the existing book ──────────
+  // dailyYield above is the fund's GROSS daily ZARONIA accrual. Without
+  // this step, every quarter's slider treated the FULL gross yield as
+  // "available to finance new contracts" even when most of it is
+  // already committed to servicing tranches already held — which could
+  // recommend buying many multiples more than the book can actually
+  // carry-neutrally support. Net against the existing ladder's total
+  // daily theta bleed (using each held tranche's own strike/expiry, via
+  // the same Black-76 engine) before any of it gets sliced by quarter.
   var existingLadder=getLadder();
   var totalExistingThetaBleed=0;
   (existingLadder.tranches||[]).forEach(function(t){
@@ -3156,6 +3335,30 @@ function renderInlineAlloc(){
   var slHtml='', exHtml='';
   var totalContracts=0, totalCost=0, totalDeltaWt=0;
 
+  // ── Map existing held tranches to quarters by expiry proximity ──────
+  // Each held tranche belongs to the quarter whose SAFEX expiry is
+  // closest to (and >= ) its own expiry date.
+  var heldPerQ=[0,0,0,0];
+  var totalHeld=(existingLadder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
+  (existingLadder.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry).getTime();
+    var best=0, bestDiff=Infinity;
+    expiries.forEach(function(exp,i){
+      var diff=Math.abs(exp.getTime()-texp);
+      if(diff<bestDiff){bestDiff=diff;best=i;}
+    });
+    heldPerQ[best]+=t.contracts;
+  });
+  var currentPct=heldPerQ.map(function(h){return totalHeld>0?(h/totalHeld*100):0;});
+
+  // ── Determine which quarters are underweight vs target ──────────────
+  // Overweight quarters get zero new allocation — we never suggest
+  // selling, only redirect new purchases toward underweight quarters.
+  // Budget and carry for overweight quarters are redistributed
+  // proportionally among underweight quarters only.
+  var gapPct=pcts.map(function(p,i){return Math.max(0,p-currentPct[i]);});
+  var totalGap=gapPct.reduce(function(s,g){return s+g;},0);
+
   expiries.forEach(function(exp,i){
     var expStr=exp.toISOString().slice(0,10);
     var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
@@ -3165,24 +3368,41 @@ function renderInlineAlloc(){
     var putR=g76a.putPriceR;
     var delta=g76a.delta;
     var thetaPerContract=g76a.thetaPerDayR;
-    var yieldSlice=netDailyYield*pcts[i]/100;
+
+    var isOverweight=currentPct[i]>pcts[i];
+    var gap=gapPct[i]; // how far below target this quarter is (0 if at/above)
+
+    // Effective allocation fraction for this quarter:
+    // overweight quarters get 0; underweight quarters share the full
+    // net yield and budget in proportion to their gap from target.
+    var effectiveFrac=totalGap>0?(gap/totalGap):0;
+    var yieldSlice=netDailyYield*effectiveFrac;
     var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
-    var budgetSlice=remaining*pcts[i]/100;
+    var budgetSlice=remaining*effectiveFrac;
     var maxBudget=putR>0?Math.floor(budgetSlice/putR):0;
-    var recommended=Math.min(maxCarry,maxBudget);
-    var bindingConstraint=maxCarry<=maxBudget?'carry-neutral':'budget';
+    var recommended=isOverweight?0:Math.min(maxCarry,maxBudget);
+    var bindingConstraint=isOverweight?'overweight':maxCarry<=maxBudget?'carry-neutral':'budget';
+
     totalContracts+=recommended; totalCost+=recommended*putR;
     totalDeltaWt+=Math.abs(delta)*recommended;
-    var constraintColor=bindingConstraint==='carry-neutral'?'var(--amber)':'var(--teal2)';
-    var constraintLabel=bindingConstraint==='carry-neutral'?'Yield/theta limit':'Budget limit';
 
-    slHtml+='<div class="alloc-slider-card">'
+    var constraintColor=isOverweight?'var(--red2)':bindingConstraint==='carry-neutral'?'var(--amber)':'var(--teal2)';
+    var constraintLabel=isOverweight?'AT/ABOVE TARGET — no new allocation':bindingConstraint==='carry-neutral'?'Yield/theta limit':'Budget limit';
+
+    // Composition status line
+    var compColor=isOverweight?'var(--red2)':gap>5?'var(--teal2)':'var(--muted)';
+    var compLabel=isOverweight
+      ?'▲ '+currentPct[i].toFixed(0)+'% held vs '+pcts[i]+'% target'
+      :'▼ '+currentPct[i].toFixed(0)+'% held vs '+pcts[i]+'% target';
+
+    slHtml+='<div class="alloc-slider-card"'+(isOverweight?' style="opacity:.65;border-color:rgba(232,64,64,.25)"':' ')+' >'
       +'<div class="alloc-sl-label" style="color:'+colors[i]+'">'+labels[i]+'</div>'
       +'<div class="alloc-sl-expiry">'+expStr+' · '+tteDays+'d</div>'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:8px;color:'+compColor+';margin-bottom:4px;font-weight:600">'+compLabel+' · '+heldPerQ[i]+' contracts held</div>'
       +'<div style="font-family:\'DM Mono\',monospace;font-size:8.5px;color:var(--muted);margin-bottom:4px">Yield: R'+Math.round(yieldSlice).toLocaleString('en-ZA')+'/day · Θ R'+Math.round(thetaPerContract)+'/c/day</div>'
       +'<div class="alloc-sl-pct" style="color:'+colors[i]+'" id="ia-pct-'+i+'">'+pcts[i]+'%</div>'
       +'<input type="range" class="alloc-sl-input" min="0" max="100" step="5" value="'+pcts[i]+'" oninput="onInlineAllocSlider('+i+',this.value)" style="accent-color:'+colors[i]+'">'
-      +'<div style="font-family:\'DM Mono\',monospace;font-size:13px;font-weight:700;color:'+colors[i]+';text-align:center;margin:4px 0">'+recommended+' contracts</div>'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:13px;font-weight:700;color:'+(isOverweight?'var(--red2)':colors[i])+';text-align:center;margin:4px 0">'+recommended+' contracts</div>'
       +'<div style="font-size:8px;color:'+constraintColor+';text-align:center;margin-bottom:4px">'+constraintLabel+'</div>'
       +'<div class="alloc-sl-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract · Δ '+delta.toFixed(4)+'</div>'
       +'<div class="alloc-sl-cost">Cost: R '+Math.round(recommended*putR).toLocaleString('en-ZA')+'</div>'
@@ -3192,7 +3412,7 @@ function renderInlineAlloc(){
     exHtml+='<button class="alloc-exec-btn" '+(canExec?'':'disabled ')
       +'onclick="execAllocTranche(\''+expStr+'\','+putR+','+K+','+recommended+')">'
       +'<div style="font-size:8px;color:var(--muted);margin-bottom:2px">'+labels[i]+'</div>'
-      +'<div style="font-size:14px;color:'+colors[i]+';font-weight:700">'+recommended+'</div>'
+      +'<div style="font-size:14px;color:'+(isOverweight?'var(--muted)':colors[i])+';font-weight:700">'+recommended+'</div>'
       +'<div style="font-size:8px;color:var(--muted)">contracts</div>'
       +'<div style="font-size:8px;color:var(--muted);margin-top:2px">'+expStr+'</div>'
       +'<div style="font-size:9px;color:var(--plat);margin-top:2px">R '+Math.round(recommended*putR).toLocaleString('en-ZA')+'</div>'
@@ -3210,7 +3430,11 @@ function renderInlineAlloc(){
     var nyBg=netYieldPct<10?'rgba(232,64,64,.08)':netYieldPct<40?'rgba(232,160,32,.08)':'rgba(64,200,128,.08)';
     var nyBorder=netYieldPct<10?'rgba(232,64,64,.25)':netYieldPct<40?'rgba(232,160,32,.25)':'rgba(64,200,128,.25)';
     netYieldEl.style.cssText='background:'+nyBg+';border:1px solid '+nyBorder+';border-radius:2px;padding:8px 14px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:'+nyColor+';text-align:center';
-    netYieldEl.innerHTML='Net yield available to finance new contracts: <strong>'+fRk(netDailyYield)+'/day</strong> ('+netYieldPct.toFixed(0)+'% of gross) — gross <strong>'+fRk(dailyYield)+'/day</strong> minus <strong>'+fRk(totalExistingThetaBleed)+'/day</strong> already committed to your existing '+(window._calcLadderHeld||0)+'-contract book';
+    var compSummary='Current composition: Q1 '+currentPct[0].toFixed(0)+'% · Q2 '+currentPct[1].toFixed(0)+'% · Q3 '+currentPct[2].toFixed(0)+'% · Q4 '+currentPct[3].toFixed(0)+'%'
+      +'&nbsp;&nbsp;·&nbsp;&nbsp;Target: Q1 '+pcts[0]+'% · Q2 '+pcts[1]+'% · Q3 '+pcts[2]+'% · Q4 '+pcts[3]+'%'
+      +' <span style="font-size:8.5px;opacity:.7">(by contract count — cost-weighting would give a different split)</span>';
+    netYieldEl.innerHTML='Net yield available: <strong>'+fRk(netDailyYield)+'/day</strong> ('+netYieldPct.toFixed(0)+'% of gross) — gross <strong>'+fRk(dailyYield)+'/day</strong> minus <strong>'+fRk(totalExistingThetaBleed)+'/day</strong> existing theta'
+      +'<br><span style="font-size:9px;opacity:.85">'+compSummary+'</span>';
   }
   if(summaryEl){
     var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
@@ -3225,6 +3449,8 @@ function renderInlineAlloc(){
   }
 }
 
+// Execute a single tranche from the allocator grid — routes through the
+// same buy-confirm modal as the manual single-expiry flow.
 function execAllocTranche(expStr, putR, K, contracts){
   if(contracts<=0){ alert('No contracts allocated to this expiry.'); return; }
   window._selectedExpiry=expStr;
@@ -3240,6 +3466,7 @@ function execAllocTranche(expStr, putR, K, contracts){
   openBuyConfirmModal();
 }
 
+// ── STEP 3→4: open buy confirmation modal ─────────────────────────
 function openBuyConfirmModal(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
   if(!window._calc){ alert('Enter market inputs first.'); return; }
@@ -3250,6 +3477,7 @@ function openBuyConfirmModal(){
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var otmFrac=FVAL['i-otm'];
 
+  // Use selected expiry from grid, fall back to default quarterly
   var expStr=window._selectedExpiry||safexExpiryStr(new Date());
   var K=window._selectedK||Math.round(S*(1-otmFrac));
   var today=new Date(); today.setHours(0,0,0,0);
@@ -3289,6 +3517,7 @@ function openBuyConfirmModal(){
 
 function closeBuyConfirmModal(){ c('buy-confirm-modal').classList.add('hidden'); }
 
+// ── STEP 5: typed confirmation enables button ──────────────────────
 function onBuyConfirmInput(){
   var val=c('bc-confirm-input').value.trim().toUpperCase();
   var btn=c('bc-confirm-btn');
@@ -3300,6 +3529,7 @@ function onBuyConfirmInput(){
   }
 }
 
+// ── STEP 5→EXECUTE: commit purchase ───────────────────────────────
 async function executeTodayBuy(){
   if(!window._pendingBuy){ alert('No pending buy — please start again.'); closeBuyConfirmModal(); return; }
   if(c('bc-confirm-input').value.trim().toUpperCase()!=='BUY'){ alert('Type BUY to confirm.'); return; }
@@ -3321,8 +3551,11 @@ async function executeTodayBuy(){
   if(!ladder.cashBalance) ladder.cashBalance=capital-pb.totalCost;
   else ladder.cashBalance-=pb.totalCost;
 
+  // Save to localStorage immediately (synchronous)
   saveLadder(ladder);
 
+  // ── Save to Firestore NOW before closing modal ──────────────────────
+  // Keep modal open with a saving indicator so user cannot navigate away
   var confirmBtn=c('bc-confirm-btn');
   var confirmInput=c('bc-confirm-input');
   confirmBtn.textContent='⏳ Saving to Firebase…';
@@ -3349,16 +3582,19 @@ async function executeTodayBuy(){
   execQty.value='';
   closeBuyConfirmModal();
 
+  // Reset button state
   confirmBtn.textContent='✓ &nbsp;Confirm Purchase';
   confirmBtn.disabled=false;
   confirmInput.disabled=false;
 
+  // Render panels — wrapped so any display error cannot suppress the toast
   try{
     renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
     renderBudgetPanel(); renderHedgeView();
     calc();
   }catch(renderErr){ console.error('Render error (trade already saved):', renderErr); }
 
+  // Show toast AFTER confirmed write
   if(saveOk){
     showToast('✓  Tranche '+id+' ('+pb.qty+' contracts) confirmed & saved to Firebase','success',6000);
   } else {
@@ -3366,6 +3602,7 @@ async function executeTodayBuy(){
   }
 }
 
+// ── HEADER BUTTON: scroll to exec panel ───────────────────────────
 function addTranche(){
   var ep=c('exec-panel');
   if(ep && ep.style.display!=='none'){
@@ -3376,6 +3613,7 @@ function addTranche(){
   }
 }
 
+// ── CLOSE TRANCHE MODAL ────────────────────────────────────────────
 var _closingTrancheId=null;
 
 function closeTranche(id){
@@ -3401,6 +3639,7 @@ function closeTranche(id){
   setText('ct-pnl',(pnl>=0?'+':'')+fRk(pnl)+' ('+(pnl>=0?'+':'')+((pnl/t.premiumTotal)*100).toFixed(1)+'%)');
   c('ct-pnl').style.color=pnl>=0?'var(--green2)':'var(--red2)';
 
+  // Reset to full close mode
   document.querySelector('input[name="ct-close-type"][value="full"]').checked=true;
   c('ct-partial-qty').style.display='none';
   c('ct-partial-qty').value='';
@@ -3408,6 +3647,7 @@ function closeTranche(id){
   var btn=c('ct-confirm-btn');
   btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
 
+  // Set proceeds summary for full close
   var proceeds=mtmPerContract*t.contracts*(1-haircut);
   c('ct-proceeds-summary').innerHTML=
     'Closing <strong style="color:var(--red2)">'+t.contracts+' contracts</strong> (full position)'
@@ -3493,6 +3733,7 @@ async function executeCloseConfirmed(){
   }
   saveLadder(ladder);
 
+  // Await Firestore before closing modal
   var btn=c('ct-confirm-btn');
   btn.textContent='⏳ Saving…'; btn.disabled=true;
   var saveOk=false;
@@ -3514,6 +3755,7 @@ async function executeCloseConfirmed(){
   else showToast('⚠  Close saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
+// ── REDUCE POSITION MODAL ──────────────────────────────────────────
 function onReduceConfirmInput(){
   var val=c('reduce-confirm-input').value.trim().toUpperCase();
   var btn=c('reduce-confirm-btn');
@@ -3622,9 +3864,11 @@ async function confirmReduce(){
     }
   });
   if(!anySelected){ alert('Select at least one tranche to reduce.'); return; }
+  // Remove fully-closed tranches (reverse order to preserve indices)
   toRemove.slice().reverse().forEach(function(idx){ ladder.tranches.splice(idx,1); });
   saveLadder(ladder);
 
+  // Await Firestore save before rendering
   var saveOk=false;
   if(fbReady()){
     try{
@@ -3644,11 +3888,20 @@ async function confirmReduce(){
   else showToast('⚠  Reduce saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
+// NOTE: the proper closeTranche(id) implementation lives earlier in this
+// file (opens the close-tranche modal with typed confirmation, tiered
+// haircuts, partial-close support, and Firebase save). A second, inferior
+// duplicate previously existed here and — due to JavaScript's
+// last-declaration-wins behavior — was silently the one actually running,
+// overriding the modal flow with a bare confirm() dialog, a flat 2.5%
+// haircut regardless of position size, and no Firebase save. Removed.
+
 function renderLadderPanel(){
   var ladder=getLadder();
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var today=new Date(); today.setHours(0,0,0,0);
 
+  // Always sync i-held from ladder (single source of truth)
   var ladderTotal=(ladder.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
   FVAL['i-held']=ladderTotal;
   var heldEl=c('i-held');
@@ -3661,7 +3914,7 @@ function renderLadderPanel(){
   }
 
   var rows='',totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0,totalPnl=0;
-  var rollFlags=[];
+  var rollFlags=[]; // tranches at or past the 50%-of-life roll point, for the summary banner
   ladder.tranches.forEach(function(t){
     var expiry=new Date(t.expiry);
     var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
@@ -3669,20 +3922,31 @@ function renderLadderPanel(){
     var buyDate=new Date(t.buyDate); buyDate.setHours(0,0,0,0);
     var daysHeld=Math.max(0,Math.round((today-buyDate)/86400000));
 
+    // Per-contract figures
     var mtmPerContract=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
     var entryPerContract=t.premiumPerContract;
 
+    // Per-tranche totals
     var totalMtmR=mtmPerContract*t.contracts;
     var pnl=(mtmPerContract-entryPerContract)*t.contracts;
     var pnlPct=entryPerContract>0?(mtmPerContract-entryPerContract)/entryPerContract*100:0;
     var theta=bsThetaPerDay(S,t.strikeLevel,r,q,iv,T);
 
+    // Delta for this tranche's strike (Black-76)
     var deltaTranche=bsDelta(S,t.strikeLevel,r,q,iv,T);
 
     var isITM=S<t.strikeLevel, isNear=!isITM&&(t.strikeLevel-S)/S<0.03;
     var rowCls=isITM?'tranche-itm':isNear?'tranche-near':'tranche-otm';
     var moneynessBadge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':isNear?'<span class="tdd-badge tdd-near">Near</span>':'<span class="tdd-badge tdd-otm">OTM</span>';
 
+    // ── Progressive roll-due escalation ─────────────────────────────
+    // Policy: close out at least 50% of the way through a tranche's
+    // original tenor, well ahead of the gamma/liquidity "cliff" near
+    // expiry. This escalates in three tiers rather than a single flag,
+    // since a manager may deliberately choose to hold an ITM tranche
+    // past the normal 50% point while a real market move is in
+    // progress — the escalation makes that an increasingly visible,
+    // conscious choice rather than something that gets overlooked.
     var totalLifeDays=Math.max(1,Math.round((expiry-buyDate)/86400000));
     var pctLifeElapsed=daysHeld/totalLifeDays;
     var rollTier=0;
@@ -3696,6 +3960,7 @@ function renderLadderPanel(){
     var badge=moneynessBadge+rollBadge;
     if(rollTier>0) rollFlags.push({id:t.id,tier:rollTier,isITM:isITM,tteDays:tteDays,pctLifeElapsed:pctLifeElapsed,contracts:t.contracts});
 
+    // Roll warning on TTE
     var tteCol=tteDays<14?'var(--red2)':tteDays<45?'var(--amber)':'var(--muted)';
     var tteFlag=tteDays<45?' ⚠':'';
 
@@ -3723,6 +3988,7 @@ function renderLadderPanel(){
   });
   tbody.innerHTML=rows;
 
+  // ── Roll-due summary banner ────────────────────────────────────────
   var rollAlertEl=c('roll-alert');
   if(rollAlertEl){
     if(rollFlags.length===0){
@@ -3771,17 +4037,20 @@ function renderBudgetPanel(){
   var expiries=getSAFEXExpiries(4);
   var T=Math.max(0,(expiries[0]-today)/(365*24*60*60*1000));
 
+  // Corrected annual convexity budget — single source via calcConvexityBudget()
   var bd=calcConvexityBudget();
   var annualBudget=bd.annual;
   var paid=bd.paid;
   var remaining=bd.remaining;
   var remainingPct=annualBudget>0?(remaining/annualBudget*100):0;
 
+  // Affordable contracts today (Q1/near-dated)
   var otmFrac=FVAL['i-otm']||0.10;
   var K=Math.round(S*(1-otmFrac));
   var putR=T>0?bsPutRepriceR(S,K,r,q,iv,T):0;
   var affordable=putR>0?Math.floor(remaining/putR):0;
 
+  // Weighted average entry premium across all tranches
   var ladder=getLadder();
   var totalContracts=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
   var blended=totalContracts>0?paid/totalContracts:0;
@@ -3802,13 +4071,58 @@ function renderBudgetPanel(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// VOL SPIKE MODEL
-// ════════════════════════════════════════════════════════════════════
+// VOL SPIKE MODEL — convex, calibrated to historical equity vol behavior
+// in real drawdowns (VIX as the closest data-rich proxy for how a broad
+// equity vol index responds to large moves; SAVI has no public long-run
+// history to calibrate against directly, so this borrows the *shape* of
+// the relationship while leaving the level open to recalibration once
+// real SAVI history around a local stress episode is available).
+//
+// CALIBRATED — fitted to actual daily SAVI/ALSI closes, Jan-Dec 2020
+// (the COVID crash). Methodology: isolated decline-phase trading days
+// only (days where ALSI made a new running low — excludes the recovery
+// arc, which exhibits hysteresis: vol stays elevated for weeks after
+// price partially recovers, and including those days would distort the
+// shock-response shape being measured). Fit: multiplier - 1 = a·x + b·x²
+// via least-squares against 15 clean decline-phase points spanning
+// drawdowns of 0% to -35.7% (ALSI peak 17 Jan 2020 -> trough 19 Mar
+// 2020). R² = 0.91.
+//
+// 2020 was chosen as the primary calibration episode over 2008 (GFC) and
+// 2015-16 (Nenegate/EM rout) for three reasons: (1) it's the cleanest
+// data — a genuine calm-market baseline through to a full crisis trough,
+// with no left-truncation (the 2008 SAVI series available started after
+// the crisis was already underway, at SAVI ~28 vs a normal ~15-20 base,
+// which compromises it as a baseline reference); (2) best individual fit
+// of the three episodes (R²=0.91 vs 0.58 for 2008, 0.27 for 2016, the
+// latter also only reaching a 15% drawdown so unsuited to calibrating
+// the -25%/-40% region at all); (3) it's the most recognizable reference
+// point for anyone reviewing this methodology.
+//
+// Notably, this real-data fit is LESS extreme than an initial estimate
+// borrowed from VIX-history intuition (which assumed multiplier(40%)
+// ~4.6x) — the actual SAVI response, fitted properly, gives ~3.5x at a
+// -40% shock. The convexity itself is real and confirmed in the data
+// (see the 9 Mar 2020 oil-price-war/circuit-breaker session, where SAVI
+// jumped from 1.35x to 2.46x of baseline in a single day on only a
+// further 3.8 percentage points of drawdown) — but the overall magnitude
+// is more modest than a VIX-based guess implied. Cross-checked against
+// 2008 and 2016 fits and a pooled-all-three fit; all land in a broadly
+// consistent range (see git history / prior audit notes for the
+// comparison table) — 2020-only was selected as the primary anchor per
+// the reasons above, not because other episodes disagreed wildly.
+//
+// Quadratic form: multiplier(x) = 1 + a·x + b·x²  (x = |shock|, fraction)
+// multiplier(0.10)=1.47x, multiplier(0.25)=2.36x, multiplier(0.40)=3.48x.
+// Recalibrate (`VOL_SPIKE_A`/`VOL_SPIKE_B` below) if/when a longer SAVI
+// history or additional clean stress episodes become available — this is
+// a fitted regression, not a hand-picked shape, but it's still a 3-episode
+// sample.
 var VOL_SPIKE_A=4.146, VOL_SPIKE_B=5.151;
 function calcCrashVol(baseIv, absMoveSize){
   var x=Math.max(0,absMoveSize);
   var multiplier=1+VOL_SPIKE_A*x+VOL_SPIKE_B*x*x;
-  return Math.min(baseIv*multiplier, 1.50);
+  return Math.min(baseIv*multiplier, 1.50); // hard cap at 150% absolute vol
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3829,16 +4143,20 @@ function renderHedgeView(){
     return;
   }
 
+  // ── Book-level aggregates ──────────────────────────────────────────
   var totalContracts=0,totalCost=0,totalMTM=0,totalDeltaNotional=0;
   ladder.tranches.forEach(function(t){
     var exp=new Date(t.expiry);
     var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
     var g76h=bsBlack76(S,t.strikeLevel,r,q,iv,Math.max(T,1e-6));
     var mtm=g76h.putPriceR;
+    // Convert this tranche's forward delta to spot delta before using it
+    // as a spot-notional hedge ratio (see deltaSpot note in calc()).
     var delta=g76h.delta*Math.exp((r-q)*Math.max(T,1e-6));
     totalContracts+=t.contracts;
     totalCost+=t.premiumTotal;
     totalMTM+=mtm*t.contracts;
+    // Delta-adjusted notional: |delta_spot| × contracts × R10 × ALSI
     totalDeltaNotional+=Math.abs(delta)*t.contracts*10*S;
   });
 
@@ -3859,20 +4177,25 @@ function renderHedgeView(){
   setText('hv-entry',avgEntry>0?fRk(avgEntry)+'/contract':'—');
   setText('hv-mtm-now','Current MTM: '+fRk(avgMTM)+'/contract');
 
+  // ── Stress scenarios ───────────────────────────────────────────────
   function stressHedge(shockPct, prefix){
     var sS=S*(1+shockPct);
+    // Equity portfolio loss (tracker sleeve tracks ALSI)
     var portLoss=totalPortfolio*Math.abs(shockPct);
     var newBookMTM=0;
     ladder.tranches.forEach(function(t){
       var exp=new Date(t.expiry);
       var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+      // Vol spike: same calcCrashVol used elsewhere
       var ivStress=calcCrashVol(iv,Math.abs(shockPct));
       var mtmStress=bsPutRepriceR(sS,t.strikeLevel,r,q,ivStress,T);
       newBookMTM+=mtmStress*t.contracts;
     });
-    var putGain=newBookMTM-totalMTM;
+    var putGain=newBookMTM-totalMTM; // gain vs today's book
     var netImpact=putGain-portLoss;
     var offsetRatio=portLoss>0?(putGain/portLoss):0;
+
+    // Implied aggregate delta at this shock
     var impliedDelta=portLoss>0?(putGain/(Math.abs(shockPct)*S*totalContracts*10)):0;
 
     if(prefix==='s0'){
@@ -3910,11 +4233,13 @@ function renderDailyNAV(){
   var inception=st.inceptionDate?new Date(st.inceptionDate):today;
   var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
 
+  // Cash base: ladder cashBalance has premiums already deducted
+  // Fall back to full capital only if no tranches exist yet
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
   var cashBase=hasTranches&&ladder.cashBalance>0?ladder.cashBalance:capital;
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
-  var residual=0;
+  var residual=0; // eliminated — ladder cashBalance is cash source of truth
   var effectiveCash=cashCore;
   var dailyCashAccrual=cashBase*dailyZaronia;
 
@@ -3954,6 +4279,84 @@ function renderDailyNAV(){
   setText('dn-pnl',(dayPnl>=0?'+':'')+fRk(dayPnl));
   if(c('dn-pnl')) c('dn-pnl').style.color=dayPnl>=0?'var(--green2)':'var(--red2)';
   window._ladderNAV={effectiveCash,optBook,totalNAV,floor,initialCap,totalTheta,dailyCashAccrual,zaronia};
+  renderThetaSnapshot();
+}
+
+function renderThetaSnapshot(){
+  if(!CURRENT_SESSION) return;
+  var ln=window._ladderNAV; if(!ln) return;
+  var ladder=getLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  if(!S||!r||!iv) return;
+  var today=new Date(); today.setHours(0,0,0,0);
+
+  // ── Option Book P&L ───────────────────────────────────────────────
+  var totalCostBasis=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+  var totalMTM=ln.optBook;
+  var bookPnl=totalMTM-totalCostBasis;
+  var bookPnlPct=totalCostBasis>0?(bookPnl/totalCostBasis*100):0;
+
+  setText('tsp-cost',fRk(totalCostBasis));
+  setText('tsp-mtm',fRk(totalMTM));
+  c('tsp-mtm').style.color=totalMTM>=totalCostBasis?'var(--green2)':'var(--amber)';
+  setText('tsp-pnl',(bookPnl>=0?'+':'')+fRk(bookPnl));
+  c('tsp-pnl').style.color=bookPnl>=0?'var(--green2)':'var(--red2)';
+  setText('tsp-pnl-pct',(bookPnlPct>=0?'+':'')+bookPnlPct.toFixed(1)+'%');
+  c('tsp-pnl-pct').style.color=bookPnlPct>=0?'var(--green2)':'var(--red2)';
+
+  // ── Daily Carry ───────────────────────────────────────────────────
+  var grossYield=ln.dailyCashAccrual;
+  var totalTheta=ln.totalTheta;
+  var netCarry=grossYield-totalTheta;
+  var carryRatio=totalTheta>0?(grossYield/totalTheta):Infinity;
+
+  setText('tsp-yield','+'+fRk(grossYield)+'/day');
+  setText('tsp-theta','−'+fRk(totalTheta)+'/day');
+  setText('tsp-net-carry',(netCarry>=0?'+':'')+fRk(netCarry)+'/day');
+  c('tsp-net-carry').style.color=netCarry>=0?'var(--green2)':'var(--red2)';
+  setText('tsp-carry-ratio',isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞');
+  c('tsp-carry-ratio').style.color=carryRatio>=1?'var(--green2)':'var(--red2)';
+
+  // ── Cumulative Theta (est.) ────────────────────────────────────────
+  // Approximation: current theta rate × days held per tranche.
+  // This understates early periods (theta was lower when options had
+  // more time value) and overstates final periods — but it's the best
+  // we can do without daily stored theta history. Exact totals will
+  // become available as EOD closes accumulate (each stores totalTheta).
+  var totalCumTheta=0;
+  var earliestBuy=null;
+  (ladder.tranches||[]).forEach(function(t){
+    var buyDate=new Date(t.buyDate); buyDate.setHours(0,0,0,0);
+    var daysHeld=Math.max(0,Math.round((today-buyDate)/86400000));
+    var texp=new Date(t.expiry);
+    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
+    var thetaPerDay=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+    totalCumTheta+=thetaPerDay*daysHeld;
+    if(!earliestBuy||buyDate<earliestBuy) earliestBuy=buyDate;
+  });
+
+  // Use stored EOD theta history for a more accurate cumulative if available
+  var navHistory=getNavHistory();
+  if(navHistory.length>0){
+    // Sum daily theta from EOD records (stored as totalTheta per day)
+    var eodCumTheta=navHistory.reduce(function(s,h){return s+(h.totalTheta||0);},0);
+    if(eodCumTheta>0){
+      totalCumTheta=eodCumTheta;
+    }
+  }
+
+  var thetaVsPnl=totalCumTheta>0?(bookPnl/totalCumTheta):null;
+  setText('tsp-cumtheta','−'+fRk(totalCumTheta));
+  c('tsp-cumtheta').style.color='var(--amber)';
+  setText('tsp-since',earliestBuy?earliestBuy.toISOString().slice(0,10):'—');
+  if(thetaVsPnl!==null){
+    var tvpEl=c('tsp-theta-vs-pnl');
+    setText('tsp-theta-vs-pnl',(bookPnl>=0?'+':'')+fRk(bookPnl)+' vs −'+fRk(totalCumTheta)+' spent');
+    tvpEl.style.color=bookPnl>=0?'var(--green2)':'var(--red2)';
+    tvpEl.style.fontSize='10px';
+  } else {
+    setText('tsp-theta-vs-pnl','—');
+  }
 }
 
 function renderLiquidityStress(){
@@ -3985,6 +4388,9 @@ function renderLiquidityStress(){
   function stressScenario(shockPct,barEl,navEl,itmEl,netEl){
     var sS=S*(1+shockPct);
     var optNewBook=0;
+    // Vol spike under shock — same model used in renderHedgeView's
+    // stressHedge(), so both panels answer the same question for a given
+    // shock size rather than one assuming static vol and the other not.
     var ivStress=calcCrashVol(iv,Math.abs(shockPct));
     (ladder.tranches||[]).forEach(function(t){
       var exp=new Date(t.expiry);
@@ -4031,6 +4437,7 @@ function commitDecision(){
   var orig=btn.innerHTML;
   btn.innerHTML='✓ Committed!'; btn.style.background='rgba(64,200,128,.3)';
   setTimeout(function(){btn.innerHTML='✓ &nbsp;Commit to Audit Log';btn.style.background='';},2000);
+  // Auto-save to Firebase after every commit
   fbSaveSession(buildSessionData());
 }
 
@@ -4090,6 +4497,7 @@ function openInflowModal(){
   c('inflow-date').value=todayStr();
   c('inflow-preview').style.display='none';
   c('inflow-modal').classList.remove('hidden');
+  // Live preview on amount change
   c('inflow-amount').oninput=previewInflow;
 }
 function closeInflowModal(){ c('inflow-modal').classList.add('hidden'); }
@@ -4101,18 +4509,23 @@ function previewInflow(){
   var navData=computeNAVFromState();
   var currentNAV=navData?navData.total:(st.capital||CURRENT_SESSION.phylaxCapital);
   var newNAV=currentNAV+amount;
+  // Time to next SAFEX expiry
   var expiryStr=document.getElementById('i-expiry').value||safexExpiryStr(new Date());
   var today=new Date(); today.setHours(0,0,0,0);
   var expiry=new Date(expiryStr);
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
   var tteDays=Math.round(T*365);
   var r=FVAL['i-jibar'];
+  // FI leg for the inflow: amount goes into call account (full amount)
   var incrementalFI=amount;
+  // Option budget for remaining tenor
   var incrementalOptBudget=amount*(r*T/(1+r*T));
+  // Contracts suggested
   var S=FVAL['i-spot'],q=FVAL['i-dY'],iv=FVAL['i-iv'],otm=FVAL['i-otm'];
   var K=Math.round(S*(1-otm));
   var putR=bsPutRepriceR(S,K,r,q,iv,T);
   var contracts=putR>0?Math.floor(incrementalOptBudget/putR):0;
+  // Units to be issued at today's live unit price
   var up=calcUnitPrice();
   var subscriptionUnitPrice=up?up.unitPrice:UNIT_INCEPTION_PRICE;
   var newUnits=amount/subscriptionUnitPrice;
@@ -4136,17 +4549,22 @@ function confirmInflow(){
   var investor=c('inflow-investor').value||'Unnamed investor';
   var date=c('inflow-date').value||todayStr();
   var st=getState();
+  // Update fund state
   var newCapital=(st.capital||CURRENT_SESSION.phylaxCapital)+ic.amount;
   st.capital=newCapital;
   st.totalInflows=(st.totalInflows||0)+ic.amount;
+  // Update total portfolio
   st.totalPortfolio=(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+ic.amount;
   saveState(st);
+  // Add cash to ladder balance — this is the single cash source of truth
   var ldr=getLadder();
   ldr.cashBalance=(ldr.cashBalance||0)+ic.amount;
   saveLadder(ldr);
   CURRENT_SESSION.phylaxCapital=newCapital;
   CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
 
+  // ── Issue new units at the live unit price — this is what actually
+  //    records "new investor data" against the unitized NAV. ──────────
   var subscriptionUnitPrice=ic.subscriptionUnitPrice||UNIT_INCEPTION_PRICE;
   var newUnits=ic.newUnits||(ic.amount/subscriptionUnitPrice);
   var us=getOrInitUnitState();
@@ -4154,6 +4572,7 @@ function confirmInflow(){
   us.unitsInIssue=runningUnits;
   saveUnitState(us);
 
+  // Log the subscription to the investor register
   var inflowLog=getInflowLog();
   inflowLog.push({
     date:date, investor:investor, type:'SUBSCRIPTION',
@@ -4173,7 +4592,9 @@ function confirmInflow(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// REDEMPTION
+// REDEMPTION — burns units at the live unit price, pays cash T+1 from
+// the call account. Option book is left untouched (advisory rebalance
+// warning only) since closing tranches is a separate, explicit decision.
 // ════════════════════════════════════════════════════════════════════
 function openRedemptionModal(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
@@ -4234,6 +4655,11 @@ function onRedeemConfirmInput(){
 async function executeRedemption(){
   if(c('rd-confirm-input').value.trim().toUpperCase()!=='REDEEM'){ alert('Type REDEEM to confirm.'); return; }
   var pr=window._pendingRedemption; if(!pr){ alert('No redemption pending.'); return; }
+  // Defensive re-check: state (cash balance, NAV, ladder) could have
+  // changed between the preview computing pr.redemptionValue and this
+  // confirm click — e.g. another tab closed a tranche, or the market
+  // moved and recalculated NAV. Re-validate against current cash before
+  // committing, rather than trusting the stale preview snapshot.
   var ldrCheck=getLadder();
   var lnCheck=window._ladderNAV;
   var currentCash=lnCheck?lnCheck.effectiveCash:(ldrCheck.cashBalance||0);
@@ -4322,6 +4748,7 @@ function openSessionList(){
 }
 function closeSessionList(){ c('session-list-modal').classList.add('hidden'); }
 
+// Delete keys are id-specific, so build them directly (lsKey is bound to the active session)
 function purgeLocalSession(id){
   ['state','navhistory','log','ladder','inflowlog'].forEach(function(k){
     try{ localStorage.removeItem('phylax_v5_'+id+'_'+k); }catch(e){}
@@ -4340,6 +4767,7 @@ async function deleteSession(id){
   var typed=prompt('Permanently delete this session?\n\n  "'+name+'"\n'+(isActive?'\n⚠ This is your ACTIVE session.\n':'')+'\nThis removes its NAV history, ladder, audit log and all records — there is no undo.\n\nType DELETE to confirm:');
   if(typed!=='DELETE'){ if(typed!==null) alert('Not deleted — you must type DELETE exactly.'); return; }
 
+  // Remove from cloud (if reachable) and from this device
   if(fbReady()){
     try{ await window.db.collection('phylax_sessions').doc(id).delete(); }
     catch(e){ console.error('Firebase delete error:',e); alert('Could not delete from the cloud (check connection). It was removed from this device only — try again to clear the cloud copy.'); }
@@ -4347,11 +4775,13 @@ async function deleteSession(id){
   purgeLocalSession(id);
 
   if(isActive){
+    // We just deleted the session we were in — leave it cleanly
     CURRENT_SESSION=null;
     try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
     c('session-bar').style.display='none';
   }
 
+  // Refresh the list; if nothing left, go to the wizard
   var remaining = await fbListSessions();
   if(!remaining.length){
     closeSessionList();
@@ -4379,6 +4809,7 @@ async function loadSessionById(id){
 // SETUP MODAL
 // ════════════════════════════════════════════════════════════════════
 function openSetupModal(resetDefaults){
+  // Optionally reset all wizard fields to a clean default state (for a brand-new session)
   if(resetDefaults){
     c('setup-name').value='Demo — R1bn Portfolio, 7% Phylax';
     c('setup-inception').value='2026-07-01';
@@ -4393,18 +4824,22 @@ function openSetupModal(resetDefaults){
   generateSessionId();
   var tp=c('setup-total-port'); if(tp) formatSetupRand(tp);
   updateSetupPreview();
+  // Show Cancel only when there is already an active session to return to
   c('setup-cancel-btn').classList.toggle('hidden', !CURRENT_SESSION);
   c('setup-modal').classList.remove('hidden');
 }
 function closeSetupModal(){
+  // Only allowed to close if a live session exists to fall back to
   if(CURRENT_SESSION) c('setup-modal').classList.add('hidden');
 }
+// Deliberately start a brand-new session (from the session bar)
 function newSession(){ openSetupModal(true); }
 function generateSessionId(){
   var id='PHYLAX_'+Date.now().toString(36).toUpperCase()+'_'+Math.random().toString(36).slice(2,6).toUpperCase();
   c('setup-session-id').value=id;
 }
 
+// Live preview in setup modal
 function formatSetupRand(el){
   var v=parseFloat(el.value.replace(/[^\d.]/g,''))||0;
   el.value=v>0?fmtRand(v):'';
@@ -4419,6 +4854,7 @@ function updateSetupPreview(){
   var phylax=total*(pct/100);
   var jibar=parseFloat(c('setup-jibar').value)||0.075;
   if(jibar>1) jibar/=100;
+  // Live sleeve value hint next to the % field
   c('sleeve-value-hint').textContent = phylax>0 ? '= '+fmtRand(phylax)+' sleeve' : 'Enter a % of the total';
   if(total>0&&pct>0){
     c('prev-phylax').textContent=fRk(phylax);
@@ -4461,8 +4897,10 @@ async function createSession(){
   saveSessionConfigLocal();
   setActiveSessionId(sessionId);
 
+  // Lock the inception ALSI into the (read-only) banner field
   paintInceptionALSI();
 
+  // Set default inputs
   FVAL['i-jibar']=jibar;
   FVAL['i-otm']=otm;
   FVAL['i-dY']=dY;
@@ -4470,14 +4908,16 @@ async function createSession(){
   c('sl-zaronia-spread').value=zaroniaSpread;
   setText('sl-zaronia-val',zaroniaSpread+' bps');
 
+  // Set default SAFEX expiry (Sep 2026 for Jul inception)
   var nextExp=safexExpiryStr(new Date(inceptionDate));
   c('i-expiry').value=nextExp;
 
+  // Initialise state
   var st=defaultState();
   st.inceptionDate=inceptionDate;
   st.capital=phylaxCapital;
   st.totalPortfolio=totalPortfolio;
-  st.cashCoreInit=0;
+  st.cashCoreInit=0; // will be set on first EOD
   saveState(st);
   saveLadder({tranches:[],cashBalance:0});
   saveLog([]); saveNavHistory([]); saveInflowLog([]);
@@ -4485,6 +4925,7 @@ async function createSession(){
   c('setup-modal').classList.add('hidden');
   activateDashboard();
 
+  // Save to Firebase
   var data=buildSessionData();
   data.createdAt=CURRENT_SESSION.createdAt;
   await fbSaveSession(data);
@@ -4504,8 +4945,11 @@ function activateDashboard(){
     fRk(CURRENT_SESSION.totalPortfolio)+' total · inception '+CURRENT_SESSION.inceptionDate+
     ' · ID: '+CURRENT_SESSION.sessionId;
   paintInceptionALSI();
+  // Legacy sessions created before the inception-ALSI lock: allow a one-time entry
   enableLegacyInceptionEntry();
 }
+// For sessions created before the inception ALSI was locked in the wizard:
+// let the user set it once directly in the banner field, then it locks.
 function enableLegacyInceptionEntry(){
   var el=document.getElementById('pb-alsi-entry');
   if(!el) return;
@@ -4607,6 +5051,7 @@ function exportMonthlyReport(){
   var blendedRet=lastH.blendedNAV?((lastH.blendedNAV-totalPort)/totalPort*100).toFixed(2):'N/A';
   var inflowLog=getInflowLog();
   var totalInflows=inflowLog.reduce(function(s,i){return s+i.amount;},0);
+  // Build simple HTML report
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phylax Capital — Monthly Report</title>'
     +'<style>body{font-family:Arial,sans-serif;color:#111;max-width:800px;margin:40px auto;padding:0 20px}'
     +'h1{color:#006070;font-size:22px}h2{color:#006070;font-size:14px;border-bottom:2px solid #006070;padding-bottom:4px}'
@@ -4653,7 +5098,7 @@ function exportMonthlyReport(){
   });
   html+='</table>'
     +'<div class="disc">Phylax Capital — Macro Protector Fund. This report is for internal use and does not constitute investment advice. '
-    +'NAV calculated using the Black-76 forward pricing model. Call account accrual at ZARONIA (JIBAR−15bps). '
+    +'NAV calculated using Merton (1973) Black-Scholes model. Call account accrual at ZARONIA (JIBAR−15bps). '
     +'All trade decisions require fund manager authorisation. BN90 RIHF compliant structure.</div>'
     +'</body></html>';
   var blob=new Blob([html],{type:'text/html'});
@@ -4665,6 +5110,7 @@ function exportMonthlyReport(){
 }
 
 function exportGoogleDrive(){
+  // Export JSON backup with instructions for Google Drive manual upload
   var data=buildSessionData();
   var filename='PhylaxCapital_Session_'+CURRENT_SESSION.sessionId+'_'+todayStr()+'.json';
   downloadJSON(data,filename);
@@ -4741,6 +5187,7 @@ function morningChecklistNeeded(){
 }
 
 function openMorningChecklist(){
+  // Pre-fill with yesterday's carried values so user can see what changed
   var alsi=FVAL['i-spot']||0;
   var savi=(FVAL['i-iv']||0)*100;
   var jibar=(FVAL['i-jibar']||0)*100;
@@ -4751,11 +5198,13 @@ function openMorningChecklist(){
   c('mc-jibar').value=jibar>0?jibar.toFixed(2):'';
   c('mc-dy').value=dy>0?dy.toFixed(2):'';
 
+  // Show carried labels
   if(alsi>0) setText('mc-alsi-prev','← yesterday: '+Math.round(alsi).toLocaleString('en-ZA'));
   if(savi>0) setText('mc-savi-prev','← yesterday: '+savi.toFixed(2)+'%');
   if(jibar>0) setText('mc-jibar-prev','← yesterday: '+jibar.toFixed(2)+'%');
   if(dy>0) setText('mc-dy-prev','← yesterday: '+dy.toFixed(2)+'%');
 
+  // Reset progress pips
   [1,2,3,4].forEach(function(i){
     c('mc-pip-'+i).className='mc-pip';
     c('mc-num-'+i).className='mc-num';
@@ -4774,6 +5223,7 @@ function mcValidate(){
   var jibar=parseFloat(c('mc-jibar').value)||0;
   var dy=parseFloat(c('mc-dy').value)||0;
 
+  // Update progress pips
   var steps=[alsi>50000, savi>1&&savi<100, jibar>1&&jibar<30, dy>0&&dy<15];
   steps.forEach(function(ok,i){
     c('mc-pip-'+(i+1)).className='mc-pip'+(ok?' done':'');
@@ -4783,6 +5233,7 @@ function mcValidate(){
   var allDone=steps.every(Boolean);
 
   if(allDone){
+    // Compute summary values
     var r=jibar/100, q=dy/100, iv=savi/100;
     var otm=FVAL['i-otm']||0.10;
     var K=Math.round(alsi*(1-otm));
@@ -4823,20 +5274,24 @@ function morningChecklistConfirm(){
   var dy=parseFloat(c('mc-dy').value)||0;
   if(!alsi||!savi||!jibar||!dy){ alert('Complete all fields.'); return; }
 
+  // Push values into dashboard inputs
   setFieldVal('i-spot', alsi);
   setFieldVal('i-iv', savi/100);
   setFieldVal('i-jibar', jibar/100);
   setFieldVal('i-dY', dy/100);
 
+  // Update FVAL
   FVAL['i-spot']=alsi;
   FVAL['i-iv']=savi/100;
   FVAL['i-jibar']=jibar/100;
   FVAL['i-dY']=dy/100;
 
+  // Format displayed fields
   Object.keys(FCFG).forEach(function(id){
     var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
   });
 
+  // Record that morning inputs are done for today — save actual values
   var morningData={
     alsi:alsi, savi:savi/100, jibar:jibar/100, dy:dy/100,
     ts:Date.now()
@@ -4845,20 +5300,13 @@ function morningChecklistConfirm(){
 
   c('morning-modal').classList.add('hidden');
   try{ refreshAllDisplays(); calc(); }catch(e){ console.error('Refresh error:',e); }
-  // Lock the five market-driving inputs for the rest of the day now that
-  // the morning checklist has been explicitly confirmed.
-  lockMorningInputs();
-  showToast('☀ Morning inputs confirmed & locked — dashboard ready','success',4000);
+  showToast('☀ Morning inputs confirmed — dashboard ready','success',4000);
 }
 
 function morningChecklistSkip(){
   localStorage.setItem('phylax_morning_'+todayStr(),'skipped');
   c('morning-modal').classList.add('hidden');
-  // Skipping still means today's inputs (carried from yesterday) are now
-  // "decided for the day" — lock them the same as an explicit confirm,
-  // so a skip can't be mistaken for an still-open, freely-editable state.
-  lockMorningInputs();
-  showToast('⚠ Morning inputs skipped — using carried values (now locked). Verify before trading.','error',6000);
+  showToast('⚠ Morning inputs skipped — using carried values. Verify before trading.','error',6000);
 }
 
 function setFieldVal(id, val){
@@ -4873,13 +5321,17 @@ function setFieldVal(id, val){
 function dashboardInit(){
   c('today-display').textContent=dt();
 
+  // Generate session ID in modal
   generateSessionId();
 
+  // Format the total-portfolio field as Rand and refresh the live preview
   var tp=c('setup-total-port'); if(tp) formatSetupRand(tp);
   updateSetupPreview();
 
+  // Check for existing active session
   var activeId=getActiveSessionId();
   if(activeId){
+    // Try to load from Firebase
     setFBStatus('connecting','Loading session…');
     fbLoadSession(activeId).then(function(data){
       if(data&&data.config){
@@ -4888,17 +5340,21 @@ function dashboardInit(){
         restoreSessionFromFirebase(data);
         activateDashboard();
         loadInputsLocal();
+        // Set ZARONIA spread from session
         if(CURRENT_SESSION.zaroniaSpread!=null){
           ZARONIA_SPREAD_BPS=CURRENT_SESSION.zaroniaSpread;
           c('sl-zaronia-spread').value=ZARONIA_SPREAD_BPS;
           setText('sl-zaronia-val',ZARONIA_SPREAD_BPS+' bps');
         }
+        // Restore FVAL from session config
         if(CURRENT_SESSION.jibar) FVAL['i-jibar']=CURRENT_SESSION.jibar;
         if(CURRENT_SESSION.otm)   FVAL['i-otm']=CURRENT_SESSION.otm;
         if(CURRENT_SESSION.dY)    FVAL['i-dY']=CURRENT_SESSION.dY;
+        // Set default expiry
         if(!c('i-expiry').value){
           c('i-expiry').value=safexExpiryStr(new Date(CURRENT_SESSION.inceptionDate||new Date()));
         }
+        // Format fields
         Object.keys(FCFG).forEach(function(id){
           var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
         });
@@ -4906,6 +5362,7 @@ function dashboardInit(){
         c('setup-modal').classList.add('hidden');
         refreshAllDisplays();
         setFBStatus('ok','Session loaded');
+        // Restore today's morning inputs if already entered today
         var morningKey='phylax_morning_'+todayStr();
         var morningRaw=localStorage.getItem(morningKey);
         if(morningRaw && morningRaw!=='skipped'){
@@ -4920,21 +5377,17 @@ function dashboardInit(){
                 var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
               });
               try{ calc(); }catch(e){}
-              // Morning inputs were already confirmed earlier today —
-              // lock them immediately rather than leaving them editable
-              // for the rest of the session.
-              lockMorningInputs();
+              // Don't show checklist — already done today
               return;
             }
           }catch(e){}
-        } else if(morningRaw==='skipped'){
-          // Already explicitly skipped for today — stay locked.
-          lockMorningInputs();
         }
+        // Show morning checklist if inputs not yet entered today
         if(morningChecklistNeeded()){
           setTimeout(function(){ openMorningChecklist(); },600);
         }
       } else {
+        // No session in Firebase — show setup modal
         setFBStatus('error','No saved session');
         openSetupModal();
       }
@@ -4944,14 +5397,19 @@ function dashboardInit(){
       openSetupModal();
     });
   } else {
+    // First time — show setup
     openSetupModal();
   }
 }
 </script>
+<!-- Firebase v10 compat SDK — loaded after main script so all functions are defined -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
+// Bootstrap Firebase, then sign in anonymously, then start the dashboard.
+// Every step degrades gracefully: if the SDK is blocked or offline, the
+// dashboard still runs from localStorage and never throws.
 (function bootstrapFirebase(){
   function startDashboard(){
     try{ dashboardInit(); }catch(e){ console.error('dashboardInit error:',e); }
@@ -4979,6 +5437,8 @@ function dashboardInit(){
     return;
   }
 
+  // Anonymous auth — gives each browser an authenticated identity so the
+  // Firestore security rules can require auth != null. Silent, no login UI.
   var authReady = false;
   function proceedOnce(){
     if(authReady) return; authReady = true;
@@ -4992,6 +5452,7 @@ function dashboardInit(){
       if(user){ console.log('Auth OK (uid '+user.uid.slice(0,6)+'…)'); }
       proceedOnce();
     });
+    // Safety: never wait more than 4s on auth before starting anyway.
     setTimeout(proceedOnce, 4000);
   } catch(e){
     console.warn('Auth unavailable (continuing):', e);
