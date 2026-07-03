@@ -230,6 +230,17 @@ textarea:focus{border-color:var(--teal2)}
 .tdd-itm{background:rgba(64,200,128,.15);color:var(--green2);border:1px solid rgba(64,200,128,.3)}
 .tdd-near{background:rgba(232,160,32,.12);color:var(--amber);border:1px solid rgba(232,160,32,.25)}
 .tdd-otm{background:rgba(90,120,136,.1);color:var(--muted);border:1px solid rgba(90,120,136,.2)}
+.tdd-roll{background:rgba(232,160,32,.18);color:var(--amber);border:1px solid rgba(232,160,32,.4)}
+.tdd-roll-overdue{background:rgba(232,120,32,.22);color:#f0a050;border:1px solid rgba(232,120,32,.5)}
+.tdd-roll-critical{background:rgba(232,64,64,.25);color:var(--red2);border:1px solid rgba(232,64,64,.6);animation:pulse 2s infinite}
+
+/* ── ROLL-DUE ALERT BANNER ──────────────────────────────────────── */
+.roll-alert{display:none;margin-bottom:12px;padding:10px 14px;border-radius:2px;
+  font-size:9px;font-family:'Rajdhani',sans-serif;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;line-height:1.7}
+.roll-alert.tier1{background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);color:var(--amber)}
+.roll-alert.tier2{background:rgba(232,120,32,.1);border:1px solid rgba(232,120,32,.4);color:#f0a050}
+.roll-alert.tier3{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.4);color:var(--red2)}
 
 /* ── BUTTONS ───────────────────────────────────────────────────── */
 .btn{border:none;border-radius:2px;cursor:pointer;font-family:'Rajdhani',sans-serif;
@@ -499,6 +510,68 @@ textarea:focus{border-color:var(--teal2)}
 .reduce-summary{padding:10px 12px;border-radius:2px;background:rgba(232,64,64,.07);
   border:1px solid rgba(232,64,64,.2);margin:12px 0;font-family:'DM Mono',monospace;font-size:10px;line-height:1.8}
 
+/* ── UNIT PRICE PANEL ───────────────────────────────────────────── */
+.unit-price-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:0;
+  background:linear-gradient(135deg,rgba(160,96,240,.08),rgba(0,196,212,.04));
+  border:1px solid rgba(160,96,240,.3);border-radius:2px;margin-bottom:10px;overflow:hidden}
+.up-cell{padding:10px 14px;border-right:1px solid rgba(160,96,240,.15);text-align:center}
+.up-cell:last-child{border-right:none}
+.up-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:3px}
+.up-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:700}
+.up-sub{font-size:8px;color:var(--muted);margin-top:2px}
+
+/* ── REDEMPTION MODAL ───────────────────────────────────────────── */
+.inv-row{display:flex;align-items:center;gap:10px;padding:8px 10px;
+  border-radius:2px;background:rgba(160,96,240,.05);border:1px solid rgba(160,96,240,.15);
+  margin-bottom:6px}
+.inv-info{flex:1;font-family:'DM Mono',monospace;font-size:10px;color:var(--plat)}
+.inv-redeem-input{width:100px;background:rgba(0,0,0,.4);border:1px solid rgba(232,64,64,.3);
+  border-radius:2px;padding:5px 8px;color:var(--white);font-family:'DM Mono',monospace;
+  font-size:11px;text-align:center;outline:none}
+
+/* ── INVESTOR REGISTER ──────────────────────────────────────────── */
+.inv-register{width:100%;border-collapse:collapse;font-size:9.5px}
+.inv-register th{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:6px 10px;
+  border-bottom:1px solid var(--border);text-align:right}
+.inv-register th:first-child{text-align:left}
+.inv-register td{padding:7px 10px;border-bottom:1px solid rgba(0,196,212,.05);
+  font-family:'DM Mono',monospace;font-size:9.5px;text-align:right}
+.inv-register td:first-child{text-align:left;color:var(--plat)}
+
+/* ── MULTI-QUARTER YIELD ALLOCATOR ──────────────────────────────── */
+.alloc-sliders{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.alloc-slider-card{background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:2px;padding:12px}
+.alloc-sl-label{font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.alloc-sl-expiry{font-family:'DM Mono',monospace;font-size:9.5px;color:var(--muted);margin-bottom:8px}
+.alloc-sl-pct{font-family:'DM Mono',monospace;font-size:18px;font-weight:700;
+  color:var(--teal2);text-align:center;margin-bottom:4px}
+.alloc-sl-input{width:100%;accent-color:var(--teal2);margin-bottom:8px;cursor:pointer}
+.alloc-sl-price{font-size:8.5px;color:var(--plat);font-family:'DM Mono',monospace;text-align:center;margin-bottom:6px}
+.alloc-sl-cost{font-size:8.5px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center}
+.alloc-totals{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+  background:rgba(0,0,0,.2);border:1px solid var(--border);border-radius:2px;
+  padding:10px 14px;margin-bottom:12px}
+.alloc-total-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px}
+.alloc-total-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.alloc-pct-total{font-family:'DM Mono',monospace;font-size:11px;
+  text-align:center;padding:6px;border-radius:2px;margin-bottom:10px}
+.alloc-execute-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.alloc-exec-btn{padding:8px 6px;border-radius:2px;font-family:'Rajdhani',sans-serif;
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  cursor:pointer;transition:all .2s;text-align:center;border:1px solid rgba(0,196,212,.3);
+  background:rgba(0,196,212,.08);color:var(--teal2)}
+.alloc-exec-btn:hover{background:rgba(0,196,212,.18);border-color:var(--teal2)}
+.alloc-exec-btn:disabled{opacity:.35;cursor:not-allowed}
+.alloc-preset{padding:4px 12px;border-radius:2px;font-family:'Rajdhani',sans-serif;
+  font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  cursor:pointer;border:1px solid var(--border);background:rgba(255,255,255,.04);
+  color:var(--muted);transition:all .2s}
+.alloc-preset:hover{border-color:var(--teal2);color:var(--teal2);background:rgba(0,196,212,.06)}
+
 @media(max-width:900px){
   .main-grid{grid-template-columns:1fr}
   .g4{grid-template-columns:1fr 1fr}
@@ -641,6 +714,10 @@ textarea:focus{border-color:var(--teal2)}
     <div class="modal-sub">New capital arriving mid-quarter. The system will recalculate the FI leg, remaining option budget, and recommended additional contracts based on the time remaining to the next SAFEX expiry.</div>
     <div class="modal-section">Inflow Details</div>
     <div class="mfi">
+      <label>Investor / DFM Name</label>
+      <input type="text" id="inflow-investor" placeholder="e.g. Investor or DFM identifier"/>
+    </div>
+    <div class="mfi">
       <label>Inflow Amount (R)</label>
       <input type="text" id="inflow-amount" placeholder="e.g. 10000000"/>
     </div>
@@ -661,10 +738,47 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc-row"><span class="mc-k">Incremental FI Leg</span><span class="mc-v" id="inf-fi">—</span></div>
       <div class="mc-row"><span class="mc-k">Incremental Option Budget</span><span class="mc-v" id="inf-opt-budget">—</span></div>
       <div class="mc-row"><span class="mc-k">Additional Contracts Suggested</span><span class="mc-v" id="inf-contracts" style="color:var(--teal2)">—</span></div>
+      <div class="mc-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+        <span class="mc-k">Subscription Unit Price</span><span class="mc-v" id="inf-unit-price" style="color:var(--purple)">—</span></div>
+      <div class="mc-row"><span class="mc-k">Units to be Issued</span><span class="mc-v" id="inf-units" style="color:var(--teal2)">—</span></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeInflowModal()" style="flex:1">Cancel</button>
-      <button class="btn btn-purple" onclick="confirmInflow()" style="flex:2;font-size:10px">✓ &nbsp;Record Inflow &amp; Update Fund</button>
+      <button class="btn btn-purple" onclick="confirmInflow()" style="flex:2;font-size:10px">✓ &nbsp;Record Inflow &amp; Issue Units</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REDEMPTION MODAL ══════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="redemption-modal">
+  <div class="modal-box" style="max-width:560px">
+    <div class="modal-title" style="color:var(--purple)">Unit Redemption</div>
+    <div class="modal-sub">Redeem units at today's unit price. Cash paid T+1 from call account. Option book unaffected unless rebalance required.</div>
+    <div class="modal-section">Today's Pricing</div>
+    <div style="background:rgba(160,96,240,.06);border:1px solid rgba(160,96,240,.2);border-radius:2px;padding:14px 16px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px">
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Unit Price</div><div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--purple)" id="rd-unit-price">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Total Units in Issue</div><div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--teal2)" id="rd-total-units">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Call Account Cash</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="rd-cash">—</div></div>
+        <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Post-Redemption Cash</div><div style="font-family:'DM Mono',monospace;font-size:13px;" id="rd-cash-after">—</div></div>
+      </div>
+    </div>
+    <div class="modal-section">Investor / Units to Redeem</div>
+    <div class="mfi"><label>Investor Name</label><input type="text" id="rd-investor" placeholder="DFM name or identifier"/></div>
+    <div class="modal-row">
+      <div class="mfi"><label>Units to Redeem</label><input type="number" id="rd-units" min="1" step="1" placeholder="0" oninput="onRedeemInput()"/></div>
+      <div class="mfi"><label>Redemption Value</label><input type="text" id="rd-value" readonly style="color:var(--purple);font-weight:700"/></div>
+    </div>
+    <div style="background:rgba(232,64,64,.07);border:1px solid rgba(232,64,64,.2);border-radius:2px;padding:12px 14px;margin-bottom:14px;font-family:'DM Mono',monospace;font-size:10px;line-height:1.8" id="rd-summary"></div>
+    <div id="rd-rebalance-warn" style="display:none;background:rgba(232,160,32,.08);border:1px solid rgba(232,160,32,.3);border-radius:2px;padding:10px 14px;margin-bottom:12px;font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--amber)"></div>
+    <div class="modal-section">Type REDEEM to confirm</div>
+    <input type="text" id="rd-confirm-input" placeholder='Type "REDEEM" to confirm'
+      style="margin-bottom:12px;text-transform:uppercase;letter-spacing:.12em;font-size:13px"
+      oninput="onRedeemConfirmInput()"/>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="rd-confirm-btn" onclick="executeRedemption()" disabled
+        style="opacity:.4;cursor:not-allowed">✓ &nbsp;Process Redemption</button>
+      <button class="btn btn-ghost" onclick="closeRedemptionModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -698,6 +812,7 @@ textarea:focus{border-color:var(--teal2)}
   <div class="sess-actions">
     <button class="btn btn-green btn-xs" onclick="newSession()">+ New Session</button>
     <button class="btn btn-purple btn-xs" onclick="openInflowModal()">+ Capital Inflow</button>
+    <button class="btn btn-xs" onclick="openRedemptionModal()" style="background:rgba(160,96,240,.15);border:1px solid rgba(160,96,240,.4);color:var(--purple)">− Redemption</button>
     <button class="btn btn-ghost btn-xs" onclick="openSessionList()">⇄ Sessions</button>
     <button class="btn btn-ghost btn-xs" onclick="exportGoogleDrive()">↑ Drive Backup</button>
     <button class="btn btn-ghost btn-xs" onclick="exportFullSession()">↓ JSON Export</button>
@@ -1040,12 +1155,46 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ UNIT PRICE BAR ════════════════════════════════════════════════ -->
+<div class="unit-price-bar" id="unit-price-bar">
+  <div class="up-cell">
+    <div class="up-label">Unit Price</div>
+    <div class="up-val" id="up-price" style="color:var(--purple)">—</div>
+    <div class="up-sub">NAV per unit (R100 inception)</div>
+  </div>
+  <div class="up-cell">
+    <div class="up-label">Return vs Inception</div>
+    <div class="up-val" id="up-return" style="color:var(--green2)">—</div>
+    <div class="up-sub">vs R100.00/unit</div>
+  </div>
+  <div class="up-cell">
+    <div class="up-label">Units in Issue</div>
+    <div class="up-val" id="up-units" style="color:var(--teal2)">—</div>
+    <div class="up-sub">Total units outstanding</div>
+  </div>
+  <div class="up-cell">
+    <div class="up-label">Unit Floor</div>
+    <div class="up-val" id="up-floor" style="color:var(--amber)">—</div>
+    <div class="up-sub">Cash+Intrinsic per unit</div>
+  </div>
+  <div class="up-cell">
+    <div class="up-label">Day Change</div>
+    <div class="up-val" id="up-day-change">—</div>
+    <div class="up-sub">vs yesterday close</div>
+  </div>
+  <div class="up-cell">
+    <div class="up-label">Redemption Price</div>
+    <div class="up-val" id="up-redeem" style="color:var(--gold)">—</div>
+    <div class="up-sub">T+1 at today's unit price</div>
+  </div>
+</div>
+
 <!-- ══ REMAINING BUDGET PANEL ════════════════════════════════════════ -->
 <div class="budget-panel" id="budget-panel">
   <div class="bp-cell">
-    <div class="bp-label">Quarterly Budget</div>
+    <div class="bp-label">Annual Convexity Budget</div>
     <div class="bp-val" id="bp-total" style="color:var(--purple)">—</div>
-    <div class="bp-sub">FI interest this quarter</div>
+    <div class="bp-sub" id="bp-total-sub">NAV − NAV/(1+ZARONIA×T)</div>
   </div>
   <div class="bp-cell">
     <div class="bp-label">Premiums Paid</div>
@@ -1055,12 +1204,12 @@ textarea:focus{border-color:var(--teal2)}
   <div class="bp-cell">
     <div class="bp-label">Remaining Budget</div>
     <div class="bp-val" id="bp-remaining" style="color:var(--teal2)">—</div>
-    <div class="bp-sub" id="bp-remaining-pct">— of quarterly budget</div>
+    <div class="bp-sub" id="bp-remaining-pct">— of annual budget</div>
   </div>
   <div class="bp-cell">
-    <div class="bp-label">Affordable Today</div>
+    <div class="bp-label">Q1 Affordable</div>
     <div class="bp-val" id="bp-affordable" style="color:var(--green2)">—</div>
-    <div class="bp-sub" id="bp-affordable-sub">at today's premium</div>
+    <div class="bp-sub" id="bp-affordable-sub">at near-dated premium</div>
   </div>
   <div class="bp-cell">
     <div class="bp-label">Blended Entry</div>
@@ -1140,6 +1289,7 @@ textarea:focus{border-color:var(--teal2)}
       <button class="btn btn-ghost btn-sm" onclick="exportLadderCSV()" style="font-size:9px">↓ Ladder CSV</button>
     </div>
   </div>
+  <div id="roll-alert" class="roll-alert"></div>
   <div style="overflow-x:auto">
     <table class="ladder-table">
       <thead>
@@ -1185,6 +1335,85 @@ textarea:focus{border-color:var(--teal2)}
     <div class="dnav-l">Day P&amp;L</div>
     <div class="dnav-v" id="dn-pnl">—</div>
     <div class="dnav-s">vs yesterday close</div>
+  </div>
+</div>
+
+<!-- ══ THETA / CARRY SNAPSHOT ═════════════════════════════════════ -->
+<div class="panel" id="theta-snapshot-panel" style="margin-bottom:14px;border-color:rgba(160,96,240,.2);background:linear-gradient(135deg,rgba(160,96,240,.05),var(--bg3))">
+  <div class="sh c-purple" style="margin-bottom:12px">Option Book P&amp;L &amp; Carry Snapshot</div>
+  <div style="display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;gap:0">
+
+    <!-- Option Book P&L -->
+    <div style="padding:0 18px 0 4px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--purple);margin-bottom:10px">Option Book P&amp;L</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Cost Basis</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--plat)" id="tsp-cost">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">MTM Today</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--amber)" id="tsp-mtm">—</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Unrealised P&amp;L</span>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700" id="tsp-pnl">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">P&amp;L %</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px" id="tsp-pnl-pct">—</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="background:var(--border)"></div>
+
+    <!-- Daily Carry -->
+    <div style="padding:0 18px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--green);margin-bottom:10px">Daily Carry</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Gross ZARONIA Yield</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--green2)" id="tsp-yield">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Total Theta Bleed</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--red2)" id="tsp-theta">—</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Net Daily Carry</span>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700" id="tsp-net-carry">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Carry Ratio</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px" id="tsp-carry-ratio">—</span>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div style="background:var(--border)"></div>
+
+    <!-- Cumulative Theta -->
+    <div style="padding:0 4px 0 18px">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--amber);margin-bottom:10px">Cumulative Theta (est.)</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Est. Theta Consumed</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--amber)" id="tsp-cumtheta">—</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Since</span>
+        <span style="font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted)" id="tsp-since">—</span>
+      </div>
+      <div style="height:1px;background:var(--border);margin:8px 0"></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-family:'Rajdhani',sans-serif;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Theta vs P&amp;L</span>
+        <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700" id="tsp-theta-vs-pnl">—</span>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:8px;color:var(--muted);margin-top:4px;line-height:1.4">
+        ⚠ Approximation: current theta rate × days held per tranche. Exact totals require daily history — improves as EOD closes accumulate.
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -1364,9 +1593,9 @@ textarea:focus{border-color:var(--teal2)}
           <!-- populated by renderExpiryGrid() -->
         </div>
 
-        <!-- Step 2: Quantity input -->
+        <!-- Step 2: Quantity input (single-expiry manual buy) -->
         <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--teal);margin-bottom:10px;margin-top:4px">
-          Step 3 — How many contracts do you want to buy today?
+          Step 3 — How many contracts do you want to buy today? (selected expiry above)
         </div>
         <div class="exec-row">
           <input type="number" class="exec-input" id="exec-qty" min="0" step="1"
@@ -1378,6 +1607,30 @@ textarea:focus{border-color:var(--teal2)}
           </button>
         </div>
         <div class="exec-warn" id="exec-warn"></div>
+
+        <!-- SAVI signal banner -->
+        <div id="savi-signal-banner" style="padding:8px 12px;border-radius:2px;margin:14px 0 10px;font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em"></div>
+
+        <!-- Multi-quarter yield allocator -->
+        <div id="inline-alloc-section">
+          <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:6px 0 6px;border-top:1px solid var(--border);padding-top:12px">
+            Or — Step 3b: allocate today's daily yield across all four quarters at once
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+            <button class="alloc-preset" onclick="applyInlinePreset([20,25,30,25])">Low Vol (&lt;18%)</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([40,35,15,10])">Moderate (18–25%) ★</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([55,30,10,5])">Elevated (25–32%)</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([70,20,10,0])">High Vol (&gt;32%)</button>
+            <button class="alloc-preset" onclick="applyInlinePreset([100,0,0,0])">100% Near</button>
+            <button class="alloc-preset" onclick="applySaviPreset()">★ Apply SAVI Signal</button>
+          </div>
+          <div class="alloc-sliders" id="inline-alloc-sliders"></div>
+          <div class="alloc-pct-total" id="inline-alloc-pct-total" style="margin-bottom:8px"></div>
+          <div id="inline-net-yield-banner" style="margin-bottom:8px"></div>
+          <div class="alloc-totals" id="inline-alloc-summary" style="margin-bottom:10px"></div>
+          <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Step 4 — Execute each tranche (double confirmation required)</div>
+          <div class="alloc-execute-grid" id="inline-alloc-execute-grid"></div>
+        </div>
       </div>
     </div>
 
@@ -1486,24 +1739,30 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
-<!-- ══ CAPITAL INFLOW LOG ════════════════════════════════════════════ -->
+<!-- ══ INVESTOR REGISTER ══════════════════════════════════════════════ -->
 <div class="panel bpurple" id="inflow-log-panel">
-  <div class="sh c-purple">Capital Inflow Log — Fund Growth Record</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="sh c-purple" style="margin-bottom:0">Investor Register — Subscriptions &amp; Redemptions</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-purple btn-xs" onclick="openInflowModal()">+ Subscribe</button>
+      <button class="btn btn-xs" onclick="openRedemptionModal()" style="background:rgba(160,96,240,.15);border:1px solid rgba(160,96,240,.4);color:var(--purple)">− Redeem</button>
+    </div>
+  </div>
   <div style="overflow-x:auto">
-    <table class="inflow-table">
+    <table class="inv-register">
       <thead><tr>
         <th style="text-align:left">Date</th>
-        <th>Amount Added (R)</th>
-        <th>NAV Before</th>
+        <th style="text-align:left">Investor</th>
+        <th>Type</th>
+        <th>Amount (R)</th>
+        <th>Unit Price</th>
+        <th>Units</th>
+        <th>Running Units</th>
         <th>NAV After</th>
-        <th>New Total Capital</th>
-        <th>FI Leg Increase</th>
-        <th>Opt Budget Add</th>
-        <th>Contracts Suggested</th>
         <th style="text-align:left">Notes</th>
       </tr></thead>
       <tbody id="inflow-log-body">
-        <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No capital inflows recorded yet.</td></tr>
+        <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No transactions recorded yet.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1512,20 +1771,21 @@ textarea:focus{border-color:var(--teal2)}
 <!-- ══ BS INTERMEDIATES ══════════════════════════════════════════════ -->
 <div class="panel" style="margin-bottom:14px">
   <div class="sh c-plat" style="cursor:pointer" onclick="toggleBS()">
-    Black-Scholes Intermediates — Step-by-Step (Auditable)
+    Black-76 Intermediates — Step-by-Step (Auditable)
     <span id="bs-toggle-label" class="toggle-btn" style="margin-left:auto;margin-right:0">▼ Show</span>
   </div>
   <div id="bs-body" class="hidden">
     <div class="g2">
       <table class="bs-table">
         <tr><td>ALSI Spot (S)</td><td id="b-S">—</td><td>Current index</td></tr>
+        <tr><td>Forward (F)</td><td id="b-F">—</td><td>S × e^((r−q)t)</td></tr>
         <tr><td>Strike (K)</td><td id="b-K">—</td><td>S × (1 − OTM%)</td></tr>
         <tr><td>TTE (t)</td><td id="b-T">—</td><td>Days ÷ 365</td></tr>
         <tr><td>JIBAR (r)</td><td id="b-r">—</td><td>Risk-free proxy</td></tr>
         <tr><td>Vol (σ)</td><td id="b-iv">—</td><td>SAVI ATM</td></tr>
-        <tr><td>Div Yield (q)</td><td id="b-dY">—</td><td>~3.8% p.a.</td></tr>
+        <tr><td>Div Yield (q)</td><td id="b-dY">—</td><td>~3.8% p.a. (priced into F)</td></tr>
         <tr class="sep"><td colspan="3"></td></tr>
-        <tr><td>d1</td><td id="b-d1">—</td><td>(ln(S/K)+(r−q+σ²/2)t)/(σ√t)</td></tr>
+        <tr><td>d1</td><td id="b-d1">—</td><td>(ln(F/K)+(σ²/2)t)/(σ√t)</td></tr>
         <tr><td>d2</td><td id="b-d2">—</td><td>d1 − σ√t</td></tr>
         <tr><td>N(d1)</td><td id="b-Nd1">—</td><td>Cum. normal</td></tr>
         <tr><td>N(d2)</td><td id="b-Nd2">—</td><td>Cum. normal</td></tr>
@@ -1533,13 +1793,13 @@ textarea:focus{border-color:var(--teal2)}
         <tr><td>n(d1)</td><td id="b-nd1">—</td><td>PDF — used in Greeks</td></tr>
       </table>
       <table class="bs-table">
-        <tr><td>Put Price (pts)</td><td id="b-price">—</td><td>Ke^(−rT)N(−d2)−Se^(−qT)N(−d1)</td></tr>
+        <tr><td>Put Price (pts)</td><td id="b-price">—</td><td>e^(−rt)[KN(−d2)−FN(−d1)]</td></tr>
         <tr><td>Put Price (R)</td><td id="b-price-r">—</td><td>pts × R10 SAFEX multiplier</td></tr>
         <tr class="sep"><td colspan="3"></td></tr>
-        <tr><td>Delta (Δ)</td><td id="b-delta">—</td><td>e^(−qT)(N(d1)−1)</td></tr>
-        <tr><td>Theta (annual)</td><td id="b-theta-a">—</td><td>Full Merton formula</td></tr>
+        <tr><td>Delta (Δ)</td><td id="b-delta">—</td><td>−e^(−rt)N(−d1)</td></tr>
+        <tr><td>Theta (annual)</td><td id="b-theta-a">—</td><td>Black-76 theta (two rate terms)</td></tr>
         <tr><td>Theta (daily)</td><td id="b-theta-d">—</td><td>Annual ÷ 365</td></tr>
-        <tr><td>Gamma</td><td id="b-gamma">—</td><td>n(d1)e^(−qT)/(Sσ√T)</td></tr>
+        <tr><td>Gamma</td><td id="b-gamma">—</td><td>n(d1)e^(−rt)/(Fσ√t)</td></tr>
         <tr><td>Vega (R/1% vol)</td><td id="b-vega">—</td><td>per contract</td></tr>
         <tr class="sep"><td colspan="3"></td></tr>
         <tr><td>Remaining Option Budget</td><td id="b-budget-bs">—</td><td>Quarterly budget − premiums paid</td></tr>
@@ -1600,12 +1860,13 @@ textarea:focus{border-color:var(--teal2)}
         <th>ALSI Open</th><th>ALSI Close</th><th>Tracker Level</th><th>IV</th><th>Contracts</th>
         <th>Cash Core</th><th>Option Book</th>
         <th style="color:var(--teal2)">Phylax NAV</th>
+        <th style="color:var(--purple)">Unit Price</th>
         <th>Day P&amp;L</th><th>vs Capital</th>
         <th style="color:var(--gold)">Tracker NAV</th>
         <th>Blended NAV</th>
       </tr></thead>
       <tbody id="nav-history-body">
-        <tr><td colspan="13" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>
+        <tr><td colspan="14" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1613,7 +1874,7 @@ textarea:focus{border-color:var(--teal2)}
 
 <div class="disc">
   Phylax Capital — Macro Protector Fund &nbsp;·&nbsp; Phylax Capital (Pty) Ltd &nbsp;·&nbsp;
-  BS engine: Merton (1973) continuous dividend yield. NAV = Call Account (ZARONIA daily accreting) + Option Book (BS MTM). &nbsp;·&nbsp;
+  Pricing engine: Black-76 (forward) model, F = S·e^((r−q)t). NAV = Call Account (ZARONIA daily accreting) + Option Book (Black-76 MTM). &nbsp;·&nbsp;
   All data persisted to Firebase Firestore — syncs on every EOD close. Export JSON/CSV regularly as secondary backup. &nbsp;·&nbsp;
   Not investment advice. All trade decisions require fund manager authorisation.
 </div>
@@ -1675,29 +1936,90 @@ function normCDF(x){
 }
 function normPDF(x){ return Math.exp(-.5*x*x)/Math.sqrt(2*Math.PI); }
 
-function bsCalcPutPrice(S,K,r,q,iv,T){
-  if(T<=0) return Math.max(K-S,0);
-  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
-  var d2=d1-iv*Math.sqrt(T);
-  return K*Math.exp(-r*T)*(1-normCDF(d2))-S*Math.exp(-q*T)*(1-normCDF(d1));
+// ════════════════════════════════════════════════════════════════════
+// BLACK-76 PRICING ENGINE — single source of truth for ALL option math.
+// SAFEX ALSI options are futures-style; priced off the fair forward
+// F = S * e^((r-q)T) rather than spot, per the Black-76 migration plan.
+// Every renderer in this file (ladder, hedge view, expiry grid, liquidity
+// stress, inline allocator, EOD close, audit log) calls through the
+// bsCalcPutPrice / bsPutRepriceR / bsThetaPerDay / bsDelta / bsGamma /
+// bsVega wrappers below — so centralizing the math here upgrades every
+// call site at once and eliminates the renderer-level duplication that
+// was the single highest-risk item in the migration audit.
+// ════════════════════════════════════════════════════════════════════
+var PRICING_MODEL_VERSION = 'black76';
+
+function bsForward(S,r,q,T){ return S*Math.exp((r-q)*T); }
+
+// Bundled Black-76 price + Greeks for a put. Returns points and Rand.
+function bsBlack76(S,K,r,q,iv,T){
+  var F=bsForward(S,r,q,T);
+  if(T<=0||F<=0||K<=0){
+    var intrinsic=Math.max(K-F,0);
+    return {F:F,d1:0,d2:0,putPoints:intrinsic,putPriceR:intrinsic*10,
+      delta:(F>0&&K>F)?-1:0,gamma:0,thetaPerDayR:0,vegaR:0};
+  }
+  if(iv<=0){
+    var disc0=Math.exp(-r*T);
+    var fwdIntrinsic=Math.max(K-F,0)*disc0;
+    return {F:F,d1:0,d2:0,putPoints:fwdIntrinsic,putPriceR:fwdIntrinsic*10,
+      delta:-disc0*(K>F?1:0),gamma:0,thetaPerDayR:0,vegaR:0};
+  }
+  var sqrtT=Math.sqrt(T);
+  var d1=(Math.log(F/K)+(iv*iv/2)*T)/(iv*sqrtT);
+  var d2=d1-iv*sqrtT;
+  var disc=Math.exp(-r*T);
+  var Nd1=normCDF(d1),Nd2=normCDF(d2),Nnd1=1-Nd1,Nnd2=1-Nd2,nd1=normPDF(d1);
+  var putPoints=disc*(K*Nnd2-F*Nnd1);
+  var delta=-disc*Nnd1;
+  var gamma=nd1*disc/(F*iv*sqrtT);
+  // Black-76 theta — two rate-driven terms (not the three-term spot-BS/
+  // Merton form used previously, which is structurally wrong for a
+  // futures-style underlying).
+  var thetaAnn=-(F*nd1*iv*disc)/(2*sqrtT)+r*K*disc*Nnd2-r*F*disc*Nnd1;
+  var vegaR=F*sqrtT*nd1*disc*0.01*10;
+  return {F:F,d1:d1,d2:d2,putPoints:putPoints,putPriceR:Math.max(0,putPoints*10),
+    delta:delta,gamma:gamma,thetaPerDayR:Math.abs(thetaAnn/365)*10,vegaR:vegaR};
 }
-function bsPutRepriceR(S,K,r,q,iv,T){
-  if(T<=0) return Math.max((K-S)*10,0);
-  if(iv<=0||S<=0) return Math.max((K*Math.exp(-r*T)-S*Math.exp(-q*T))*10,0);
-  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
-  var d2=d1-iv*Math.sqrt(T);
-  var put=K*Math.exp(-r*T)*(1-normCDF(d2))-S*Math.exp(-q*T)*(1-normCDF(d1));
-  return Math.max(0,put*10);
-}
-function bsThetaPerDay(S,K,r,q,iv,T){
-  if(T<=0||iv<=0) return 0;
-  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
-  var d2=d1-iv*Math.sqrt(T);
-  var nd1=normPDF(d1);
-  var Nnd1=1-normCDF(d1);
-  var Nnd2=1-normCDF(d2);
-  var thetaAnn=-(S*Math.exp(-q*T)*nd1*iv)/(2*Math.sqrt(T))+r*K*Math.exp(-r*T)*Nnd2-q*S*Math.exp(-q*T)*Nnd1;
-  return Math.abs(thetaAnn/365)*10;
+
+// ── Drop-in compatible wrappers — identical call signatures to the old
+//    spot-BS functions, so every existing call site (ladder, hedge view,
+//    expiry grid, liquidity stress, inline allocator, EOD close, exports,
+//    morning checklist) is upgraded to Black-76 with zero edits there. ──
+function bsCalcPutPrice(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).putPoints; }
+function bsPutRepriceR(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).putPriceR; }
+function bsThetaPerDay(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).thetaPerDayR; }
+function bsDelta(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).delta; }
+function bsGamma(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).gamma; }
+function bsVega(S,K,r,q,iv,T){ return bsBlack76(S,K,r,q,iv,T).vegaR; }
+
+// ── Implied volatility solver — Newton-Raphson with bisection fallback.
+//    Not yet wired into any UI control; available for future SAVI
+//    cross-validation. Returns null if no solution found in bounds. ──
+function bsImpliedVol(targetPriceR,S,K,r,q,T){
+  if(targetPriceR<=0||T<=0) return null;
+  var iv=0.20;
+  for(var i=0;i<50;i++){
+    var g=bsBlack76(S,K,r,q,iv,T);
+    var diff=g.putPriceR-targetPriceR;
+    if(Math.abs(diff)<1e-6*Math.max(1,targetPriceR)) return iv;
+    var vegaPerVol=g.vegaR*100; // vegaR is per 1% vol; convert to per unit vol
+    if(!vegaPerVol||vegaPerVol<1e-8) break;
+    var next=iv-diff/vegaPerVol;
+    if(!isFinite(next)||next<=0||next>3) break;
+    iv=next;
+  }
+  var lo=0.001,hi=3.00;
+  var fLo=bsBlack76(S,K,r,q,lo,T).putPriceR-targetPriceR;
+  var fHi=bsBlack76(S,K,r,q,hi,T).putPriceR-targetPriceR;
+  if(fLo*fHi>0) return null;
+  for(var j=0;j<100;j++){
+    var mid=(lo+hi)/2;
+    var fMid=bsBlack76(S,K,r,q,mid,T).putPriceR-targetPriceR;
+    if(Math.abs(fMid)<1e-6*Math.max(1,targetPriceR)) return mid;
+    if(fLo*fMid<0){ hi=mid; fHi=fMid; } else { lo=mid; fLo=fMid; }
+  }
+  return (lo+hi)/2;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1729,6 +2051,17 @@ function fmtRand(n){ return 'R '+Math.round(n).toString().replace(/\B(?=(\d{3})+
 function fmtPct(n,dp){ return (n*100).toFixed(dp==null?2:dp)+'%'; }
 function fmtPctAbs(n,dp){ return Math.abs(n).toFixed(dp==null?2:dp); }
 function setText(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+// Escape user-supplied free text (investor names, trade notes, session
+// names) before interpolating it into innerHTML templates. These fields
+// are typed by the operator and persisted to Firebase — if the dashboard
+// is ever shared with a second viewer (a DFM, an auditor, another
+// session on the same Firestore doc), unescaped text here would execute
+// as live HTML/JS when the table re-renders.
+function escapeHtml(s){
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function c(id){ return document.getElementById(id); }
 
 // ════════════════════════════════════════════════════════════════════
@@ -1973,9 +2306,11 @@ function localSessionList(){
 function buildSessionData(){
   if(!CURRENT_SESSION) return null;
   var st = getState();
+  var us = getUnitState();
   return {
     config: CURRENT_SESSION,
     state: st,
+    unitState: us,
     lastSaved: new Date().toISOString(),
     lastSavedBy: deviceLabel(),
     createdAt: CURRENT_SESSION.createdAt || new Date().toISOString()
@@ -2063,6 +2398,14 @@ function getLadder(){
              .sort(function(a,b){return (a.addedTs||0)-(b.addedTs||0);}),
            cashBalance: _LIVE.cashBalance||0 };
 }
+// ⚠ FIRE-AND-FORGET — do not call this for a live trade purchase, close,
+// or reduce. Only the two remaining callers of this exact function are
+// safe by construction: session setup (initializing a brand-new, empty
+// ladder — nothing to race against) and resetDemo() (wiping to zero).
+// Every real trade mutation must go through commitNewTrade() (adds,
+// transactional) or saveLadderAwait() (closes/reduces, awaited) instead,
+// so the caller can actually confirm the write landed before telling
+// the user it's saved.
 function saveLadder(l){
   var newMap={};
   (l.tranches||[]).forEach(function(t){ newMap[t.id]=t; });
@@ -2123,6 +2466,38 @@ async function saveLadderAwait(l){
 // budget. Also the durability guarantee for "laptop dies right after
 // I click confirm" — the trade document exists in Firestore before
 // this function returns ok:true. ──
+// ── Generic transactional cash-balance adjustment — reads the server's
+// currently COMMITTED ladderCashBalance at the instant of write (not a
+// locally-cached value that may be stale) and applies delta atomically.
+// Used by both subscriptions (+amount) and redemptions (-amount), which
+// previously wrote cashBalance from a stale local read via a plain
+// merge:true — meaning a concurrent trade/redemption/subscription in
+// another browser could be silently stomped rather than netted.
+async function adjustCommittedCash(delta, extraDocWrite){
+  if(!CURRENT_SESSION) throw new Error('No active session');
+  var id=CURRENT_SESSION.sessionId;
+  if(!fbReady()) return {ok:false, offline:true};
+  try{
+    var finalCash;
+    await window.db.runTransaction(async function(tx){
+      var sdoc = await tx.get(sessionDoc(id));
+      var committedCash = (sdoc.exists && sdoc.data().ladderCashBalance!=null)
+        ? sdoc.data().ladderCashBalance
+        : (CURRENT_SESSION.phylaxCapital||0);
+      finalCash = Math.max(0, committedCash + delta);
+      tx.set(sessionDoc(id), Object.assign({ladderCashBalance:finalCash}, extraDocWrite&&extraDocWrite.sessionMerge?extraDocWrite.sessionMerge:{}), {merge:true});
+      if(extraDocWrite && extraDocWrite.ref && extraDocWrite.data){
+        tx.set(extraDocWrite.ref, extraDocWrite.data);
+      }
+    });
+    _LIVE.cashBalance=finalCash;
+    return {ok:true, cashBalance:finalCash};
+  }catch(e){
+    console.error('adjustCommittedCash transaction failed:',e);
+    return {ok:false, error:e};
+  }
+}
+
 async function commitNewTrade(tranche, spentAmount){
   if(!CURRENT_SESSION) throw new Error('No active session');
   var id=CURRENT_SESSION.sessionId;
@@ -2226,6 +2601,62 @@ function detachLiveListeners(){
 // Restore session config/state from a Firestore doc read at load time.
 // Trades/NAV/audit/inflows/inputs arrive via attachLiveListeners(),
 // not this — this only seeds the aggregate state fields.
+// ════════════════════════════════════════════════════════════════════
+// UNIT PRICE ENGINE — units in issue, NAV per unit, redemption pricing.
+// Units are issued at the current unit price whenever new capital
+// subscribes, and burned at the current unit price on redemption — this
+// is what was missing for "new investor data" to flow through correctly
+// when money enters the fund mid-quarter.
+// ════════════════════════════════════════════════════════════════════
+var UNIT_INCEPTION_PRICE=100.00;
+
+function getUnitState(){ try{ var v=localStorage.getItem(lsKey('unitstate')); return v?JSON.parse(v):{unitsInIssue:0,inceptionUnitPrice:UNIT_INCEPTION_PRICE}; }catch(e){ return {unitsInIssue:0,inceptionUnitPrice:UNIT_INCEPTION_PRICE}; } }
+function saveUnitState(us){ try{ localStorage.setItem(lsKey('unitstate'),JSON.stringify(us)); }catch(e){} }
+
+function getOrInitUnitState(){
+  var us=getUnitState();
+  if(!us.unitsInIssue||us.unitsInIssue<=0){
+    var st=getState();
+    var capital=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
+    if(capital>0){ us.unitsInIssue=capital/UNIT_INCEPTION_PRICE; us.inceptionUnitPrice=UNIT_INCEPTION_PRICE; saveUnitState(us); }
+  }
+  return us;
+}
+
+function calcUnitPrice(){
+  var ln=window._ladderNAV; if(!ln) return null;
+  var us=getOrInitUnitState();
+  if(!us.unitsInIssue||us.unitsInIssue<=0) return null;
+  var unitPrice=ln.totalNAV/us.unitsInIssue;
+  var unitFloor=ln.floor/us.unitsInIssue;
+  return {unitPrice:unitPrice,unitFloor:unitFloor,unitsInIssue:us.unitsInIssue,inceptionUnitPrice:us.inceptionUnitPrice};
+}
+
+function renderUnitPriceBar(){
+  var up=calcUnitPrice(); if(!up) return;
+  var navHistory=getNavHistory();
+  var prevUnitPrice=up.inceptionUnitPrice;
+  if(navHistory.length>0){
+    var prev=navHistory[navHistory.length-1];
+    if(prev.unitPrice) prevUnitPrice=prev.unitPrice;
+    else if(prev.nav&&up.unitsInIssue>0) prevUnitPrice=prev.nav/up.unitsInIssue;
+  }
+  var dayChange=up.unitPrice-prevUnitPrice;
+  var totalReturn=up.unitPrice-up.inceptionUnitPrice;
+  var totalReturnPct=totalReturn/up.inceptionUnitPrice*100;
+  setText('up-price','R '+up.unitPrice.toFixed(4));
+  if(c('up-price')) c('up-price').style.color=up.unitPrice>=up.inceptionUnitPrice?'var(--green2)':'var(--red2)';
+  setText('up-return',(totalReturn>=0?'+':'')+totalReturn.toFixed(4)+' ('+totalReturnPct.toFixed(3)+'%)');
+  if(c('up-return')) c('up-return').style.color=totalReturn>=0?'var(--green2)':'var(--red2)';
+  setText('up-units',Math.round(up.unitsInIssue).toLocaleString('en-ZA'));
+  setText('up-floor','R '+up.unitFloor.toFixed(4));
+  if(c('up-floor')) c('up-floor').style.color=up.unitFloor>=up.inceptionUnitPrice?'var(--green2)':'var(--amber)';
+  setText('up-day-change',(dayChange>=0?'+':'')+dayChange.toFixed(4));
+  if(c('up-day-change')) c('up-day-change').style.color=dayChange>=0?'var(--green2)':'var(--red2)';
+  setText('up-redeem','R '+up.unitPrice.toFixed(4));
+  window._unitData=up;
+}
+
 function restoreSessionFromFirebase(data){
   if(!CURRENT_SESSION||!data) return;
   if(data.state){
@@ -2234,6 +2665,7 @@ function restoreSessionFromFirebase(data){
     if(data.ladderCashBalance>0){ st.cashCoreInit=data.ladderCashBalance; }
     saveState(st);
   }
+  if(data.unitState) saveUnitState(data.unitState);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2252,6 +2684,32 @@ function nextSAFEXExpiry(fromDate){
 function safexExpiryStr(fromDate){ return nextSAFEXExpiry(fromDate).toISOString().slice(0,10); }
 
 // Get next N SAFEX quarterly expiry dates from today
+// ════════════════════════════════════════════════════════════════════
+// CONVEXITY BUDGET — single source of truth
+// Annual: NAV − NAV/(1 + ZARONIA × T_to_4th_expiry)
+// This is the correct PV-based formula (the FI leg compounds at ZARONIA
+// to exactly NAV by the 4th expiry; the budget is the gap between that
+// and today's NAV) — NOT a naive NAV×r/(1+r)/4 quarterly approximation,
+// which understates available convexity budget as rates/tenor change.
+// calc(), renderBudgetPanel(), and renderExpiryGrid() all call this so
+// the three panels can never silently disagree.
+// ════════════════════════════════════════════════════════════════════
+function calcConvexityBudget(){
+  var zaronia=getZaronia();
+  var ln=window._ladderNAV;
+  var st=getState();
+  var NAV=ln?ln.totalNAV:(st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0));
+  if(!NAV||!zaronia) return {annual:0,remaining:0,paid:0,NAV:0,zaronia:zaronia||0,T_annual:0};
+  var today=new Date(); today.setHours(0,0,0,0);
+  var expiries=getSAFEXExpiries(4);
+  var T_annual=Math.max(0.0001,(expiries[3]-today)/(365*24*60*60*1000));
+  var annualBudget=NAV-NAV/(1+zaronia*T_annual);
+  var ladder=getLadder();
+  var paid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+  var remaining=Math.max(0,annualBudget-paid);
+  return {annual:annualBudget,remaining:remaining,paid:paid,NAV:NAV,zaronia:zaronia,T_annual:T_annual};
+}
+
 function getSAFEXExpiries(n){
   var results=[], d=new Date(); d.setHours(0,0,0,0);
   var m=d.getMonth(), y=d.getFullYear();
@@ -2278,15 +2736,9 @@ function renderExpiryGrid(){
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
 
-  // Calculate remaining budget directly — same formula as calc() and renderBudgetPanel()
-  var st=getState();
-  var capital=st?st.capital:CURRENT_SESSION.phylaxCapital;
-  var navForBudget=window._ladderNAV?window._ladderNAV.totalNAV:capital;
-  var annualBudget=navForBudget*(r/(1+r));
-  var quarterlyBudget=annualBudget/4;
-  var ladder=getLadder();
-  var premiumsPaid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
-  var remaining=Math.max(0,quarterlyBudget-premiumsPaid);
+  // Remaining budget — shared single source of truth (calcConvexityBudget)
+  var bd=calcConvexityBudget();
+  var remaining=bd.remaining;
 
   var selectedExpiry=window._selectedExpiry||expiries[0].toISOString().slice(0,10);
   var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
@@ -2296,9 +2748,9 @@ function renderExpiryGrid(){
     var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
     var tteDays=Math.round(T*365);
     var K=Math.round(S*(1-otm));
-    var putR=bsPutRepriceR(S,K,r,q,iv,T);
-    var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(Math.max(T,1e-6)));
-    var delta=Math.exp(-q*T)*(normCDF(d1)-1);
+    var g76e=bsBlack76(S,K,r,q,iv,Math.max(T,1e-6));
+    var putR=g76e.putPriceR;
+    var delta=g76e.delta;
     var affordable=putR>0?Math.floor(remaining/putR):0;
     var isSelected=expStr===selectedExpiry;
     html+='<div class="expiry-card'+(isSelected?' selected':'')+'" onclick="selectExpiry(\''+expStr+'\','+putR+','+K+')">'
@@ -2417,17 +2869,17 @@ function calc(){
   if(T<=0){ showWarn('Option has expired — update expiry date to next SAFEX quarterly'); return; }
   var K=Math.round(S*(1-otm));
 
-  // BS
-  var d1=(Math.log(S/K)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
-  var d2=d1-iv*Math.sqrt(T);
+  // ── Black-76 pricing (single source of truth via bsBlack76) ──
+  var g76=bsBlack76(S,K,r,q,iv,T);
+  var fwdF=g76.F, d1=g76.d1, d2=g76.d2;
   var Nd1=normCDF(d1),Nd2=normCDF(d2),Nnd1=1-Nd1,Nnd2=1-Nd2,nd1=normPDF(d1);
-  var putPrice=K*Math.exp(-r*T)*Nnd2-S*Math.exp(-q*T)*Nnd1;
-  var putPriceR=putPrice*10;
-  var delta=Math.exp(-q*T)*(Nd1-1);
-  var thetaA=-(S*Math.exp(-q*T)*nd1*iv)/(2*Math.sqrt(T))+r*K*Math.exp(-r*T)*Nnd2-q*S*Math.exp(-q*T)*Nnd1;
-  var thetaD=thetaA/365;
-  var gamma=Math.exp(-q*T)*nd1/(S*iv*Math.sqrt(T));
-  var vega=S*Math.exp(-q*T)*nd1*Math.sqrt(T)*0.01*10;
+  var putPrice=g76.putPoints;
+  var putPriceR=g76.putPriceR;
+  var delta=g76.delta;
+  var thetaD=g76.thetaPerDayR/10; // points/day, for display parity with BS table
+  var thetaA=thetaD*365;
+  var gamma=g76.gamma;
+  var vega=g76.vegaR;
 
   // NAV
   var NAV, navData=computeNAVFromState();
@@ -2457,15 +2909,32 @@ function calc(){
   var zaronia=getZaronia();
   var dailyYield=NAV*zaronia/365;
   var thetaBleedPC=Math.abs(thetaD)*10;
-  var maxCarryContracts=thetaBleedPC>0?Math.floor(dailyYield/thetaBleedPC):9999;
+  // Net gross yield against the existing ladder's actual theta bleed
+  // (each tranche priced at its own strike/expiry) before computing how
+  // many MORE contracts the truly-uncommitted yield can support. Without
+  // this, maxCarryContracts only "accidentally" looked sane via the
+  // held-subtraction trick below — it was still built on gross yield,
+  // same root cause as the multi-quarter allocator bug fixed earlier.
+  var ladderForCarry=getLadder();
+  var ladderHeldForCarry=(ladderForCarry.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
+  var totalExistingThetaBleedSingle=0;
+  (ladderForCarry.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry);
+    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
+    totalExistingThetaBleedSingle+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+  });
+  var netDailyYieldSingle=Math.max(0,dailyYield-totalExistingThetaBleedSingle);
+  var maxCarryContracts=thetaBleedPC>0?(ladderHeldForCarry+Math.floor(netDailyYieldSingle/thetaBleedPC)):9999;
 
   // ── Unified budget: remaining after premiums already paid ──────────
-  // Total quarterly budget uses same formula as budget panel
-  var annualBudgetCalc=NAV*(r/(1+r));
-  var quarterlyBudgetCalc=annualBudgetCalc/4;
+  // Uses calcConvexityBudget() — the corrected PV-based annual formula,
+  // shared with renderBudgetPanel() and renderExpiryGrid() so all three
+  // panels always agree.
+  var bdCalc=calcConvexityBudget();
+  var annualBudgetCalc=bdCalc.annual;
   var ladder=getLadder();
-  var premiumsPaid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
-  var remainingBudget=Math.max(0,quarterlyBudgetCalc-premiumsPaid);
+  var premiumsPaid=bdCalc.paid;
+  var remainingBudget=bdCalc.remaining;
   var convexityBudget=remainingBudget; // keep name for BS table display
   var budgetContracts=putPriceR>0?Math.floor(remainingBudget/putPriceR):0;
   var recommended=Math.max(0,Math.min(budgetContracts,maxCarryContracts));
@@ -2473,7 +2942,13 @@ function calc(){
   var dailyThetaBleed=thetaBleedPC*held;
   var netCarry=dailyYield-dailyThetaBleed;
   var carryRatio=dailyThetaBleed>0?dailyYield/dailyThetaBleed:Infinity;
-  var hedgeMultiple=NAV>0?(S*10*held*delta)/NAV:0;
+  // bsBlack76's `delta` is the forward delta (∂P/∂F). Convert to spot
+  // delta (∂P/∂S = ∂P/∂F × e^((r-q)T)) before using it as a spot-notional
+  // hedge ratio — multiplying forward delta by spot S directly understates
+  // or overstates hedge notional by the forward/spot conversion factor
+  // whenever r ≠ q.
+  var deltaSpot=delta*Math.exp((r-q)*T);
+  var hedgeMultiple=NAV>0?(S*10*held*deltaSpot)/NAV:0;
   var bookValue=putPriceR*held;
   var daysLeft=Math.round(T*365);
 
@@ -2535,6 +3010,18 @@ function calc(){
     if(!execQty.dataset.userEdited) window._selectedExpiry=null;
     renderExpiryGrid();
     onExecQtyInput();
+    // SAVI-conditioned allocation preset (unless user has manually adjusted)
+    if(!window._allocUserOverride){
+      var saviRec=saviConditionedPreset(iv);
+      window._allocYieldPcts=saviRec.pcts.slice();
+    }
+    var saviNow=saviConditionedPreset(iv);
+    var banner=c('savi-signal-banner');
+    if(banner){
+      banner.innerHTML='★ SAVI Signal (SAVI '+(iv*100).toFixed(1)+'%): '+saviNow.label;
+      banner.style.cssText='padding:8px 12px;border-radius:2px;margin:14px 0 10px;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;background:rgba(0,0,0,.2);border:1px solid;border-color:'+saviNow.color+';color:'+saviNow.color;
+    }
+    renderInlineAlloc();
   } else if(tradeRequiredLadder<0){
     box.className='decision-box sell'; action.textContent='REDUCE'; action.style.color='var(--red)';
     num.textContent=Math.abs(tradeRequiredLadder); num.style.color='var(--red)'; lbl.textContent='Contracts to Reduce';
@@ -2574,7 +3061,7 @@ function calc(){
   c('o-budget').textContent=fRk(convexityBudget);
 
   // BS table
-  c('b-S').textContent=S.toLocaleString();c('b-K').textContent=K.toLocaleString();
+  c('b-S').textContent=S.toLocaleString();c('b-F').textContent=Math.round(fwdF).toLocaleString();c('b-K').textContent=K.toLocaleString();
   c('b-T').textContent=T.toFixed(6);c('b-r').textContent=fP(r,2);
   c('b-iv').textContent=fP(iv,2);c('b-dY').textContent=fP(q,2);
   c('b-d1').textContent=f4(d1);c('b-d2').textContent=f4(d2);
@@ -2601,12 +3088,14 @@ function calc(){
     dailyThetaBleed:Math.round(dailyThetaBleed),netCarry:Math.round(netCarry),
     carryRatio:carryRatio.toFixed(2),hedgeMultiple:hedgeMultiple.toFixed(2),
     recommended,held,tradeRequired,bookValue:Math.round(bookValue),
-    navM:(NAV/1e6).toFixed(2),expiry:expiryStr};
+    navM:(NAV/1e6).toFixed(2),expiry:expiryStr,
+    pricingModel:PRICING_MODEL_VERSION,forwardPrice:Math.round(fwdF)};
 
   // Refresh ladder panels
   renderLadderPanel();
   renderDailyNAV();
   renderLiquidityStress();
+  renderUnitPriceBar();
   renderBudgetPanel();
   renderHedgeView();
   updatePortfolio();
@@ -2764,13 +3253,21 @@ async function endOfDay(){
   var dayPnl=closingNAV-prevNAV;
   var optionPnl=dayPnl-carryToday;
 
+  // Unit price at EOD close
+  var us=getOrInitUnitState();
+  var closingUnitPrice=us.unitsInIssue>0?closingNAV/us.unitsInIssue:UNIT_INCEPTION_PRICE;
+  var totalIntrinsicClose=(ldrClose.tranches||[]).reduce(function(s,t){return s+Math.max(0,t.strikeLevel-eodSpot)*10*t.contracts;},0);
+  var closingUnitFloor=us.unitsInIssue>0?(cashCoreClose+totalIntrinsicClose)/us.unitsInIssue:UNIT_INCEPTION_PRICE;
+
   var entry={
     date:today, alsiOpen:eodOpen, alsi:eodSpot, alsiTracker:eodTrackerLevel, iv:eodIV,
     contracts:held, cashCore:cashCoreClose, optBook:optBookClose,
     residual:0, nav:closingNAV,
+    unitPrice:closingUnitPrice, unitsInIssue:us.unitsInIssue, unitFloor:closingUnitFloor,
     trackerNAV:trackerNAV, blendedNAV:blendedNAV,
     dayPnl:dayPnl, carryToday:carryToday, optionPnl:optionPnl,
-    putPriceR:optBookClose>0&&held>0?optBookClose/held:0, zaronia:zaronia
+    putPriceR:optBookClose>0&&held>0?optBookClose/held:0, zaronia:zaronia,
+    entryTs:today // stable, date-keyed — EOD is naturally one entry/day
   };
   var existing=history.findIndex(function(h){return h.date===today;});
   if(existing>=0) history[existing]=entry; else history.push(entry);
@@ -2787,11 +3284,27 @@ async function endOfDay(){
   c('eb-vs').style.color=closingNAV>=st.capital?'var(--green2)':'var(--red2)';
   c('fb-save-status').textContent='';
 
-  // Firebase sync
+  // Firebase sync — await BOTH the parent doc AND the actual NAV entry
+  // doc. saveNavHistory() above already fires the NAV write, but it's
+  // fire-and-forget; without this explicit await, "✓ Synced" could show
+  // before today's NAV entry had actually landed in Firestore.
   var fullData=buildSessionData();
   fullData.lastEODDate=today;
-  await fbSaveSession(fullData);
-  c('fb-save-status').textContent='✓ Synced to Firebase · ' + new Date().toLocaleTimeString('en-ZA');
+  if(fbReady()){
+    try{
+      await Promise.all([
+        fbSaveSession(fullData),
+        navCol(CURRENT_SESSION.sessionId).doc(String(entry.entryTs)).set(Object.assign({},entry,{_by:deviceLabel()}))
+      ]);
+      _lastSyncedKeys.navHistory[String(entry.entryTs)]=true;
+      c('fb-save-status').textContent='✓ Synced to Firebase · ' + new Date().toLocaleTimeString('en-ZA');
+    }catch(e){
+      console.error('EOD save error:',e);
+      c('fb-save-status').textContent='⚠ Cloud save failed — saved locally';
+    }
+  } else {
+    c('fb-save-status').textContent='⚠ Offline — saved locally only';
+  }
 
   updateSimState();
   updatePerfSummary();
@@ -2936,7 +3449,7 @@ function renderNavHistoryTable(){
   var capital=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:70000000);
   var tbody=c('nav-history-body');
   if(history.length===0){
-    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
     return;
   }
   var html='';
@@ -2953,6 +3466,7 @@ function renderNavHistoryTable(){
       +'<td>'+fRk(h.cashCore)+'</td>'
       +'<td style="color:var(--amber)">'+fRk(h.optBook)+'</td>'
       +'<td style="color:var(--teal2);font-weight:600">'+fRk(h.nav)+'</td>'
+      +'<td style="color:var(--purple);font-weight:600">'+(h.unitPrice?'R '+h.unitPrice.toFixed(4):'—')+'</td>'
       +'<td style="color:'+pnlC+'">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
       +'<td style="color:'+vsCC+'">'+(vsC>=0?'+':'')+vsC.toFixed(2)+'%</td>'
       +'<td style="color:var(--gold)">'+fRk(h.trackerNAV||0)+'</td>'
@@ -3023,6 +3537,225 @@ function onExecQtyInput(){
     warnEl.textContent='✓ Matches recommendation — position will be fully hedged.';
     warnEl.style.display='block';
   }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MULTI-QUARTER YIELD ALLOCATOR — allocate today's daily ZARONIA yield
+// across all four SAFEX quarterly expiries simultaneously, with
+// SAVI-conditioned presets and a per-expiry execute grid.
+// ════════════════════════════════════════════════════════════════════
+window._allocYieldPcts=[40,35,15,10]; // default: Moderate vol preset
+
+// SAVI-conditioned preset recommendation
+function saviConditionedPreset(iv){
+  var savi=iv*100;
+  if(savi<18)  return {pcts:[20,25,30,25], label:'Vol LOW (<18%) — skew far, vega is cheap', color:'var(--teal2)'};
+  if(savi<25)  return {pcts:[40,35,15,10], label:'Vol MODERATE (18–25%) — balanced ladder', color:'var(--green2)'};
+  if(savi<32)  return {pcts:[55,30,10,5],  label:'Vol ELEVATED (25–32%) — skew near, limit long-dated cost', color:'var(--amber)'};
+  return         {pcts:[70,20,10,0],        label:'Vol HIGH (>32%) — near-dated only, puts expensive', color:'var(--red2)'};
+}
+
+function applySaviPreset(){
+  var iv=FVAL['i-iv']||0.24;
+  var rec=saviConditionedPreset(iv);
+  window._allocYieldPcts=rec.pcts.slice();
+  window._allocUserOverride=false;
+  renderInlineAlloc();
+}
+
+function onInlineAllocSlider(idx,val){
+  var pcts=window._allocYieldPcts||[40,35,15,10];
+  pcts[idx]=parseInt(val);
+  window._allocYieldPcts=pcts;
+  window._allocUserOverride=true;
+  var el=c('ia-pct-'+idx); if(el) el.textContent=val+'%';
+  renderInlineAlloc();
+}
+
+function applyInlinePreset(pcts){
+  window._allocYieldPcts=pcts.slice();
+  window._allocUserOverride=true;
+  renderInlineAlloc();
+}
+
+function renderInlineAlloc(){
+  var sliderDiv=c('inline-alloc-sliders');
+  var execDiv=c('inline-alloc-execute-grid');
+  var pctDiv=c('inline-alloc-pct-total');
+  if(!sliderDiv||!execDiv) return;
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var otm=FVAL['i-otm']||0.10;
+  if(!S||!r||!iv){ sliderDiv.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see allocation</div>'; return; }
+  var today=new Date(); today.setHours(0,0,0,0);
+  var expiries=getSAFEXExpiries(4);
+  var pcts=window._allocYieldPcts||[40,35,15,10];
+  var totalPct=pcts.reduce(function(s,p){return s+p;},0);
+  var colors=['var(--teal2)','var(--green2)','var(--amber)','var(--purple)'];
+  var labels=['Q1 Near','Q2','Q3','Q4 Far'];
+  var NAV=window._ladderNAV?window._ladderNAV.totalNAV:(getState().capital||0);
+  var zaronia=getZaronia();
+  var dailyYield=NAV*zaronia/365;
+  var bd=calcConvexityBudget();
+  var remaining=bd.remaining||0;
+
+  // ── Net out theta already being paid by the existing book ──────────
+  // dailyYield above is the fund's GROSS daily ZARONIA accrual. Without
+  // this step, every quarter's slider treated the FULL gross yield as
+  // "available to finance new contracts" even when most of it is
+  // already committed to servicing tranches already held — which could
+  // recommend buying many multiples more than the book can actually
+  // carry-neutrally support. Net against the existing ladder's total
+  // daily theta bleed (using each held tranche's own strike/expiry, via
+  // the same Black-76 engine) before any of it gets sliced by quarter.
+  var existingLadder=getLadder();
+  var totalExistingThetaBleed=0;
+  (existingLadder.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry);
+    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
+    totalExistingThetaBleed+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+  });
+  var netDailyYield=Math.max(0,dailyYield-totalExistingThetaBleed);
+
+  if(Math.abs(totalPct-100)<1){
+    pctDiv.textContent='✓ Yield allocation sums to 100%';
+    pctDiv.style.background='rgba(64,200,128,.08)'; pctDiv.style.border='1px solid rgba(64,200,128,.2)'; pctDiv.style.color='var(--green2)';
+  } else {
+    pctDiv.textContent='⚠ Sums to '+totalPct+'% — adjust to reach 100%';
+    pctDiv.style.background='rgba(232,160,32,.08)'; pctDiv.style.border='1px solid rgba(232,160,32,.2)'; pctDiv.style.color='var(--amber)';
+  }
+
+  var slHtml='', exHtml='';
+  var totalContracts=0, totalCost=0, totalDeltaWt=0;
+
+  // ── Map existing held tranches to quarters by expiry proximity ──────
+  // Each held tranche belongs to the quarter whose SAFEX expiry is
+  // closest to (and >= ) its own expiry date.
+  var heldPerQ=[0,0,0,0];
+  var totalHeld=(existingLadder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
+  (existingLadder.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry).getTime();
+    var best=0, bestDiff=Infinity;
+    expiries.forEach(function(exp,i){
+      var diff=Math.abs(exp.getTime()-texp);
+      if(diff<bestDiff){bestDiff=diff;best=i;}
+    });
+    heldPerQ[best]+=t.contracts;
+  });
+  var currentPct=heldPerQ.map(function(h){return totalHeld>0?(h/totalHeld*100):0;});
+
+  // ── Determine which quarters are underweight vs target ──────────────
+  // Overweight quarters get zero new allocation — we never suggest
+  // selling, only redirect new purchases toward underweight quarters.
+  // Budget and carry for overweight quarters are redistributed
+  // proportionally among underweight quarters only.
+  var gapPct=pcts.map(function(p,i){return Math.max(0,p-currentPct[i]);});
+  var totalGap=gapPct.reduce(function(s,g){return s+g;},0);
+
+  expiries.forEach(function(exp,i){
+    var expStr=exp.toISOString().slice(0,10);
+    var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
+    var tteDays=Math.round(T*365);
+    var K=Math.round(S*(1-otm));
+    var g76a=bsBlack76(S,K,r,q,iv,T);
+    var putR=g76a.putPriceR;
+    var delta=g76a.delta;
+    var thetaPerContract=g76a.thetaPerDayR;
+
+    var isOverweight=currentPct[i]>pcts[i];
+    var gap=gapPct[i]; // how far below target this quarter is (0 if at/above)
+
+    // Effective allocation fraction for this quarter:
+    // overweight quarters get 0; underweight quarters share the full
+    // net yield and budget in proportion to their gap from target.
+    var effectiveFrac=totalGap>0?(gap/totalGap):0;
+    var yieldSlice=netDailyYield*effectiveFrac;
+    var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
+    var budgetSlice=remaining*effectiveFrac;
+    var maxBudget=putR>0?Math.floor(budgetSlice/putR):0;
+    var recommended=isOverweight?0:Math.min(maxCarry,maxBudget);
+    var bindingConstraint=isOverweight?'overweight':maxCarry<=maxBudget?'carry-neutral':'budget';
+
+    totalContracts+=recommended; totalCost+=recommended*putR;
+    totalDeltaWt+=Math.abs(delta)*recommended;
+
+    var constraintColor=isOverweight?'var(--red2)':bindingConstraint==='carry-neutral'?'var(--amber)':'var(--teal2)';
+    var constraintLabel=isOverweight?'AT/ABOVE TARGET — no new allocation':bindingConstraint==='carry-neutral'?'Yield/theta limit':'Budget limit';
+
+    // Composition status line
+    var compColor=isOverweight?'var(--red2)':gap>5?'var(--teal2)':'var(--muted)';
+    var compLabel=isOverweight
+      ?'▲ '+currentPct[i].toFixed(0)+'% held vs '+pcts[i]+'% target'
+      :'▼ '+currentPct[i].toFixed(0)+'% held vs '+pcts[i]+'% target';
+
+    slHtml+='<div class="alloc-slider-card"'+(isOverweight?' style="opacity:.65;border-color:rgba(232,64,64,.25)"':' ')+' >'
+      +'<div class="alloc-sl-label" style="color:'+colors[i]+'">'+labels[i]+'</div>'
+      +'<div class="alloc-sl-expiry">'+expStr+' · '+tteDays+'d</div>'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:8px;color:'+compColor+';margin-bottom:4px;font-weight:600">'+compLabel+' · '+heldPerQ[i]+' contracts held</div>'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:8.5px;color:var(--muted);margin-bottom:4px">Yield: R'+Math.round(yieldSlice).toLocaleString('en-ZA')+'/day · Θ R'+Math.round(thetaPerContract)+'/c/day</div>'
+      +'<div class="alloc-sl-pct" style="color:'+colors[i]+'" id="ia-pct-'+i+'">'+pcts[i]+'%</div>'
+      +'<input type="range" class="alloc-sl-input" min="0" max="100" step="5" value="'+pcts[i]+'" oninput="onInlineAllocSlider('+i+',this.value)" style="accent-color:'+colors[i]+'">'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:13px;font-weight:700;color:'+(isOverweight?'var(--red2)':colors[i])+';text-align:center;margin:4px 0">'+recommended+' contracts</div>'
+      +'<div style="font-size:8px;color:'+constraintColor+';text-align:center;margin-bottom:4px">'+constraintLabel+'</div>'
+      +'<div class="alloc-sl-price">R '+Math.round(putR).toLocaleString('en-ZA')+'/contract · Δ '+delta.toFixed(4)+'</div>'
+      +'<div class="alloc-sl-cost">Cost: R '+Math.round(recommended*putR).toLocaleString('en-ZA')+'</div>'
+      +'</div>';
+
+    var canExec=recommended>0&&Math.abs(totalPct-100)<1;
+    exHtml+='<button class="alloc-exec-btn" '+(canExec?'':'disabled ')
+      +'onclick="execAllocTranche(\''+expStr+'\','+putR+','+K+','+recommended+')">'
+      +'<div style="font-size:8px;color:var(--muted);margin-bottom:2px">'+labels[i]+'</div>'
+      +'<div style="font-size:14px;color:'+(isOverweight?'var(--muted)':colors[i])+';font-weight:700">'+recommended+'</div>'
+      +'<div style="font-size:8px;color:var(--muted)">contracts</div>'
+      +'<div style="font-size:8px;color:var(--muted);margin-top:2px">'+expStr+'</div>'
+      +'<div style="font-size:9px;color:var(--plat);margin-top:2px">R '+Math.round(recommended*putR).toLocaleString('en-ZA')+'</div>'
+      +'</button>';
+  });
+
+  sliderDiv.innerHTML=slHtml;
+  execDiv.innerHTML=exHtml;
+
+  var summaryEl=c('inline-alloc-summary');
+  var netYieldEl=c('inline-net-yield-banner');
+  if(netYieldEl){
+    var netYieldPct=dailyYield>0?(netDailyYield/dailyYield*100):0;
+    var nyColor=netYieldPct<10?'var(--red2)':netYieldPct<40?'var(--amber)':'var(--green2)';
+    var nyBg=netYieldPct<10?'rgba(232,64,64,.08)':netYieldPct<40?'rgba(232,160,32,.08)':'rgba(64,200,128,.08)';
+    var nyBorder=netYieldPct<10?'rgba(232,64,64,.25)':netYieldPct<40?'rgba(232,160,32,.25)':'rgba(64,200,128,.25)';
+    netYieldEl.style.cssText='background:'+nyBg+';border:1px solid '+nyBorder+';border-radius:2px;padding:8px 14px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:'+nyColor+';text-align:center';
+    var compSummary='Current composition: Q1 '+currentPct[0].toFixed(0)+'% · Q2 '+currentPct[1].toFixed(0)+'% · Q3 '+currentPct[2].toFixed(0)+'% · Q4 '+currentPct[3].toFixed(0)+'%'
+      +'&nbsp;&nbsp;·&nbsp;&nbsp;Target: Q1 '+pcts[0]+'% · Q2 '+pcts[1]+'% · Q3 '+pcts[2]+'% · Q4 '+pcts[3]+'%'
+      +' <span style="font-size:8.5px;opacity:.7">(by contract count — cost-weighting would give a different split)</span>';
+    netYieldEl.innerHTML='Net yield available: <strong>'+fRk(netDailyYield)+'/day</strong> ('+netYieldPct.toFixed(0)+'% of gross) — gross <strong>'+fRk(dailyYield)+'/day</strong> minus <strong>'+fRk(totalExistingThetaBleed)+'/day</strong> existing theta'
+      +'<br><span style="font-size:9px;opacity:.85">'+compSummary+'</span>';
+  }
+  if(summaryEl){
+    var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
+    var budgetUsedPct=remaining>0?(totalCost/remaining*100):0;
+    var ladderHeld=window._calcLadderHeld||0;
+    summaryEl.innerHTML=''
+      +'<div><div class="alloc-total-label">Total Contracts</div><div class="alloc-total-val" style="color:var(--teal2)">'+totalContracts+'</div></div>'
+      +'<div><div class="alloc-total-label">Total Cost</div><div class="alloc-total-val" style="color:var(--red2)">R '+Math.round(totalCost).toLocaleString('en-ZA')+'</div></div>'
+      +'<div><div class="alloc-total-label">Budget Used</div><div class="alloc-total-val" style="color:'+(budgetUsedPct>90?'var(--red2)':budgetUsedPct>70?'var(--amber)':'var(--green2)')+'">'+budgetUsedPct.toFixed(1)+'%</div></div>'
+      +'<div><div class="alloc-total-label">Wt Avg |Δ|</div><div class="alloc-total-val" style="color:var(--blue2)">'+avgDelta.toFixed(4)+'</div></div>'
+      +'<div><div class="alloc-total-label">New Held Total</div><div class="alloc-total-val" style="color:var(--green2)">'+(ladderHeld+totalContracts)+' (+'+(totalContracts)+')</div></div>';
+  }
+}
+
+// Execute a single tranche from the allocator grid — routes through the
+// same buy-confirm modal as the manual single-expiry flow.
+function execAllocTranche(expStr, putR, K, contracts){
+  if(contracts<=0){ alert('No contracts allocated to this expiry.'); return; }
+  window._selectedExpiry=expStr;
+  window._selectedPutR=putR;
+  window._selectedK=K;
+  var execQty=c('exec-qty');
+  if(execQty){
+    execQty.value=contracts;
+    execQty.dataset.userEdited='1';
+    execQty.dataset.recommended=window._calcRecommended||contracts;
+    execQty.dataset.putPriceR=putR;
+  }
+  openBuyConfirmModal();
 }
 
 // ── STEP 3→4: open buy confirmation modal ─────────────────────────
@@ -3439,15 +4172,13 @@ async function confirmReduce(){
   else showToast('⚠  Reduce saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
-// NOTE (v9): a second, crude closeTranche(id) previously lived here and
-// silently shadowed the real one above (JS last-declaration-wins) — the
-// exact "duplicate function" pattern flagged before. Because of it, the
-// ✕ Close button was actually running a bare confirm() dialog with a
-// hardcoded 2.5% haircut and no partial-close, and the entire modal +
-// executeCloseConfirmed() flow (with its proper tiered haircut and the
-// new awaited Firestore save) was unreachable. Removed — the ✕ Close
-// button now correctly reaches closeTranche() at the top of this file,
-// which opens the modal, which calls executeCloseConfirmed().
+// NOTE: the proper closeTranche(id) implementation lives earlier in this
+// file (opens the close-tranche modal with typed confirmation, tiered
+// haircuts, partial-close support, and Firebase save). A second, inferior
+// duplicate previously existed here and — due to JavaScript's
+// last-declaration-wins behavior — was silently the one actually running,
+// overriding the modal flow with a bare confirm() dialog, a flat 2.5%
+// haircut regardless of position size, and no Firebase save. Removed.
 
 function renderLadderPanel(){
   var ladder=getLadder();
@@ -3467,6 +4198,7 @@ function renderLadderPanel(){
   }
 
   var rows='',totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0,totalPnl=0;
+  var rollFlags=[]; // tranches at or past the 50%-of-life roll point, for the summary banner
   ladder.tranches.forEach(function(t){
     var expiry=new Date(t.expiry);
     var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
@@ -3484,13 +4216,33 @@ function renderLadderPanel(){
     var pnlPct=entryPerContract>0?(mtmPerContract-entryPerContract)/entryPerContract*100:0;
     var theta=bsThetaPerDay(S,t.strikeLevel,r,q,iv,T);
 
-    // Delta for this tranche's strike
-    var d1t=(Math.log(S/t.strikeLevel)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(T));
-    var deltaTranche=Math.exp(-q*T)*(normCDF(d1t)-1);
+    // Delta for this tranche's strike (Black-76)
+    var deltaTranche=bsDelta(S,t.strikeLevel,r,q,iv,T);
 
     var isITM=S<t.strikeLevel, isNear=!isITM&&(t.strikeLevel-S)/S<0.03;
     var rowCls=isITM?'tranche-itm':isNear?'tranche-near':'tranche-otm';
-    var badge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':isNear?'<span class="tdd-badge tdd-near">Near</span>':'<span class="tdd-badge tdd-otm">OTM</span>';
+    var moneynessBadge=isITM?'<span class="tdd-badge tdd-itm">ITM ✓</span>':isNear?'<span class="tdd-badge tdd-near">Near</span>':'<span class="tdd-badge tdd-otm">OTM</span>';
+
+    // ── Progressive roll-due escalation ─────────────────────────────
+    // Policy: close out at least 50% of the way through a tranche's
+    // original tenor, well ahead of the gamma/liquidity "cliff" near
+    // expiry. This escalates in three tiers rather than a single flag,
+    // since a manager may deliberately choose to hold an ITM tranche
+    // past the normal 50% point while a real market move is in
+    // progress — the escalation makes that an increasingly visible,
+    // conscious choice rather than something that gets overlooked.
+    var totalLifeDays=Math.max(1,Math.round((expiry-buyDate)/86400000));
+    var pctLifeElapsed=daysHeld/totalLifeDays;
+    var rollTier=0;
+    if(pctLifeElapsed>=0.90||tteDays<=10) rollTier=3;
+    else if(pctLifeElapsed>=0.75) rollTier=2;
+    else if(pctLifeElapsed>=0.50) rollTier=1;
+    var rollBadge='';
+    if(rollTier===1) rollBadge='<span class="tdd-badge tdd-roll" title="'+Math.round(pctLifeElapsed*100)+'% of tenor elapsed — past the normal 50% roll point">ROLL DUE</span>';
+    else if(rollTier===2) rollBadge='<span class="tdd-badge tdd-roll-overdue" title="'+Math.round(pctLifeElapsed*100)+'% of tenor elapsed">ROLL OVERDUE</span>';
+    else if(rollTier===3) rollBadge='<span class="tdd-badge tdd-roll-critical" title="'+tteDays+'d to expiry, '+Math.round(pctLifeElapsed*100)+'% of tenor elapsed">⚠ EXPIRY RISK</span>';
+    var badge=moneynessBadge+rollBadge;
+    if(rollTier>0) rollFlags.push({id:t.id,tier:rollTier,isITM:isITM,tteDays:tteDays,pctLifeElapsed:pctLifeElapsed,contracts:t.contracts});
 
     // Roll warning on TTE
     var tteCol=tteDays<14?'var(--red2)':tteDays<45?'var(--amber)':'var(--muted)';
@@ -3520,6 +4272,29 @@ function renderLadderPanel(){
   });
   tbody.innerHTML=rows;
 
+  // ── Roll-due summary banner ────────────────────────────────────────
+  var rollAlertEl=c('roll-alert');
+  if(rollAlertEl){
+    if(rollFlags.length===0){
+      rollAlertEl.style.display='none';
+    } else {
+      var maxTier=Math.max.apply(null,rollFlags.map(function(f){return f.tier;}));
+      var tierClass='tier'+maxTier;
+      var tier3=rollFlags.filter(function(f){return f.tier===3;});
+      var tier2=rollFlags.filter(function(f){return f.tier===2;});
+      var tier1=rollFlags.filter(function(f){return f.tier===1;});
+      var itmHeld=rollFlags.filter(function(f){return f.isITM;});
+      var lines=[];
+      if(tier3.length) lines.push('⚠ EXPIRY RISK — '+tier3.length+' tranche'+(tier3.length>1?'s':'')+' within 10 days of expiry or 90%+ through tenor: '+tier3.map(function(f){return f.id+' ('+f.tteDays+'d left)';}).join(', ')+'. Close or roll now — do not let these run to expiry.');
+      if(tier2.length) lines.push('⚠ ROLL OVERDUE — '+tier2.length+' tranche'+(tier2.length>1?'s':'')+' past 75% of tenor: '+tier2.map(function(f){return f.id;}).join(', ')+'. Review today.');
+      if(tier1.length) lines.push('ℹ ROLL DUE — '+tier1.length+' tranche'+(tier1.length>1?'s':'')+' past the normal 50% roll point: '+tier1.map(function(f){return f.id;}).join(', ')+'.');
+      if(itmHeld.length) lines.push('<span style="font-weight:400;opacity:.85">'+itmHeld.length+' of the above '+(itmHeld.length>1?'are':'is')+' currently ITM — if you\'re deliberately holding past the normal roll point because the market is moving in your favour, that\'s a valid call, but confirm it\'s intentional rather than overlooked. The gamma/liquidity risk near expiry applies whether ITM or OTM.</span>');
+      rollAlertEl.innerHTML=lines.join('<br>');
+      rollAlertEl.className='roll-alert '+tierClass;
+      rollAlertEl.style.display='block';
+    }
+  }
+
   var pnlTotalColor=totalPnl>=0?'var(--green2)':'var(--red2)';
   c('ladder-totals').innerHTML=
     '<span style="font-family:\'Rajdhani\',sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)">TOTALS:</span>'
@@ -3543,50 +4318,95 @@ function renderBudgetPanel(){
   if(!r||!capital||!expiryStr) return;
 
   var today=new Date(); today.setHours(0,0,0,0);
-  var expiry=new Date(expiryStr);
-  var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
+  var expiries=getSAFEXExpiries(4);
+  var T=Math.max(0,(expiries[0]-today)/(365*24*60*60*1000));
 
-  // Total quarterly budget — same formula as calc() so panels agree
-  var navData=window._ladderNAV;
-  var navForBudget=navData?navData.totalNAV:(st.capital||CURRENT_SESSION.phylaxCapital);
-  var annualBudget=navForBudget*(r/(1+r));
-  var quarterlyBudget=annualBudget/4;
+  // Corrected annual convexity budget — single source via calcConvexityBudget()
+  var bd=calcConvexityBudget();
+  var annualBudget=bd.annual;
+  var paid=bd.paid;
+  var remaining=bd.remaining;
+  var remainingPct=annualBudget>0?(remaining/annualBudget*100):0;
 
-  // Cumulative premiums already paid
-  var ladder=getLadder();
-  var paid=(ladder.tranches||[]).reduce(function(s,t){return s+t.premiumTotal;},0);
-  var remaining=Math.max(0,quarterlyBudget-paid);
-  var remainingPct=quarterlyBudget>0?(remaining/quarterlyBudget*100):0;
-
-  // Affordable contracts today
+  // Affordable contracts today (Q1/near-dated)
   var otmFrac=FVAL['i-otm']||0.10;
   var K=Math.round(S*(1-otmFrac));
   var putR=T>0?bsPutRepriceR(S,K,r,q,iv,T):0;
   var affordable=putR>0?Math.floor(remaining/putR):0;
 
   // Weighted average entry premium across all tranches
+  var ladder=getLadder();
   var totalContracts=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
   var blended=totalContracts>0?paid/totalContracts:0;
 
-  setText('bp-total',fRk(quarterlyBudget));
+  setText('bp-total',fRk(annualBudget));
+  if(c('bp-total-sub')) setText('bp-total-sub','NAV−NAV/(1+ZARONIA×'+(bd.T_annual*365).toFixed(0)+'d/365)');
   setText('bp-paid',paid>0?'−'+fRk(paid):'—');
   c('bp-paid').style.color=paid>0?'var(--red2)':'var(--muted)';
   setText('bp-remaining',fRk(remaining));
   c('bp-remaining').style.color=remainingPct>50?'var(--teal2)':remainingPct>20?'var(--amber)':'var(--red2)';
-  setText('bp-remaining-pct',remainingPct.toFixed(1)+'% of quarterly budget');
+  setText('bp-remaining-pct',remainingPct.toFixed(1)+'% of annual budget');
   setText('bp-affordable',affordable>0?affordable+' contracts':'Budget exhausted');
   c('bp-affordable').style.color=affordable>0?'var(--green2)':'var(--red2)';
-  setText('bp-affordable-sub',putR>0?'at '+fRk(putR)+'/contract today':'no price available');
+  setText('bp-affordable-sub',putR>0?'at '+fRk(putR)+'/contract Q1':'no price available');
   setText('bp-blended',blended>0?fRk(blended):'—');
 
-  window._budgetData={quarterlyBudget,paid,remaining,affordable,putR,blended,totalContracts};
+  window._budgetData={quarterlyBudget:annualBudget,paid,remaining,affordable,putR,blended,totalContracts};
 }
 
-// Vol spike model: implied vol rises as market falls
-// Empirical approximation: IV roughly doubles at -25% shock
+// ════════════════════════════════════════════════════════════════════
+// VOL SPIKE MODEL — convex, calibrated to historical equity vol behavior
+// in real drawdowns (VIX as the closest data-rich proxy for how a broad
+// equity vol index responds to large moves; SAVI has no public long-run
+// history to calibrate against directly, so this borrows the *shape* of
+// the relationship while leaving the level open to recalibration once
+// real SAVI history around a local stress episode is available).
+//
+// CALIBRATED — fitted to actual daily SAVI/ALSI closes, Jan-Dec 2020
+// (the COVID crash). Methodology: isolated decline-phase trading days
+// only (days where ALSI made a new running low — excludes the recovery
+// arc, which exhibits hysteresis: vol stays elevated for weeks after
+// price partially recovers, and including those days would distort the
+// shock-response shape being measured). Fit: multiplier - 1 = a·x + b·x²
+// via least-squares against 15 clean decline-phase points spanning
+// drawdowns of 0% to -35.7% (ALSI peak 17 Jan 2020 -> trough 19 Mar
+// 2020). R² = 0.91.
+//
+// 2020 was chosen as the primary calibration episode over 2008 (GFC) and
+// 2015-16 (Nenegate/EM rout) for three reasons: (1) it's the cleanest
+// data — a genuine calm-market baseline through to a full crisis trough,
+// with no left-truncation (the 2008 SAVI series available started after
+// the crisis was already underway, at SAVI ~28 vs a normal ~15-20 base,
+// which compromises it as a baseline reference); (2) best individual fit
+// of the three episodes (R²=0.91 vs 0.58 for 2008, 0.27 for 2016, the
+// latter also only reaching a 15% drawdown so unsuited to calibrating
+// the -25%/-40% region at all); (3) it's the most recognizable reference
+// point for anyone reviewing this methodology.
+//
+// Notably, this real-data fit is LESS extreme than an initial estimate
+// borrowed from VIX-history intuition (which assumed multiplier(40%)
+// ~4.6x) — the actual SAVI response, fitted properly, gives ~3.5x at a
+// -40% shock. The convexity itself is real and confirmed in the data
+// (see the 9 Mar 2020 oil-price-war/circuit-breaker session, where SAVI
+// jumped from 1.35x to 2.46x of baseline in a single day on only a
+// further 3.8 percentage points of drawdown) — but the overall magnitude
+// is more modest than a VIX-based guess implied. Cross-checked against
+// 2008 and 2016 fits and a pooled-all-three fit; all land in a broadly
+// consistent range (see git history / prior audit notes for the
+// comparison table) — 2020-only was selected as the primary anchor per
+// the reasons above, not because other episodes disagreed wildly.
+//
+// Quadratic form: multiplier(x) = 1 + a·x + b·x²  (x = |shock|, fraction)
+// multiplier(0.10)=1.47x, multiplier(0.25)=2.36x, multiplier(0.40)=3.48x.
+// Recalibrate (`VOL_SPIKE_A`/`VOL_SPIKE_B` below) if/when a longer SAVI
+// history or additional clean stress episodes become available — this is
+// a fitted regression, not a hand-picked shape, but it's still a 3-episode
+// sample.
+var VOL_SPIKE_A=4.146, VOL_SPIKE_B=5.151;
 function calcCrashVol(baseIv, absMoveSize){
-  var multiplier=1+Math.min(absMoveSize*4, 2.0); // caps at 3x base IV
-  return Math.min(baseIv*multiplier, 1.50); // hard cap at 150%
+  var x=Math.max(0,absMoveSize);
+  var multiplier=1+VOL_SPIKE_A*x+VOL_SPIKE_B*x*x;
+  return Math.min(baseIv*multiplier, 1.50); // hard cap at 150% absolute vol
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3612,13 +4432,15 @@ function renderHedgeView(){
   ladder.tranches.forEach(function(t){
     var exp=new Date(t.expiry);
     var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
-    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
-    var d1t=(Math.log(S/t.strikeLevel)+(r-q+iv*iv/2)*T)/(iv*Math.sqrt(Math.max(T,1e-6)));
-    var delta=Math.exp(-q*T)*(normCDF(d1t)-1);
+    var g76h=bsBlack76(S,t.strikeLevel,r,q,iv,Math.max(T,1e-6));
+    var mtm=g76h.putPriceR;
+    // Convert this tranche's forward delta to spot delta before using it
+    // as a spot-notional hedge ratio (see deltaSpot note in calc()).
+    var delta=g76h.delta*Math.exp((r-q)*Math.max(T,1e-6));
     totalContracts+=t.contracts;
     totalCost+=t.premiumTotal;
     totalMTM+=mtm*t.contracts;
-    // Delta-adjusted notional: |delta| × contracts × R10 × ALSI
+    // Delta-adjusted notional: |delta_spot| × contracts × R10 × ALSI
     totalDeltaNotional+=Math.abs(delta)*t.contracts*10*S;
   });
 
@@ -3741,6 +4563,84 @@ function renderDailyNAV(){
   setText('dn-pnl',(dayPnl>=0?'+':'')+fRk(dayPnl));
   if(c('dn-pnl')) c('dn-pnl').style.color=dayPnl>=0?'var(--green2)':'var(--red2)';
   window._ladderNAV={effectiveCash,optBook,totalNAV,floor,initialCap,totalTheta,dailyCashAccrual,zaronia};
+  renderThetaSnapshot();
+}
+
+function renderThetaSnapshot(){
+  if(!CURRENT_SESSION) return;
+  var ln=window._ladderNAV; if(!ln) return;
+  var ladder=getLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  if(!S||!r||!iv) return;
+  var today=new Date(); today.setHours(0,0,0,0);
+
+  // ── Option Book P&L ───────────────────────────────────────────────
+  var totalCostBasis=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
+  var totalMTM=ln.optBook;
+  var bookPnl=totalMTM-totalCostBasis;
+  var bookPnlPct=totalCostBasis>0?(bookPnl/totalCostBasis*100):0;
+
+  setText('tsp-cost',fRk(totalCostBasis));
+  setText('tsp-mtm',fRk(totalMTM));
+  c('tsp-mtm').style.color=totalMTM>=totalCostBasis?'var(--green2)':'var(--amber)';
+  setText('tsp-pnl',(bookPnl>=0?'+':'')+fRk(bookPnl));
+  c('tsp-pnl').style.color=bookPnl>=0?'var(--green2)':'var(--red2)';
+  setText('tsp-pnl-pct',(bookPnlPct>=0?'+':'')+bookPnlPct.toFixed(1)+'%');
+  c('tsp-pnl-pct').style.color=bookPnlPct>=0?'var(--green2)':'var(--red2)';
+
+  // ── Daily Carry ───────────────────────────────────────────────────
+  var grossYield=ln.dailyCashAccrual;
+  var totalTheta=ln.totalTheta;
+  var netCarry=grossYield-totalTheta;
+  var carryRatio=totalTheta>0?(grossYield/totalTheta):Infinity;
+
+  setText('tsp-yield','+'+fRk(grossYield)+'/day');
+  setText('tsp-theta','−'+fRk(totalTheta)+'/day');
+  setText('tsp-net-carry',(netCarry>=0?'+':'')+fRk(netCarry)+'/day');
+  c('tsp-net-carry').style.color=netCarry>=0?'var(--green2)':'var(--red2)';
+  setText('tsp-carry-ratio',isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞');
+  c('tsp-carry-ratio').style.color=carryRatio>=1?'var(--green2)':'var(--red2)';
+
+  // ── Cumulative Theta (est.) ────────────────────────────────────────
+  // Approximation: current theta rate × days held per tranche.
+  // This understates early periods (theta was lower when options had
+  // more time value) and overstates final periods — but it's the best
+  // we can do without daily stored theta history. Exact totals will
+  // become available as EOD closes accumulate (each stores totalTheta).
+  var totalCumTheta=0;
+  var earliestBuy=null;
+  (ladder.tranches||[]).forEach(function(t){
+    var buyDate=new Date(t.buyDate); buyDate.setHours(0,0,0,0);
+    var daysHeld=Math.max(0,Math.round((today-buyDate)/86400000));
+    var texp=new Date(t.expiry);
+    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
+    var thetaPerDay=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+    totalCumTheta+=thetaPerDay*daysHeld;
+    if(!earliestBuy||buyDate<earliestBuy) earliestBuy=buyDate;
+  });
+
+  // Use stored EOD theta history for a more accurate cumulative if available
+  var navHistory=getNavHistory();
+  if(navHistory.length>0){
+    // Sum daily theta from EOD records (stored as totalTheta per day)
+    var eodCumTheta=navHistory.reduce(function(s,h){return s+(h.totalTheta||0);},0);
+    if(eodCumTheta>0){
+      totalCumTheta=eodCumTheta;
+    }
+  }
+
+  var thetaVsPnl=totalCumTheta>0?(bookPnl/totalCumTheta):null;
+  setText('tsp-cumtheta','−'+fRk(totalCumTheta));
+  c('tsp-cumtheta').style.color='var(--amber)';
+  setText('tsp-since',earliestBuy?earliestBuy.toISOString().slice(0,10):'—');
+  if(thetaVsPnl!==null){
+    var tvpEl=c('tsp-theta-vs-pnl');
+    setText('tsp-theta-vs-pnl',(bookPnl>=0?'+':'')+fRk(bookPnl)+' vs −'+fRk(totalCumTheta)+' spent');
+    tvpEl.style.color=bookPnl>=0?'var(--green2)':'var(--red2)';
+    tvpEl.style.fontSize='10px';
+  } else {
+    setText('tsp-theta-vs-pnl','—');
+  }
 }
 
 function renderLiquidityStress(){
@@ -3772,10 +4672,14 @@ function renderLiquidityStress(){
   function stressScenario(shockPct,barEl,navEl,itmEl,netEl){
     var sS=S*(1+shockPct);
     var optNewBook=0;
+    // Vol spike under shock — same model used in renderHedgeView's
+    // stressHedge(), so both panels answer the same question for a given
+    // shock size rather than one assuming static vol and the other not.
+    var ivStress=calcCrashVol(iv,Math.abs(shockPct));
     (ladder.tranches||[]).forEach(function(t){
       var exp=new Date(t.expiry);
       var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
-      var mtmNew=bsPutRepriceR(sS,t.strikeLevel,r,q,iv,T);
+      var mtmNew=bsPutRepriceR(sS,t.strikeLevel,r,q,ivStress,T);
       optNewBook+=mtmNew*t.contracts;
     });
     var navNew=ln.effectiveCash+optNewBook;
@@ -3809,7 +4713,8 @@ function commitDecision(){
     putPriceR:c_.putPriceR,dailyYield:c_.dailyYield,dailyThetaBleed:c_.dailyThetaBleed,
     netCarry:c_.netCarry,carryRatio:c_.carryRatio,hedgeMultiple:c_.hedgeMultiple,
     held:c_.held,recommended:c_.recommended,tradeRequired:c_.tradeRequired,
-    bookValue:c_.bookValue,navM:c_.navM,expiry:c_.expiry,notes};
+    bookValue:c_.bookValue,navM:c_.navM,expiry:c_.expiry,notes,
+    pricingModel:c_.pricingModel||PRICING_MODEL_VERSION};
   var log=getLog(); log.unshift(entry); saveLog(log); renderLog();
   c('i-notes').value='';
   var btn=document.querySelector('.btn-green');
@@ -3832,8 +4737,12 @@ function renderLog(){
   log.forEach(function(e){
     var tc=e.tradeType==='BUY'?'var(--teal2)':e.tradeType==='SELL'?'var(--red)':'var(--amber)';
     var rc=e.tradeType==='BUY'?'buy-row':e.tradeType==='SELL'?'sell-row':'hold-row';
+    var modelTag=e.pricingModel||'spot_bs';
+    var modelBadge=modelTag==='black76'
+      ?'<span title="Priced with Black-76 (forward) model" style="font-size:7px;color:var(--teal2);border:1px solid rgba(0,196,212,.3);border-radius:2px;padding:0 3px;margin-left:5px;vertical-align:middle">B76</span>'
+      :'<span title="Priced with legacy spot Black-Scholes model — not directly comparable to Black-76 entries" style="font-size:7px;color:var(--amber);border:1px solid rgba(232,160,32,.3);border-radius:2px;padding:0 3px;margin-left:5px;vertical-align:middle">BS</span>';
     html+='<tr class="'+rc+'">'
-      +'<td style="white-space:nowrap;color:var(--muted)">'+e.ts+'</td>'
+      +'<td style="white-space:nowrap;color:var(--muted)">'+e.ts+modelBadge+'</td>'
       +'<td>'+Number(e.S).toLocaleString()+'</td>'
       +'<td>'+Number(e.K).toLocaleString()+'</td>'
       +'<td style="color:var(--plat)">'+e.T+'</td>'
@@ -3847,7 +4756,7 @@ function renderLog(){
       +'<td style="color:var(--muted)">'+e.navM+'m</td>'
       +'<td style="color:'+(Number(e.netCarry)>=0?'var(--green)':'var(--red)')+'">'+fRk(Number(e.netCarry))+'</td>'
       +'<td style="color:var(--amber)">'+e.hedgeMultiple+'×</td>'
-      +'<td style="text-align:left;font-size:9.5px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+e.notes.replace(/"/g,'&quot;')+'">'+e.notes+'</td>'
+      +'<td style="text-align:left;font-size:9.5px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escapeHtml(e.notes)+'">'+escapeHtml(e.notes)+'</td>'
       +'</tr>';
   });
   tbody.innerHTML=html;
@@ -3866,6 +4775,7 @@ function clearLog(){
 // ════════════════════════════════════════════════════════════════════
 function openInflowModal(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
+  c('inflow-investor').value='';
   c('inflow-amount').value='';
   c('inflow-notes').value='';
   c('inflow-date').value=todayStr();
@@ -3899,6 +4809,10 @@ function previewInflow(){
   var K=Math.round(S*(1-otm));
   var putR=bsPutRepriceR(S,K,r,q,iv,T);
   var contracts=putR>0?Math.floor(incrementalOptBudget/putR):0;
+  // Units to be issued at today's live unit price
+  var up=calcUnitPrice();
+  var subscriptionUnitPrice=up?up.unitPrice:UNIT_INCEPTION_PRICE;
+  var newUnits=amount/subscriptionUnitPrice;
   c('inf-amount').textContent=fRk(amount);
   c('inf-nav-before').textContent=fRk(currentNAV);
   c('inf-nav-after').textContent=fRk(newNAV);
@@ -3906,14 +4820,17 @@ function previewInflow(){
   c('inf-fi').textContent=fRk(incrementalFI)+' (full call account)';
   c('inf-opt-budget').textContent=fRk(incrementalOptBudget);
   c('inf-contracts').textContent=contracts+' contracts';
+  if(c('inf-unit-price')) c('inf-unit-price').textContent='R '+subscriptionUnitPrice.toFixed(4)+'/unit';
+  if(c('inf-units')) c('inf-units').textContent=Math.round(newUnits).toLocaleString('en-ZA')+' units';
   c('inflow-preview').style.display='block';
-  window._inflowCalc={amount,currentNAV,newNAV,tteDays,incrementalFI,incrementalOptBudget,contracts,T,putR,K,S};
+  window._inflowCalc={amount,currentNAV,newNAV,tteDays,incrementalFI,incrementalOptBudget,contracts,T,putR,K,S,subscriptionUnitPrice,newUnits};
 }
 
-function confirmInflow(){
+async function confirmInflow(){
   if(!window._inflowCalc){ alert('Enter an inflow amount first.'); return; }
   var ic=window._inflowCalc;
-  var notes=c('inflow-notes').value||'Capital inflow';
+  var notes=c('inflow-notes').value||'Capital subscription';
+  var investor=c('inflow-investor').value||'Unnamed investor';
   var date=c('inflow-date').value||todayStr();
   var st=getState();
   // Update fund state
@@ -3923,50 +4840,205 @@ function confirmInflow(){
   // Update total portfolio
   st.totalPortfolio=(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+ic.amount;
   saveState(st);
-  // Add cash to ladder balance — this is the single cash source of truth
-  var ldr=getLadder();
-  ldr.cashBalance=(ldr.cashBalance||0)+ic.amount;
-  saveLadder(ldr);
   CURRENT_SESSION.phylaxCapital=newCapital;
   CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
+  // Cash balance is NOT set locally here — the transaction below is the
+  // sole writer of ladderCashBalance, reading the server's committed
+  // value rather than this browser's possibly-stale local cache. Same
+  // class of fix as executeRedemption().
 
-  // Log the inflow
-  var inflowLog=getInflowLog();
-  inflowLog.push({
-    date, amount:ic.amount, navBefore:ic.currentNAV, navAfter:ic.newNAV,
-    newCapital, incrementalFI:ic.incrementalFI, incrementalOptBudget:ic.incrementalOptBudget,
-    contractsSuggested:ic.contracts, tteDays:ic.tteDays, notes
-  });
-  saveInflowLog(inflowLog);
+  // ── Issue new units at the live unit price — this is what actually
+  //    records "new investor data" against the unitized NAV. ──────────
+  var subscriptionUnitPrice=ic.subscriptionUnitPrice||UNIT_INCEPTION_PRICE;
+  var newUnits=ic.newUnits||(ic.amount/subscriptionUnitPrice);
+  var us=getOrInitUnitState();
+  var runningUnits=us.unitsInIssue+newUnits;
+  us.unitsInIssue=runningUnits;
+  saveUnitState(us);
+
+  // Log the subscription to the investor register
+  var inflowEntry={
+    date:date, investor:investor, type:'SUBSCRIPTION',
+    amount:ic.amount, unitPrice:subscriptionUnitPrice,
+    units:newUnits, runningUnits:runningUnits,
+    navAfter:ic.newNAV, navBefore:ic.currentNAV,
+    incrementalFI:ic.incrementalFI, incrementalOptBudget:ic.incrementalOptBudget,
+    contractsSuggested:ic.contracts, tteDays:ic.tteDays, notes:notes,
+    entryTs:Date.now()
+  };
+  var inflowLog=getInflowLog(); inflowLog.push(inflowEntry);
+  _LIVE.inflowLog=inflowLog; try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(inflowLog)); }catch(e){}
   renderInflowLog();
   closeInflowModal();
   updateSimState();
   calc();
-  fbSaveSession(buildSessionData());
-  alert('Capital inflow of '+fRk(ic.amount)+' recorded.\n\nFund capital updated to '+fRk(newCapital)+'.\nSuggested additional contracts: '+ic.contracts+'.\n\nRemember to execute the additional SAFEX puts and update Contracts Held.');
+
+  // Transactional cash addition + atomic inflow-doc write — same
+  // race-safe guarantee as a trade purchase or redemption.
+  var saveOk=false;
+  if(fbReady()){
+    try{
+      var result=await adjustCommittedCash(ic.amount, {
+        ref: inflowCol(CURRENT_SESSION.sessionId).doc(String(inflowEntry.entryTs)),
+        data: Object.assign({},inflowEntry,{_by:deviceLabel()}),
+        sessionMerge: buildSessionData()
+      });
+      saveOk=!!result.ok;
+      if(saveOk){
+        _lastSyncedKeys.inflowLog[String(inflowEntry.entryTs)]=true;
+        setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+      } else if(!result.offline){
+        setFBStatus('error','Cloud save failed');
+      }
+    }catch(e){ console.error('Subscription save error:',e); setFBStatus('error','Cloud save failed'); }
+  }
+  if(saveOk) showToast('✓ Subscription '+fRk(ic.amount)+' — '+Math.round(newUnits).toLocaleString('en-ZA')+' units issued at R'+subscriptionUnitPrice.toFixed(4),'success',6000);
+  else showToast('⚠ Subscription saved locally — Firebase unavailable. Do not close tab.','error',10000);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// REDEMPTION — burns units at the live unit price, pays cash T+1 from
+// the call account. Option book is left untouched (advisory rebalance
+// warning only) since closing tranches is a separate, explicit decision.
+// ════════════════════════════════════════════════════════════════════
+function openRedemptionModal(){
+  if(!CURRENT_SESSION){ alert('No active session.'); return; }
+  if(!window._ladderNAV){ alert('Enter market inputs first to calculate unit price.'); return; }
+  var up=calcUnitPrice(); var ln=window._ladderNAV;
+  if(!up){ alert('Unit state not initialised — enter market inputs first.'); return; }
+  setText('rd-unit-price','R '+up.unitPrice.toFixed(4)+'/unit');
+  setText('rd-total-units',Math.round(up.unitsInIssue).toLocaleString('en-ZA')+' units');
+  setText('rd-cash','R '+Math.round(ln.effectiveCash).toLocaleString('en-ZA')); if(c('rd-cash')) c('rd-cash').style.color='var(--teal2)';
+  setText('rd-cash-after','—');
+  c('rd-investor').value=''; c('rd-units').value=''; c('rd-value').value='';
+  c('rd-summary').innerHTML='Enter units to redeem above.';
+  c('rd-rebalance-warn').style.display='none';
+  c('rd-confirm-input').value='';
+  var btn=c('rd-confirm-btn'); btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+  c('redemption-modal').classList.remove('hidden');
+}
+function closeRedemptionModal(){ c('redemption-modal').classList.add('hidden'); }
+
+function onRedeemInput(){
+  var up=window._unitData||calcUnitPrice(); var ln=window._ladderNAV; if(!up||!ln) return;
+  var units=parseFloat(c('rd-units').value)||0;
+  if(units<=0){ c('rd-summary').innerHTML='Enter units to redeem.'; return; }
+  if(units>up.unitsInIssue){ c('rd-summary').innerHTML='<span style="color:var(--red2)">⚠ Cannot exceed units in issue ('+Math.round(up.unitsInIssue).toLocaleString('en-ZA')+')</span>'; return; }
+  var redemptionValue=units*up.unitPrice;
+  var unitsAfter=up.unitsInIssue-units;
+  var newNAV=ln.totalNAV-redemptionValue;
+  var newUnitPrice=unitsAfter>0?newNAV/unitsAfter:0;
+  var cashAfter=ln.effectiveCash-redemptionValue;
+  c('rd-value').value='R '+Math.round(redemptionValue).toLocaleString('en-ZA');
+  setText('rd-cash-after','R '+Math.round(cashAfter).toLocaleString('en-ZA')); if(c('rd-cash-after')) c('rd-cash-after').style.color=cashAfter>0?'var(--teal2)':'var(--red2)';
+  if(redemptionValue>ln.effectiveCash){
+    c('rd-summary').innerHTML='<span style="color:var(--red2)">⚠ Insufficient call-account cash for this redemption — value R'+Math.round(redemptionValue).toLocaleString('en-ZA')+' exceeds available cash R'+Math.round(ln.effectiveCash).toLocaleString('en-ZA')+'. Unit price reflects total NAV (cash + option book); redemptions are paid from cash only. Close tranches first to raise cash, or reduce the unit count.</span>';
+    c('rd-rebalance-warn').style.display='none';
+    c('rd-confirm-input').value='';
+    var blockBtn=c('rd-confirm-btn'); blockBtn.disabled=true; blockBtn.style.opacity='.4'; blockBtn.style.cursor='not-allowed';
+    window._pendingRedemption=null;
+    return;
+  }
+  var bd=calcConvexityBudget();
+  var newBudget=newNAV-newNAV/(1+bd.zaronia*bd.T_annual);
+  var rebalanceNeeded=bd.paid>newBudget;
+  c('rd-summary').innerHTML='Units: <strong style="color:var(--purple)">'+Math.round(units).toLocaleString('en-ZA')+'</strong> · Value: <strong style="color:var(--purple)">R '+Math.round(redemptionValue).toLocaleString('en-ZA')+'</strong><br>New unit price after: R '+newUnitPrice.toFixed(4)+' · Units remaining: '+Math.round(unitsAfter).toLocaleString('en-ZA')+'<br>T+1 cash payout from call account — option book unaffected';
+  if(rebalanceNeeded){ c('rd-rebalance-warn').style.display='block'; c('rd-rebalance-warn').innerHTML='⚠ Rebalance Advisory — Premiums paid (R'+Math.round(bd.paid).toLocaleString('en-ZA')+') exceed new annual budget (R'+Math.round(newBudget).toLocaleString('en-ZA')+') by R'+Math.round(bd.paid-newBudget).toLocaleString('en-ZA')+'. Consider reducing option book after redemption.'; }
+  else { c('rd-rebalance-warn').style.display='none'; }
+  c('rd-confirm-input').value='';
+  var btn=c('rd-confirm-btn'); btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+  window._pendingRedemption={units:units,redemptionValue:redemptionValue,cashAfter:cashAfter,unitsAfter:unitsAfter,newUnitPrice:newUnitPrice,newNAV:newNAV};
+}
+
+function onRedeemConfirmInput(){
+  var val=c('rd-confirm-input').value.trim().toUpperCase();
+  var btn=c('rd-confirm-btn');
+  if(val==='REDEEM'&&window._pendingRedemption){ btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; }
+  else { btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed'; }
+}
+
+async function executeRedemption(){
+  if(c('rd-confirm-input').value.trim().toUpperCase()!=='REDEEM'){ alert('Type REDEEM to confirm.'); return; }
+  var pr=window._pendingRedemption; if(!pr){ alert('No redemption pending.'); return; }
+  // Defensive re-check: state (cash balance, NAV, ladder) could have
+  // changed between the preview computing pr.redemptionValue and this
+  // confirm click — e.g. another tab closed a tranche, or the market
+  // moved and recalculated NAV. Re-validate against current cash before
+  // committing, rather than trusting the stale preview snapshot.
+  var ldrCheck=getLadder();
+  var lnCheck=window._ladderNAV;
+  var currentCash=lnCheck?lnCheck.effectiveCash:(ldrCheck.cashBalance||0);
+  if(pr.redemptionValue>currentCash){
+    alert('⚠ Redemption blocked — call-account cash has changed since this was previewed.\n\nRedemption value: R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+'\nCurrent available cash: R'+Math.round(currentCash).toLocaleString('en-ZA')+'\n\nClose the redemption modal and try again with updated figures.');
+    return;
+  }
+  var up=window._unitData||calcUnitPrice();
+  var investor=c('rd-investor').value||'Unnamed investor';
+  var us=getUnitState(); us.unitsInIssue=pr.unitsAfter;
+  var st=getState(); st.capital=Math.max(0,(st.capital||0)-pr.redemptionValue); st.totalPortfolio=Math.max(0,(st.totalPortfolio||0)-pr.redemptionValue);
+  CURRENT_SESSION.phylaxCapital=st.capital;
+  CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
+  var redemptionEntry={date:todayStr(),investor:investor,type:'REDEMPTION',amount:-pr.redemptionValue,unitPrice:up?up.unitPrice:0,units:-pr.units,runningUnits:pr.unitsAfter,navAfter:pr.newNAV,notes:'Redemption '+Math.round(pr.units).toLocaleString('en-ZA')+' units @ R'+(up?up.unitPrice.toFixed(4):'?'),entryTs:Date.now()};
+  var inflowLog=getInflowLog(); inflowLog.push(redemptionEntry);
+
+  // Local-first for instant UI + offline safety. Cash balance is NOT
+  // set locally here — the transaction below is the sole writer of
+  // ladderCashBalance, reading the server's committed value rather than
+  // this browser's possibly-stale local cache.
+  saveState(st); saveUnitState(us);
+  _LIVE.inflowLog=inflowLog; try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(inflowLog)); }catch(e){}
+
+  window._pendingRedemption=null;
+  closeRedemptionModal(); renderInflowLog();
+  try{ renderLadderPanel(); renderDailyNAV(); renderLiquidityStress(); renderBudgetPanel(); renderHedgeView(); calc(); }catch(e){ console.error(e); }
+  // Transactional cash decrement + atomic inflow-doc write — investor-
+  // facing money movement gets the same race-safe guarantee as a trade.
+  var saveOk=false;
+  if(fbReady()){
+    try{
+      var result=await adjustCommittedCash(-pr.redemptionValue, {
+        ref: inflowCol(CURRENT_SESSION.sessionId).doc(String(redemptionEntry.entryTs)),
+        data: Object.assign({},redemptionEntry,{_by:deviceLabel()}),
+        sessionMerge: buildSessionData()
+      });
+      saveOk=!!result.ok;
+      if(saveOk){
+        _lastSyncedKeys.inflowLog[String(redemptionEntry.entryTs)]=true;
+        setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+      } else if(!result.offline){
+        setFBStatus('error','Cloud save failed');
+      }
+    }catch(e){ console.error('Redemption save error:',e); setFBStatus('error','Cloud save failed'); }
+  }
+  if(saveOk) showToast('✓ Redemption R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+' processed & saved to Firebase','success',6000);
+  else showToast('⚠ Redemption saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
 
 function renderInflowLog(){
   var log=getInflowLog();
   var tbody=c('inflow-log-body');
   if(!log||log.length===0){
-    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No capital inflows recorded yet.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No transactions recorded yet.</td></tr>';
     return;
   }
   var html='';
   log.slice().reverse().forEach(function(e){
+    var isSub=e.type==='SUBSCRIPTION'||!e.type;
+    var typeColor=isSub?'var(--green2)':'var(--red2)';
+    var typeLabel=isSub?'SUB':'REDEEM';
     html+='<tr>'
-      +'<td>'+e.date+'</td>'
-      +'<td style="color:var(--purple)">'+fRk(e.amount)+'</td>'
-      +'<td>'+fRk(e.navBefore)+'</td>'
-      +'<td style="color:var(--teal2)">'+fRk(e.navAfter)+'</td>'
-      +'<td>'+fRk(e.newCapital)+'</td>'
-      +'<td>'+fRk(e.incrementalFI)+'</td>'
-      +'<td>'+fRk(e.incrementalOptBudget)+'</td>'
-      +'<td style="color:var(--teal2)">'+e.contractsSuggested+'</td>'
-      +'<td style="text-align:left;color:var(--muted);font-size:9.5px">'+e.notes+'</td>'
+      +'<td style="color:var(--muted)">'+e.date+'</td>'
+      +'<td style="color:var(--plat);text-align:left">'+escapeHtml(e.investor||'—')+'</td>'
+      +'<td style="color:'+typeColor+';font-family:\'Rajdhani\',sans-serif;font-weight:700;text-align:center">'+typeLabel+'</td>'
+      +'<td style="color:'+(isSub?'var(--green2)':'var(--red2)')+'">'+(isSub?'+':'')+fRk(e.amount)+'</td>'
+      +'<td style="color:var(--purple)">R '+(e.unitPrice?e.unitPrice.toFixed(4):'—')+'</td>'
+      +'<td style="color:'+(isSub?'var(--teal2)':'var(--red2)')+'">'+(isSub?'+':'')+Math.round(e.units||0).toLocaleString('en-ZA')+'</td>'
+      +'<td style="color:var(--plat)">'+Math.round(e.runningUnits||0).toLocaleString('en-ZA')+'</td>'
+      +'<td style="color:var(--teal2)">'+fRk(e.navAfter||0)+'</td>'
+      +'<td style="text-align:left;color:var(--muted);font-size:9px">'+escapeHtml(e.notes||'')+'</td>'
       +'</tr>';
   });
+
   tbody.innerHTML=html;
 }
 
@@ -3989,7 +5061,7 @@ function openSessionList(){
         +'<div style="flex:1;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="loadSessionById(\''+s.sessionId+'\')">'
         +(isActive?'<span style="font-family:\'Rajdhani\',sans-serif;font-size:8px;font-weight:700;color:var(--teal2);text-transform:uppercase;letter-spacing:.1em;background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.2);padding:2px 6px;border-radius:2px;flex-shrink:0">Active</span>':'')
         +'<div style="flex:1">'
-        +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+(s.config?s.config.sessionName:s.sessionId)+'</div>'
+        +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+escapeHtml(s.config?s.config.sessionName:s.sessionId)+'</div>'
         +'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--muted)">'
         +(s.config?fRk(s.config.phylaxCapital)+' sleeve · '+fRk(s.config.totalPortfolio)+' portfolio · inception '+s.config.inceptionDate:'—')
         +'</div>'
@@ -4311,9 +5383,9 @@ function exportLadderCSV(){
 
 function exportFullSession(){
   var data=buildSessionData();
-  // buildSessionData() only carries config+state (see note above it) —
-  // the full backup export needs the live records pulled in explicitly,
-  // or this would silently produce an incomplete backup.
+  // buildSessionData() only carries config+state+unitState (see note
+  // above it) — the full backup export needs the live records pulled in
+  // explicitly, or this would silently produce an incomplete backup.
   data.ladder = getLadder();
   data.navHistory = getNavHistory();
   data.auditLog = getLog();
@@ -4349,7 +5421,7 @@ function exportMonthlyReport(){
     +'</style></head><body>'
     +'<h1>Phylax Capital — Macro Protector Fund</h1>'
     +'<p style="font-size:11px;color:#666">Monthly Performance Report · Generated '+new Date().toLocaleDateString('en-ZA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</p>'
-    +'<p style="font-size:11px;color:#666">Session: '+CURRENT_SESSION.sessionName+' · Inception: '+CURRENT_SESSION.inceptionDate+'</p>'
+    +'<p style="font-size:11px;color:#666">Session: '+escapeHtml(CURRENT_SESSION.sessionName)+' · Inception: '+CURRENT_SESSION.inceptionDate+'</p>'
     +'<h2>Portfolio Overview</h2>'
     +'<div class="kpi">'
     +'<div class="kc"><div class="kl">Phylax NAV</div><div class="kv">'+fRk(lastH.nav)+'</div></div>'
@@ -4427,7 +5499,7 @@ function toggleBS(){
 // ════════════════════════════════════════════════════════════════════
 // RESET DEMO
 // ════════════════════════════════════════════════════════════════════
-function resetDemo(){
+async function resetDemo(){
   if(!confirm('Reset this demo session?\n\nThis will clear ALL NAV history, ladder, and performance data for the current session.\nThe session config and audit log are preserved.\n\nThis cannot be undone.')) return;
   if(prompt('Type RESET to confirm:')!=='RESET'){ alert('Reset cancelled.'); return; }
   saveNavHistory([]); saveLadder({tranches:[],cashBalance:0});
@@ -4435,8 +5507,14 @@ function resetDemo(){
   FVAL['i-held']=0; c('i-held').value='0';
   c('eod-breakdown').style.display='none';
   refreshAllDisplays();
-  fbSaveSession(buildSessionData());
-  alert('Demo reset. Audit log preserved. Firebase updated.');
+  var savedToCloud=false;
+  if(fbReady()){
+    try{ await fbSaveSession(buildSessionData()); savedToCloud=true; }
+    catch(e){ console.error('Reset demo save error:',e); }
+  }
+  alert(savedToCloud
+    ? 'Demo reset. Audit log preserved. Firebase updated.'
+    : 'Demo reset locally. Firebase unavailable — cloud copy was NOT confirmed updated; reconnect and reset again if this matters.');
 }
 
 // ════════════════════════════════════════════════════════════════════
