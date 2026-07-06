@@ -3738,17 +3738,9 @@ function renderInlineAlloc(){
   // ── Map existing held tranches to quarters by expiry proximity ──────
   // Each held tranche belongs to the quarter whose SAFEX expiry is
   // closest to (and >= ) its own expiry date.
-  var heldPerQ=[0,0,0,0];
+  var heldMap=heldPerQuarterMap();
+  var heldPerQ=expiries.map(function(exp){ return heldMap[exp.toISOString().slice(0,10)]||0; });
   var totalHeld=(existingLadder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
-  (existingLadder.tranches||[]).forEach(function(t){
-    var texp=new Date(t.expiry).getTime();
-    var best=0, bestDiff=Infinity;
-    expiries.forEach(function(exp,i){
-      var diff=Math.abs(exp.getTime()-texp);
-      if(diff<bestDiff){bestDiff=diff;best=i;}
-    });
-    heldPerQ[best]+=t.contracts;
-  });
   var currentPct=heldPerQ.map(function(h){return totalHeld>0?(h/totalHeld*100):0;});
 
   // ── Determine which quarters are underweight vs target ──────────────
