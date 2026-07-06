@@ -2821,15 +2821,30 @@ function selectExpiry(expStr, putR, K){
   window._selectedExpiry=expStr;
   window._selectedPutR=putR;
   window._selectedK=K;
+  // Keep the "official" Option Expiry field (the one calc() reads for
+  // the core recommended-contracts / budget / carry math) in lockstep
+  // with whichever tenor was just picked in the grid. Without this,
+  // the decision box keeps quoting whatever quarter i-expiry was last
+  // set to — independently of the grid — while the buy-confirm modal
+  // prices at the grid's selection. Two different tenors' economics
+  // under one number. This has no effect on renderExpiryGrid(),
+  // renderBudgetPanel(), or the multi-quarter allocator — none of them
+  // read i-expiry for their actual math, only as a readiness check.
+  var expiryField=c('i-expiry');
+  if(expiryField && expiryField.value!==expStr){
+    expiryField.value=expStr;
+    saveInputs();
+  }
   // Update exec-qty recommended based on selected expiry
   var bd=window._budgetData||{};
   var remaining=bd.remaining||0;
   var affordable=putR>0?Math.floor(remaining/putR):0;
   var execQty=c('exec-qty');
   if(!execQty.dataset.userEdited) execQty.value=Math.min(affordable, window._calcRecommended||0);
-  // Re-render grid to show new selection
-  renderExpiryGrid();
-  onExecQtyInput();
+  // Recompute against the newly-synced expiry — this refreshes the
+  // decision box, BS table, and exec-qty together, all consistent with
+  // the quarter now selected, instead of just re-rendering the grid.
+  calc();
 }
 
 // ════════════════════════════════════════════════════════════════════
