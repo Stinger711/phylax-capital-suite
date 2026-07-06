@@ -2771,7 +2771,40 @@ function getSAFEXExpiries(n){
   }
   return results;
 }
-
+// ── Shared per-quarter holdings lookup ──────────────────────────────
+// Buckets every held tranche against whichever of the 4 current SAFEX
+// quarterly expiries is nearest to that tranche's own expiry — the
+// same matching rule the multi-quarter allocator already used inline.
+// Factored out here so calc()'s single-quarter decision box and the
+// allocator can never independently disagree on this again.
+function heldPerQuarterMap(){
+  var expiries=getSAFEXExpiries(4);
+  var ladder=getLadder();
+  var map={};
+  expiries.forEach(function(exp){ map[exp.toISOString().slice(0,10)]=0; });
+  (ladder.tranches||[]).forEach(function(t){
+    var texp=new Date(t.expiry).getTime();
+    var best=0, bestDiff=Infinity;
+    expiries.forEach(function(exp,i){
+      var diff=Math.abs(exp.getTime()-texp);
+      if(diff<bestDiff){ bestDiff=diff; best=i; }
+    });
+    var key=expiries[best].toISOString().slice(0,10);
+    map[key]=(map[key]||0)+t.contracts;
+  });
+  return map;
+}
+function contractsHeldForExpiry(expiryStr){
+  var expiries=getSAFEXExpiries(4);
+  var map=heldPerQuarterMap();
+  var target=new Date(expiryStr).getTime();
+  var best=0, bestDiff=Infinity;
+  expiries.forEach(function(exp,i){
+    var diff=Math.abs(exp.getTime()-target);
+    if(diff<bestDiff){ bestDiff=diff; best=i; }
+  });
+  return map[expiries[best].toISOString().slice(0,10)]||0;
+}
 // Render the 4-expiry comparison grid in the exec panel
 function renderExpiryGrid(){
   var grid=c('expiry-grid'); if(!grid) return;
@@ -2965,18 +2998,17 @@ function calc(){
     pnlEl.style.color=pnl>=0?'var(--green2)':'var(--red2)';
   }
 
-  // Use ZARONIA for carry (call account)
+// Use ZARONIA for carry (call account)
   var zaronia=getZaronia();
   var dailyYield=NAV*zaronia/365;
   var thetaBleedPC=Math.abs(thetaD)*10;
   // Net gross yield against the existing ladder's actual theta bleed
   // (each tranche priced at its own strike/expiry) before computing how
   // many MORE contracts the truly-uncommitted yield can support. Without
-  // this, maxCarryContracts only "accidentally" looked sane via the
+  // this, the carry ceiling only "accidentally" looked sane via the
   // held-subtraction trick below — it was still built on gross yield,
   // same root cause as the multi-quarter allocator bug fixed earlier.
   var ladderForCarry=getLadder();
-  var ladderHeldForCarry=(ladderForCarry.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
   var totalExistingThetaBleedSingle=0;
   (ladderForCarry.tranches||[]).forEach(function(t){
     var texp=new Date(t.expiry);
@@ -2984,9 +3016,14 @@ function calc(){
     totalExistingThetaBleedSingle+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
   });
   var netDailyYieldSingle=Math.max(0,dailyYield-totalExistingThetaBleedSingle);
-  var maxCarryContracts=thetaBleedPC>0?(ladderHeldForCarry+Math.floor(netDailyYieldSingle/thetaBleedPC)):9999;
+  // Purely incremental — "how many MORE of this expiry can leftover net
+  // yield support" — not a total-book target. Previously this baked in
+  // the ENTIRE ladder's held count, which made "recommended" an implicit
+  // total-book target priced as if every existing tranche (across all
+  // four quarters) had been bought at THIS expiry's theta rate.
+  var maxAdditionalCarry=thetaBleedPC>0?Math.floor(netDailyYieldSingle/thetaBleedPC):9999;
 
-  // ── Unified budget: remaining after premiums already paid ──────────
+ // ── Unified budget: remaining after premiums already paid ──────────
   // Uses calcConvexityBudget() — the corrected PV-based annual formula,
   // shared with renderBudgetPanel() and renderExpiryGrid() so all three
   // panels always agree.
@@ -2996,8 +3033,15 @@ function calc(){
   var premiumsPaid=bdCalc.paid;
   var remainingBudget=bdCalc.remaining;
   var convexityBudget=remainingBudget; // keep name for BS table display
-  var budgetContracts=putPriceR>0?Math.floor(remainingBudget/putPriceR):0;
-  var recommended=Math.max(0,Math.min(budgetContracts,maxCarryContracts));
+  var budgetContracts=putPriceR>0?Math.floor(remainingBudget/putPriceR):0; // already incremental
+  // Held specifically at THIS expiry (nearest-quarter match, via the
+  // shared helper) — same bucketing the multi-quarter allocator uses,
+  // so the two panels always answer the same question instead of this
+  // one comparing a this-expiry target against the WHOLE book's count.
+  var ladderHeldThisExpiry=contractsHeldForExpiry(expiryStr);
+  var maxAdditional=Math.min(budgetContracts,maxAdditionalCarry); // may be negative if carry has deteriorated
+  var recommended=Math.max(0,ladderHeldThisExpiry+maxAdditional);
+  var maxCarryContracts=maxAdditionalCarry; // keeps existing "Max Carry-Neutral" display wired up
   var tradeRequired=recommended-held;
   var dailyThetaBleed=thetaBleedPC*held;
   var netCarry=dailyYield-dailyThetaBleed;
@@ -3011,7 +3055,6 @@ function calc(){
   var hedgeMultiple=NAV>0?(S*10*held*deltaSpot)/NAV:0;
   var bookValue=putPriceR*held;
   var daysLeft=Math.round(T*365);
-
   // Strike & TTE
   c('i-strike-show').value=fmtInt(K)+' pts';
   c('i-t-show').value=T.toFixed(4)+' yrs ('+daysLeft+' days)';
@@ -3027,26 +3070,31 @@ function calc(){
   // ── Derive held from ladder (single source of truth) ──────────────
   var ladder=getLadder();
   var ladderHeld=(ladder.tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
-  var tradeRequiredLadder=recommended-ladderHeld;
-
-  // Carry status — use ladderHeld not the stale manual held field
-  var cs=c('carry-status');
-  if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts held — carry N/A until first purchase'; }
+  // BUY/REDUCE/HOLD must compare THIS-expiry recommendation against
+  // THIS-expiry holdings — comparing it to the whole book (ladderHeld)
+  // is exactly what produced false signals once the book spans more
+  // than one SAFEX quarter. ladderHeld (total) is kept below for the
+  // portfolio-wide carry-status message, which is a genuine whole-book
+  // statement, and is still used unchanged everywhere else in calc().
+  var tradeRequiredLadder=recommended-ladderHeldThisExpiry;
+  // Carry status — use ladderHeld not the stale manual held
+var cs=c('carry-status');  
+if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts held — carry N/A until first purchase'; }
   else if(netCarry>=0){ cs.className='carry-ok'; cs.innerHTML='✓ &nbsp;Carry POSITIVE — self-financing at '+ladderHeld+' contracts ('+fRk(netCarry)+'/day net)'; }
   else { cs.className='carry-bad'; cs.innerHTML='⚠ &nbsp;Carry NEGATIVE — theta bleed exceeds yield at '+ladderHeld+' contracts. Max carry-neutral: '+maxCarryContracts; }
 
   // ── Hedge alert (overhedge / underhedge carry-forward) ─────────────
   var alertEl=c('hedge-alert');
-  if(ladderHeld>recommended){
-    var excess=ladderHeld-recommended;
+  if(ladderHeldThisExpiry>recommended){
+    var excess=ladderHeldThisExpiry-recommended;
     alertEl.className='hedge-alert overhedged';
-    alertEl.innerHTML='⚠ OVERHEDGED &nbsp;·&nbsp; Holding <strong>'+ladderHeld+'</strong> contracts vs target <strong>'+recommended+'</strong> &nbsp;·&nbsp; Excess: <strong>'+excess+'</strong> contracts'
+    alertEl.innerHTML='⚠ OVERHEDGED at '+expiryStr+' &nbsp;·&nbsp; Holding <strong>'+ladderHeldThisExpiry+'</strong> contracts vs target <strong>'+recommended+'</strong> &nbsp;·&nbsp; Excess: <strong>'+excess+'</strong> contracts'
       +'<br><span style="font-weight:400;color:var(--red2);opacity:.8">Market conditions have shifted — consider reducing. Click "Reduce Position" below to select tranches.</span>';
     alertEl.style.display='block';
-  } else if(ladderHeld<recommended && ladderHeld>0){
-    var deficit=recommended-ladderHeld;
+  } else if(ladderHeldThisExpiry<recommended && ladderHeldThisExpiry>0){
+    var deficit=recommended-ladderHeldThisExpiry;
     alertEl.className='hedge-alert underhedged';
-    alertEl.innerHTML='ℹ UNDERHEDGED &nbsp;·&nbsp; Holding <strong>'+ladderHeld+'</strong> contracts vs target <strong>'+recommended+'</strong> &nbsp;·&nbsp; Gap: <strong>'+deficit+'</strong> contracts to close';
+    alertEl.innerHTML='ℹ UNDERHEDGED at '+expiryStr+' &nbsp;·&nbsp; Holding <strong>'+ladderHeldThisExpiry+'</strong> contracts vs target <strong>'+recommended+'</strong> &nbsp;·&nbsp; Gap: <strong>'+deficit+'</strong> contracts to close';
     alertEl.style.display='block';
   } else {
     alertEl.style.display='none';
@@ -3058,7 +3106,7 @@ function calc(){
   if(tradeRequiredLadder>0){
     box.className='decision-box buy'; action.textContent='BUY'; action.style.color='var(--teal2)';
     num.textContent=tradeRequiredLadder; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
-    det.innerHTML='Increase from <strong>'+ladderHeld+'</strong> → <strong>'+recommended+'</strong><br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);
+    det.innerHTML='Increase from <strong>'+ladderHeldThisExpiry+'</strong> → <strong>'+recommended+'</strong> at '+expiryStr+'<br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);;
     execPanel.style.display='block';
     execBtn.style.display='inline-block';
     // Pre-fill with recommended gap only if user hasn't already typed something
@@ -3085,13 +3133,13 @@ function calc(){
   } else if(tradeRequiredLadder<0){
     box.className='decision-box sell'; action.textContent='REDUCE'; action.style.color='var(--red)';
     num.textContent=Math.abs(tradeRequiredLadder); num.style.color='var(--red)'; lbl.textContent='Contracts to Reduce';
-    det.innerHTML='Overhedged: holding <strong>'+ladderHeld+'</strong> vs target <strong>'+recommended+'</strong><br>Carry ratio: '+carryRatio.toFixed(2)+'× &nbsp;·&nbsp; Max carry-neutral: '+maxCarryContracts
+    det.innerHTML='Overhedged at '+expiryStr+': holding <strong>'+ladderHeldThisExpiry+'</strong> vs target <strong>'+recommended+'</strong><br>Carry ratio: '+carryRatio.toFixed(2)+'× &nbsp;·&nbsp; Max additional carry-neutral: '+maxCarryContracts
       +'<br><button onclick="openReduceModal('+Math.abs(tradeRequiredLadder)+')" style="margin-top:8px;padding:5px 14px;background:rgba(232,64,64,.15);border:1px solid rgba(232,64,64,.4);color:var(--red2);border-radius:2px;cursor:pointer;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">✕ Reduce Position</button>';
     execPanel.style.display='none';
   } else {
     box.className='decision-box hold'; action.textContent='HOLD'; action.style.color='var(--amber)';
     num.textContent='0'; num.style.color='var(--amber)'; lbl.textContent='No Trade Required';
-    det.innerHTML='Position optimal at <strong>'+ladderHeld+'</strong> contracts<br>Carry: '+(isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞')+' &nbsp;·&nbsp; HM: '+hedgeMultiple.toFixed(2)+'×<br>Monitor ALSI and SAVI daily';
+    det.innerHTML='Position optimal at <strong>'+ladderHeldThisExpiry+'</strong> contracts at '+expiryStr+'<br>Carry: '+(isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞')+' &nbsp;·&nbsp; HM: '+hedgeMultiple.toFixed(2)+'×<br>Monitor ALSI and SAVI daily';
     execPanel.style.display='none';
   }
 
