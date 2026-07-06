@@ -2331,6 +2331,22 @@ function lsKey(k){ return 'phylax_v5_'+CURRENT_SESSION.sessionId+'_'+k; }
 
 var _LIVE = { trades:{}, cashBalance:0, navHistory:[], auditLog:[], inflowLog:[], inputs:{} };
 var _LISTENERS = [];
+
+// ── Trade-sync race guard ───────────────────────────────────────────
+// A transactional write (commitNewTrade) or a diffed write (saveLadder/
+// saveLadderAwait) can be locally applied to _LIVE.trades before the
+// tradesCol().onSnapshot() listener's next callback has caught up —
+// e.g. a from-cache snapshot echo that hasn't absorbed the newest
+// commit yet. Without this, that stale snapshot wholesale-overwrites
+// _LIVE.trades and briefly "loses" a tranche that was just bought,
+// which undercounts existing holdings for anything reading getLadder()
+// in that window (the multi-quarter allocator's composition check being
+// the case that surfaced it). These two maps let the listener tell the
+// difference between "genuinely removed elsewhere" and "stale echo of
+// my own very recent write" for a few seconds, then get out of the way.
+var TRADE_SYNC_GRACE_MS = 4000;
+var _tradeWriteTimestamps = {};   // tradeId -> ms of last local optimistic write
+var _tradeTombstones = {};        // tradeId -> ms of last local optimistic removal
 var _lastSyncedKeys = { navHistory:{}, auditLog:{}, inflowLog:{} };
 
 function getState(){ try{ var v=localStorage.getItem(lsKey('state')); return v?JSON.parse(v):defaultState(); }catch(e){ return defaultState(); } }
@@ -2413,6 +2429,9 @@ function saveLadder(l){
   var changedIds = Object.keys(newMap).filter(function(id){
     return JSON.stringify(newMap[id]) !== JSON.stringify(_LIVE.trades[id]);
   });
+  var _now=Date.now();
+  changedIds.forEach(function(tid){ _tradeWriteTimestamps[tid]=_now; delete _tradeTombstones[tid]; });
+  removedIds.forEach(function(tid){ _tradeTombstones[tid]=_now; delete _tradeWriteTimestamps[tid]; });
   _LIVE.trades = newMap;
   _LIVE.cashBalance = l.cashBalance||0;
   try{ localStorage.setItem(lsKey('ladder'),JSON.stringify(l)); }catch(e){}
@@ -2440,6 +2459,9 @@ async function saveLadderAwait(l){
   var changedIds = Object.keys(newMap).filter(function(id){
     return JSON.stringify(newMap[id]) !== JSON.stringify(_LIVE.trades[id]);
   });
+  var _now=Date.now();
+  changedIds.forEach(function(tid){ _tradeWriteTimestamps[tid]=_now; delete _tradeTombstones[tid]; });
+  removedIds.forEach(function(tid){ _tradeTombstones[tid]=_now; delete _tradeWriteTimestamps[tid]; });
   _LIVE.trades = newMap;
   _LIVE.cashBalance = l.cashBalance||0;
   try{ localStorage.setItem(lsKey('ladder'),JSON.stringify(l)); }catch(e){}
@@ -2511,6 +2533,8 @@ async function commitNewTrade(tranche, spentAmount){
   ladder.tranches.push(tranche);
   ladder.cashBalance = (ladder.cashBalance||CURRENT_SESSION.phylaxCapital) - spentAmount;
   _LIVE.trades[tranche.id]=tranche;
+  _tradeWriteTimestamps[tranche.id]=Date.now();
+  delete _tradeTombstones[tranche.id];
   _LIVE.cashBalance=ladder.cashBalance;
   try{ localStorage.setItem(lsKey('ladder'),JSON.stringify(ladder)); }catch(e){}
 
@@ -2541,9 +2565,30 @@ function attachLiveListeners(sessionId){
   if(!fbReady()) return;
   try{
     _LISTENERS.push(tradesCol(sessionId).onSnapshot(function(snap){
-      var map={};
-      snap.forEach(function(d){ map[d.id]=d.data(); });
-      _LIVE.trades = map;
+      var snapMap={};
+      snap.forEach(function(d){ snapMap[d.id]=d.data(); });
+      var now=Date.now();
+      var merged=Object.assign({}, _LIVE.trades);
+      // Apply everything the snapshot confirms — unless it's showing a
+      // trade this browser just deleted a moment ago (a stale/racing
+      // echo), which we let expire naturally after the grace window.
+      Object.keys(snapMap).forEach(function(id){
+        var tombstoneAt=_tradeTombstones[id];
+        if(tombstoneAt && (now-tombstoneAt)<TRADE_SYNC_GRACE_MS) return;
+        merged[id]=snapMap[id];
+        delete _tradeTombstones[id];
+      });
+      // Remove anything the snapshot no longer lists — UNLESS this
+      // browser wrote it within the grace window, in which case a
+      // stale/from-cache snapshot echo is far more likely than a
+      // genuine concurrent delete from another device.
+      Object.keys(merged).forEach(function(id){
+        if(snapMap[id]) return;
+        var writtenAt=_tradeWriteTimestamps[id];
+        if(writtenAt && (now-writtenAt)<TRADE_SYNC_GRACE_MS) return;
+        delete merged[id];
+      });
+      _LIVE.trades = merged;
       try{ localStorage.setItem(lsKey('ladder'), JSON.stringify(getLadder())); }catch(e){}
       if(typeof refreshAllDisplays==='function') refreshAllDisplays();
     }, function(e){ console.error('Trades listener error:',e); }));
