@@ -1831,6 +1831,7 @@ textarea:focus{border-color:var(--teal2)}
   <div class="sh c-teal">Audit Log — Permanent Decision Record</div>
   <div class="log-controls">
     <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+    <button class="btn btn-ghost btn-sm" onclick="exportClosedTradesCSV()">↓ Export Closed Trades</button>
     <button class="btn btn-danger btn-sm" onclick="clearLog()">⚠ Clear All</button>
     <div class="log-count" id="log-count">0 records</div>
   </div>
@@ -2121,6 +2122,10 @@ function fFocus(el){
 }
 function fBlur(el){
   if(el.id==='i-nav' && !navOverrideActive){ return; }
+  if(el.id==='eod-open') window._eodOpenTouched=true;
+  if(el.id==='eod-alsi-tracker') window._eodTrackerTouched=true;
+  if(el.id==='eod-spot') window._eodSpotTouched=true;
+  if(el.id==='eod-iv') window._eodIvTouched=true;
   var cfg=FCFG[el.id]; if(!cfg) return;
   var raw=cfg.parse(el.value);
   if(!isNaN(raw) && raw>0){ FVAL[el.id]=raw; }
@@ -2197,6 +2202,7 @@ function tradesCol(id){ return sessionDoc(id).collection('trades'); }
 function auditCol(id){ return sessionDoc(id).collection('audit'); }
 function navCol(id){ return sessionDoc(id).collection('navHistory'); }
 function inflowCol(id){ return sessionDoc(id).collection('inflows'); }
+function closedTradesCol(id){ return sessionDoc(id).collection('closedTrades'); }
 function liveInputsDoc(id){ return sessionDoc(id).collection('live').doc('inputs'); }
 
 async function fbSaveSession(data){
@@ -2329,7 +2335,7 @@ function buildSessionData(){
 // ════════════════════════════════════════════════════════════════════
 function lsKey(k){ return 'phylax_v5_'+CURRENT_SESSION.sessionId+'_'+k; }
 
-var _LIVE = { trades:{}, cashBalance:0, navHistory:[], auditLog:[], inflowLog:[], inputs:{} };
+var _LIVE = { trades:{}, cashBalance:0, navHistory:[], auditLog:[], inflowLog:[], closedTrades:[], inputs:{} };
 var _LISTENERS = [];
 
 // ── Trade-sync race guard ───────────────────────────────────────────
@@ -2347,7 +2353,7 @@ var _LISTENERS = [];
 var TRADE_SYNC_GRACE_MS = 4000;
 var _tradeWriteTimestamps = {};   // tradeId -> ms of last local optimistic write
 var _tradeTombstones = {};        // tradeId -> ms of last local optimistic removal
-var _lastSyncedKeys = { navHistory:{}, auditLog:{}, inflowLog:{} };
+var _lastSyncedKeys = { navHistory:{}, auditLog:{}, inflowLog:{}, closedTrades:{} };
 
 function getState(){ try{ var v=localStorage.getItem(lsKey('state')); return v?JSON.parse(v):defaultState(); }catch(e){ return defaultState(); } }
 function saveState(st){ try{ localStorage.setItem(lsKey('state'),JSON.stringify(st)); }catch(e){} }
@@ -2385,6 +2391,13 @@ function saveInflowLog(l){
   _LIVE.inflowLog = l;
   try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(l)); }catch(e){}
   _syncDiff('inflowLog', inflowCol, l);
+}
+
+function getClosedTrades(){ return (_LIVE.closedTrades||[]).slice(); }
+function saveClosedTrades(l){
+  _LIVE.closedTrades = l;
+  try{ localStorage.setItem(lsKey('closedtrades'),JSON.stringify(l)); }catch(e){}
+  _syncDiff('closedTrades', closedTradesCol, l);
 }
 
 function _syncDiff(bucketName, colFn, arr){
@@ -2620,6 +2633,13 @@ function attachLiveListeners(sessionId){
       var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.inflowLog=keys;
       try{ localStorage.setItem(lsKey('inflowlog'), JSON.stringify(_LIVE.inflowLog)); }catch(e){}
     }, function(e){ console.error('Inflow log listener error:',e); }));
+
+    _LISTENERS.push(closedTradesCol(sessionId).onSnapshot(function(snap){
+      _LIVE.closedTrades = snap.docs.map(function(d){return d.data();})
+        .sort(function(a,b){return (a.entryTs||0)>(b.entryTs||0)?1:-1;});
+      var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.closedTrades=keys;
+      try{ localStorage.setItem(lsKey('closedtrades'), JSON.stringify(_LIVE.closedTrades)); }catch(e){}
+    }, function(e){ console.error('Closed trades listener error:',e); }));
 
     _LISTENERS.push(liveInputsDoc(sessionId).onSnapshot(function(doc){
       if(doc.exists){
@@ -3182,13 +3202,19 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   c('b-c-budget').textContent=budgetContracts;c('b-c-carry').textContent=maxCarryContracts;
   c('b-c-rec').textContent=recommended;
 
-  // Pre-fill EOD
-  FVAL['eod-spot']=S; FVAL['eod-iv']=iv;
-  c('eod-spot').value=FCFG['eod-spot'].fmt(S);
-  c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
-  // Pre-fill opening ALSI from the morning spot, unless already entered for today
-  if(!c('eod-open').value || c('eod-open').value==='0 pts'){ FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S); }
-  if(!c('eod-alsi-tracker').value || c('eod-alsi-tracker').value==='0 pts') c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(S);
+  // Pre-fill EOD fields once per calendar day; never clobber a value already typed today
+  var todayKey = todayStr();
+  if (window._eodPrefillDay !== todayKey) {
+    window._eodPrefillDay = todayKey;
+    window._eodOpenTouched = false;
+    window._eodTrackerTouched = false;
+    window._eodSpotTouched = false;
+    window._eodIvTouched = false;
+  }
+  if(!window._eodOpenTouched){ FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S); }
+  if(!window._eodTrackerTouched){ c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(S); }
+  if(!window._eodSpotTouched){ FVAL['eod-spot']=S; c('eod-spot').value=FCFG['eod-spot'].fmt(S); }
+  if(!window._eodIvTouched){ FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv); }
 
   window._calc={S,K,T:T.toFixed(6),r,iv,q,d1:f4(d1),d2:f4(d2),Nd1:f4(Nd1),Nd2:f4(Nd2),nd1:f4(nd1),
     putPrice:f4(putPrice),putPriceR:Math.round(putPriceR),delta:f4(delta),thetaD:f4(thetaD),
@@ -4111,6 +4137,25 @@ async function executeCloseConfirmed(){
   var idx=ladder.tranches.findIndex(function(x){return x.id===t.id;});
   if(idx<0){ alert('Tranche no longer found.'); closeTrancheModal(); return; }
 
+  // ── Record the realized outcome before mutating/removing the tranche ──
+  var buyDateMs=new Date(t.buyDate).setHours(0,0,0,0);
+  var nowMs=new Date(); nowMs.setHours(0,0,0,0);
+  var daysHeldClose=Math.max(0,Math.round((nowMs-buyDateMs)/86400000));
+  var costBasisClosed=t.premiumPerContract*qty;
+  var realizedPnl=proceeds-costBasisClosed;
+  var realizedPnlPct=costBasisClosed>0?(realizedPnl/costBasisClosed*100):0;
+  var closedRecord={
+    entryTs:Date.now(), trancheId:t.id, buyDate:t.buyDate, closeDate:todayStr(),
+    expiry:t.expiry, strikeLevel:t.strikeLevel, contractsClosed:qty,
+    contractsRemaining:Math.max(0,t.contracts-qty),
+    entryPerContract:t.premiumPerContract, exitPerContract:mtm,
+    costBasisClosed:costBasisClosed, grossProceeds:mtm*qty, haircut:haircut,
+    netProceeds:proceeds, realizedPnl:realizedPnl, realizedPnlPct:realizedPnlPct,
+    daysHeld:daysHeldClose, spotAtBuy:t.spotAtBuy, spotAtClose:FVAL['i-spot'],
+    closeType:qty>=t.contracts?'full':'partial', closeReason:'manual'
+  };
+  var closedList=getClosedTrades(); closedList.unshift(closedRecord); saveClosedTrades(closedList);
+
   ladder.cashBalance+=proceeds;
   if(qty>=t.contracts){
     ladder.tranches.splice(idx,1);
@@ -4240,6 +4285,23 @@ async function confirmReduce(){
     var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
     var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
     var proceeds=mtm*qty*0.975;
+    var buyDateMsR=new Date(t.buyDate).setHours(0,0,0,0);
+    var daysHeldR=Math.max(0,Math.round((today-buyDateMsR)/86400000));
+    var costBasisClosedR=t.premiumPerContract*qty;
+    var realizedPnlR=proceeds-costBasisClosedR;
+    var closedListR=getClosedTrades();
+    closedListR.unshift({
+      entryTs:Date.now(), trancheId:t.id, buyDate:t.buyDate, closeDate:todayStr(),
+      expiry:t.expiry, strikeLevel:t.strikeLevel, contractsClosed:qty,
+      contractsRemaining:Math.max(0,t.contracts-qty),
+      entryPerContract:t.premiumPerContract, exitPerContract:mtm,
+      costBasisClosed:costBasisClosedR, grossProceeds:mtm*qty, haircut:0.025,
+      netProceeds:proceeds, realizedPnl:realizedPnlR,
+      realizedPnlPct:costBasisClosedR>0?(realizedPnlR/costBasisClosedR*100):0,
+      daysHeld:daysHeldR, spotAtBuy:t.spotAtBuy, spotAtClose:S,
+      closeType:qty>=t.contracts?'full':'partial', closeReason:'reduce'
+    });
+    saveClosedTrades(closedListR);
     ladder.cashBalance+=proceeds;
     if(qty>=t.contracts){
       toRemove.push(idx);
@@ -5445,7 +5507,23 @@ function exportCSV(){
   });
   downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_TradeLog_'+todayStr()+'.csv');
 }
+function exportCSV(){
+  ...
+  downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_TradeLog_'+todayStr()+'.csv');
+}
 
+function exportClosedTradesCSV(){
+  var trades=getClosedTrades();
+  if(!trades.length){alert('No closed trades to export.');return;}
+  var headers=['TrancheID','BuyDate','CloseDate','Expiry','Strike','ContractsClosed','ContractsRemaining','EntryPerContract','ExitPerContract','CostBasisClosed','GrossProceeds','Haircut','NetProceeds','RealizedPnL','RealizedPnLPct','DaysHeld','SpotAtBuy','SpotAtClose','CloseType','CloseReason'];
+  var rows=trades.map(function(t){
+    return [t.trancheId,t.buyDate,t.closeDate,t.expiry,t.strikeLevel,t.contractsClosed,t.contractsRemaining,t.entryPerContract,t.exitPerContract,t.costBasisClosed,t.grossProceeds,t.haircut,t.netProceeds,t.realizedPnl,t.realizedPnlPct,t.daysHeld,t.spotAtBuy,t.spotAtClose,t.closeType,t.closeReason].join(',');
+  });
+  downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_ClosedTrades_'+todayStr()+'.csv');
+}
+
+function exportNAVCSV(){
+  ...
 function exportNAVCSV(){
   var history=getNavHistory();
   if(!history.length){alert('No NAV history to export.');return;}
@@ -5490,6 +5568,7 @@ function exportFullSession(){
   data.navHistory = getNavHistory();
   data.auditLog = getLog();
   data.inflowLog = getInflowLog();
+  data.closedTrades = getClosedTrades();
   downloadJSON(data,'PhylaxCapital_Session_'+CURRENT_SESSION.sessionId+'_'+todayStr()+'.json');
 }
 
@@ -5571,6 +5650,7 @@ function exportGoogleDrive(){
   data.navHistory = getNavHistory();
   data.auditLog = getLog();
   data.inflowLog = getInflowLog();
+  data.closedTrades = getClosedTrades();
   var filename='PhylaxCapital_Session_'+CURRENT_SESSION.sessionId+'_'+todayStr()+'.json';
   downloadJSON(data,filename);
   setTimeout(function(){
