@@ -1312,6 +1312,13 @@ textarea:focus{border-color:var(--teal2)}
 <!-- ══ CRASH HARVEST & RE-HEDGE MONITOR ═══════════════════════════════ -->
 <div class="panel" id="harvest-panel" style="margin-bottom:14px;border-color:rgba(160,96,240,.3)">
   <div class="sh c-purple">Crash Harvest &amp; Re-Hedge Monitor</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:rgba(0,0,0,.2);border-radius:2px;border:1px solid var(--border)">
+    <span style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Simulate Drawdown %</span>
+    <input type="range" id="hv-sim-slider" min="0" max="40" step="1" value="0" style="width:160px;accent-color:var(--purple)" oninput="onHarvestSimInput(this.value)"/>
+    <span id="hv-sim-val" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple);min-width:32px">0%</span>
+    <span id="hv-sim-badge" class="hidden" style="font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;color:var(--amber);background:rgba(232,160,32,.12);border:1px solid rgba(232,160,32,.3);padding:2px 8px;border-radius:2px;letter-spacing:.08em">⚠ SIMULATED PREVIEW — NOT LIVE DATA</span>
+    <span style="font-size:8.5px;color:var(--muted);margin-left:auto">Drag to preview tier/ranking behaviour without changing the real ALSI spot or rolling peak. Set to 0% to return to live.</span>
+  </div>
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
     <div class="mc">
       <div class="mc-l">Rolling Peak ALSI</div>
@@ -2828,12 +2835,25 @@ function calcHarvestTier(){
   return {tier:tier,drawdown:drawdown,peak:peak,targetPct:targetPct,targetLabel:targetLabel};
 }
 
+// Non-mutating preview version — never writes to harvestState, used only
+// by the "Simulate Drawdown %" slider so testing tier behaviour can't
+// accidentally alter the real rolling peak or activate real tracking.
+function calcHarvestTierForSpot(simSpot, realPeak){
+  if(!simSpot||!realPeak) return {tier:0,drawdown:0,peak:realPeak||0,targetPct:0,targetLabel:'No tier active'};
+  var drawdown=(realPeak-simSpot)/realPeak;
+  var tier=0,targetPct=0,targetLabel='No tier active';
+  if(drawdown>=0.25){ tier=3; targetPct=100; targetLabel='Up to 100%'; }
+  else if(drawdown>=0.15){ tier=2; targetPct=60; targetLabel='50–70%'; }
+  else if(drawdown>=0.10){ tier=1; targetPct=35; targetLabel='30–40%'; }
+  return {tier:tier,drawdown:drawdown,peak:realPeak,targetPct:targetPct,targetLabel:targetLabel};
+}
+
 // Rank active tranches by unrealised P&L% PER CONTRACT (policy Section 3)
 // — descending, nearer-dated tranche wins ties — and flag which ones
 // fall inside the active tier's target harvest percentage.
-function getRankedTranchesForHarvest(targetPct){
+function getRankedTranchesForHarvest(targetPct, spotOverride){
   var ladder=getLadder();
-  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var S=spotOverride||FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var today=new Date(); today.setHours(0,0,0,0);
   var rows=(ladder.tranches||[]).map(function(t){
     var exp=new Date(t.expiry);
@@ -4648,10 +4668,26 @@ function renderLadderPanel(){
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Θ/day: <span style="color:var(--red2)">−'+fRfull(totalTheta)+'</span></span>';
 }
 
+function onHarvestSimInput(val){
+  window._harvestSimPct = parseInt(val)||0;
+  var lbl=c('hv-sim-val'); if(lbl) lbl.textContent=window._harvestSimPct+'%';
+  renderHarvestPanel();
+}
+
 function renderHarvestPanel(){
   if(!CURRENT_SESSION) return;
   var hs=getHarvestState();
-  var tierInfo=calcHarvestTier();
+  var simPct=window._harvestSimPct||0;
+  var realTier=calcHarvestTier(); // always runs — this is what tracks/updates the real peak
+  var tierInfo=realTier, simSpot=null;
+  var badgeEl=c('hv-sim-badge');
+  if(simPct>0){
+    simSpot=realTier.peak*(1-simPct/100);
+    tierInfo=calcHarvestTierForSpot(simSpot, realTier.peak);
+    if(badgeEl) badgeEl.classList.remove('hidden');
+  } else {
+    if(badgeEl) badgeEl.classList.add('hidden');
+  }
   setText('hv-peak', tierInfo.peak>0?fmtInt(tierInfo.peak)+' pts':'—');
   setText('hv-peak-date', hs.peakDate?('as of '+hs.peakDate):'—');
   setText('hv-drawdown', (tierInfo.drawdown*100).toFixed(2)+'%');
@@ -4699,7 +4735,7 @@ function renderHarvestPanel(){
     reentrySection.classList.add('hidden');
   }
 
-  var rk=getRankedTranchesForHarvest(tierInfo.targetPct||0);
+  var rk=getRankedTranchesForHarvest(tierInfo.targetPct||0, simSpot);
   var tbody=c('harvest-rank-tbody');
   if(!rk.rows.length){
     tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No active tranches.</td></tr>';
