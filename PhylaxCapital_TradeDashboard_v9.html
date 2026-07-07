@@ -1309,6 +1309,69 @@ textarea:focus{border-color:var(--teal2)}
   <div id="ladder-totals" style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap"></div>
 </div>
 
+<!-- ══ CRASH HARVEST & RE-HEDGE MONITOR ═══════════════════════════════ -->
+<div class="panel" id="harvest-panel" style="margin-bottom:14px;border-color:rgba(160,96,240,.3)">
+  <div class="sh c-purple">Crash Harvest &amp; Re-Hedge Monitor</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+    <div class="mc">
+      <div class="mc-l">Rolling Peak ALSI</div>
+      <div class="mc-v" id="hv-peak">—</div>
+      <div class="mc-s" id="hv-peak-date">—</div>
+    </div>
+    <div class="mc">
+      <div class="mc-l">Drawdown from Peak</div>
+      <div class="mc-v" id="hv-drawdown">—</div>
+      <div class="mc-s" id="hv-tier-label">—</div>
+    </div>
+    <div class="mc">
+      <div class="mc-l">Active Harvest Tier</div>
+      <div class="mc-v" id="hv-tier-num">—</div>
+      <div class="mc-s" id="hv-target-pct">—</div>
+    </div>
+    <div class="mc">
+      <div class="mc-l">Harvest Tracking</div>
+      <div class="mc-v" id="hv-tracking-status">Inactive</div>
+      <div class="mc-s">
+        <button class="btn btn-purple btn-xs" id="hv-activate-btn" onclick="activateHarvestTracking()">Activate Tracking</button>
+        <button class="btn btn-danger btn-xs hidden" id="hv-deactivate-btn" onclick="deactivateHarvestTracking()">✓ Mark Re-Hedge Executed</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="harvest-reentry-section" class="hidden" style="margin-bottom:14px;padding:12px 14px;border-radius:2px;background:rgba(160,96,240,.06);border:1px solid rgba(160,96,240,.2)">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--purple);margin-bottom:8px">Re-Entry Tracking (Active)</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">
+      <div><div class="hg-label">Baseline SAVI</div><div class="hg-val" id="hv-baseline-savi">—</div></div>
+      <div><div class="hg-label">Trailing 20d SAVI</div><div class="hg-val" id="hv-trailing-savi">—</div></div>
+      <div><div class="hg-label">Re-entry Threshold (×1.20)</div><div class="hg-val" id="hv-threshold">—</div></div>
+      <div><div class="hg-label">Consecutive Qualifying Days</div><div class="hg-val" id="hv-consec-days">—</div></div>
+      <div><div class="hg-label">Days Since Harvest (max 24)</div><div class="hg-val" id="hv-days-elapsed">—</div></div>
+    </div>
+    <div id="hv-reentry-alert" style="margin-top:10px;display:none;padding:8px 12px;border-radius:2px;font-family:'Rajdhani',sans-serif;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em"></div>
+  </div>
+
+  <div class="sh c-purple" style="font-size:9px;margin-bottom:8px">Tranches Ranked by P&amp;L% per Contract — Harvest Selection Order</div>
+  <div style="overflow-x:auto">
+    <table class="ladder-table" id="harvest-rank-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;padding-left:12px">Rank</th>
+          <th style="text-align:left">Tranche</th>
+          <th>Expiry</th><th>TTE (d)</th><th>Contracts</th>
+          <th>Entry (R/c)</th><th>MTM (R/c)</th><th>P&amp;L % /c</th>
+          <th>Cum. % of Book</th><th style="text-align:center">In Target?</th>
+        </tr>
+      </thead>
+      <tbody id="harvest-rank-tbody"></tbody>
+    </table>
+  </div>
+  <div style="font-size:8.5px;color:var(--muted);margin-top:8px;line-height:1.5">
+    Policy: harvest tranches top-down by this ranking until the target % (per active tier) is reached. See the Crash Harvest &amp; Re-Hedge Policy document for the full rule set. Selecting tranches here does not execute a trade — use ✕ Close in the Option Ladder panel above to action the harvest.
+  </div>
+</div>
+
+<!-- ══ DAILY NAV BREAKDOWN ══════════════════════════════════════════ -->
+
 <!-- ══ DAILY NAV BREAKDOWN ══════════════════════════════════════════ -->
 <div class="dnav-grid">
   <div class="dnav-card dc-green">
@@ -2313,10 +2376,12 @@ function buildSessionData(){
   if(!CURRENT_SESSION) return null;
   var st = getState();
   var us = getUnitState();
+  var hs = getHarvestState();
   return {
     config: CURRENT_SESSION,
     state: st,
     unitState: us,
+    harvestState: hs,
     lastSaved: new Date().toISOString(),
     lastSavedBy: deviceLabel(),
     createdAt: CURRENT_SESSION.createdAt || new Date().toISOString()
@@ -2722,6 +2787,119 @@ function renderUnitPriceBar(){
   window._unitData=up;
 }
 
+// ════════════════════════════════════════════════════════════════════
+// CRASH HARVEST & RE-HEDGE POLICY STATE
+// Implements the documented harvest/re-hedge policy: rolling ALSI peak
+// for drawdown measurement, active harvest tier, baseline SAVI captured
+// at harvest activation, consecutive-day re-entry counter, and the
+// 24-trading-day max no-hedge safety valve. Persisted like unitState —
+// localStorage + piggybacked on the next fbSaveSession() call, with an
+// explicit push on activate/deactivate since those are deliberate
+// user actions that should land immediately.
+// ════════════════════════════════════════════════════════════════════
+function defaultHarvestState(){
+  return { rollingPeakALSI:0, peakDate:null, harvestActive:false, activeTier:0,
+    baselineSAVI:0, harvestStartDate:null, consecutiveQualifyingDays:0, lastCheckedDate:null };
+}
+function getHarvestState(){ try{ var v=localStorage.getItem(lsKey('harveststate')); return v?JSON.parse(v):defaultHarvestState(); }catch(e){ return defaultHarvestState(); } }
+function saveHarvestState(hs){ try{ localStorage.setItem(lsKey('harveststate'),JSON.stringify(hs)); }catch(e){} }
+
+function trailingSAVIAvg(days){
+  var history=getNavHistory();
+  var recent=history.slice(-days);
+  if(!recent.length) return null;
+  var sum=recent.reduce(function(s,h){return s+(h.iv||0);},0);
+  return {avg:sum/recent.length, n:recent.length};
+}
+
+// Drawdown tiers per Section 2 of the Crash Harvest & Re-Hedge Policy:
+// −10 to −15%: harvest 30–40% · −15 to −25%: harvest 50–70% · <−25%: up to 100%
+function calcHarvestTier(){
+  var hs=getHarvestState();
+  var S=FVAL['i-spot']||0;
+  if(!S) return {tier:0,drawdown:0,peak:hs.rollingPeakALSI||0,targetPct:0,targetLabel:'—'};
+  var peak=Math.max(hs.rollingPeakALSI||0,S);
+  if(peak!==hs.rollingPeakALSI){ hs.rollingPeakALSI=peak; hs.peakDate=todayStr(); saveHarvestState(hs); }
+  var drawdown = peak>0 ? (peak-S)/peak : 0;
+  var tier=0,targetPct=0,targetLabel='No tier active';
+  if(drawdown>=0.25){ tier=3; targetPct=100; targetLabel='Up to 100%'; }
+  else if(drawdown>=0.15){ tier=2; targetPct=60; targetLabel='50–70%'; }
+  else if(drawdown>=0.10){ tier=1; targetPct=35; targetLabel='30–40%'; }
+  return {tier:tier,drawdown:drawdown,peak:peak,targetPct:targetPct,targetLabel:targetLabel};
+}
+
+// Rank active tranches by unrealised P&L% PER CONTRACT (policy Section 3)
+// — descending, nearer-dated tranche wins ties — and flag which ones
+// fall inside the active tier's target harvest percentage.
+function getRankedTranchesForHarvest(targetPct){
+  var ladder=getLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var rows=(ladder.tranches||[]).map(function(t){
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var pnlPct=t.premiumPerContract>0?(mtm-t.premiumPerContract)/t.premiumPerContract*100:0;
+    return {id:t.id,expiry:t.expiry,contracts:t.contracts,entry:t.premiumPerContract,mtm:mtm,pnlPct:pnlPct,tteDays:Math.round(T*365)};
+  });
+  rows.sort(function(a,b){ if(Math.abs(a.pnlPct-b.pnlPct)<0.5) return a.tteDays-b.tteDays; return b.pnlPct-a.pnlPct; });
+  var totalContracts=rows.reduce(function(s,rr){return s+rr.contracts;},0);
+  var targetContracts=Math.ceil(totalContracts*((targetPct||0)/100));
+  var cum=0;
+  rows.forEach(function(row){
+    row.selected = cum < targetContracts;
+    cum += row.contracts;
+    row.cumPct = totalContracts>0?(Math.min(cum,totalContracts)/totalContracts*100):0;
+  });
+  return {rows:rows,totalContracts:totalContracts,targetContracts:targetContracts};
+}
+
+function tradingDaysSinceHarvestStart(hs){
+  if(!hs.harvestStartDate) return 0;
+  return getNavHistory().filter(function(h){return h.date>=hs.harvestStartDate;}).length;
+}
+
+// Called once per EOD close — advances the consecutive-qualifying-day
+// counter used by the re-entry trigger (policy Section 5).
+function updateHarvestReentryTracking(){
+  var hs=getHarvestState();
+  if(!hs.harvestActive) return;
+  var today=todayStr();
+  if(hs.lastCheckedDate===today) return;
+  var trailing=trailingSAVIAvg(20);
+  if(!trailing) return;
+  var threshold=hs.baselineSAVI*1.2;
+  hs.consecutiveQualifyingDays = (trailing.avg<threshold) ? (hs.consecutiveQualifyingDays||0)+1 : 0;
+  hs.lastCheckedDate=today;
+  saveHarvestState(hs);
+}
+
+function activateHarvestTracking(){
+  var hs=getHarvestState();
+  var trailing=trailingSAVIAvg(20);
+  var tierInfo=calcHarvestTier();
+  hs.harvestActive=true;
+  hs.activeTier=tierInfo.tier;
+  hs.baselineSAVI=trailing?trailing.avg:(FVAL['i-iv']||0.20);
+  hs.harvestStartDate=todayStr();
+  hs.consecutiveQualifyingDays=0;
+  hs.lastCheckedDate=todayStr();
+  saveHarvestState(hs);
+  fbSaveSession(buildSessionData());
+  renderHarvestPanel();
+  showToast('✓ Harvest tracking activated — baseline SAVI '+(hs.baselineSAVI*100).toFixed(2)+'%','success',5000);
+}
+function deactivateHarvestTracking(){
+  if(!confirm('Mark re-hedge as executed and reset harvest tracking?\n\nThis re-bases the rolling peak to today\'s spot and clears the active harvest state.')) return;
+  var hs=defaultHarvestState();
+  hs.rollingPeakALSI=FVAL['i-spot']||0;
+  hs.peakDate=todayStr();
+  saveHarvestState(hs);
+  fbSaveSession(buildSessionData());
+  renderHarvestPanel();
+  showToast('✓ Harvest tracking reset — rolling peak re-based to today\'s spot','success',5000);
+}
+
 function restoreSessionFromFirebase(data){
   if(!CURRENT_SESSION||!data) return;
   if(data.state){
@@ -2731,6 +2909,7 @@ function restoreSessionFromFirebase(data){
     saveState(st);
   }
   if(data.unitState) saveUnitState(data.unitState);
+  if(data.harvestState) saveHarvestState(data.harvestState);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3232,6 +3411,7 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   renderUnitPriceBar();
   renderBudgetPanel();
   renderHedgeView();
+  renderHarvestPanel();
   updatePortfolio();
 }
 
@@ -3406,6 +3586,7 @@ async function endOfDay(){
   var existing=history.findIndex(function(h){return h.date===today;});
   if(existing>=0) history[existing]=entry; else history.push(entry);
   saveNavHistory(history);
+  updateHarvestReentryTracking();
 
   // Display breakdown
   var eodBD=c('eod-breakdown'); eodBD.style.display='grid';
@@ -4465,6 +4646,81 @@ function renderLadderPanel(){
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">MTM: <span style="color:var(--amber)">'+fRfull(totalMTM)+'</span></span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Unreal P&L: <span style="color:'+pnlTotalColor+'">'+(totalPnl>=0?'+':'')+fRfull(totalPnl)+'</span></span>'
     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px">Θ/day: <span style="color:var(--red2)">−'+fRfull(totalTheta)+'</span></span>';
+}
+
+function renderHarvestPanel(){
+  if(!CURRENT_SESSION) return;
+  var hs=getHarvestState();
+  var tierInfo=calcHarvestTier();
+  setText('hv-peak', tierInfo.peak>0?fmtInt(tierInfo.peak)+' pts':'—');
+  setText('hv-peak-date', hs.peakDate?('as of '+hs.peakDate):'—');
+  setText('hv-drawdown', (tierInfo.drawdown*100).toFixed(2)+'%');
+  var ddEl=c('hv-drawdown'); if(ddEl) ddEl.style.color = tierInfo.drawdown>=0.10?'var(--red2)':'var(--muted)';
+  var tierNames=['None','Tier 1','Tier 2','Tier 3'];
+  setText('hv-tier-label', tierInfo.tier>0?tierNames[tierInfo.tier]+' active':'No tier active');
+  setText('hv-tier-num', tierInfo.tier>0?String(tierInfo.tier):'—');
+  setText('hv-target-pct', tierInfo.tier>0?('Target: '+tierInfo.targetLabel):'—');
+
+  setText('hv-tracking-status', hs.harvestActive?'Active':'Inactive');
+  var statusEl=c('hv-tracking-status'); if(statusEl) statusEl.style.color = hs.harvestActive?'var(--purple)':'var(--muted)';
+  var actBtn=c('hv-activate-btn'), deactBtn=c('hv-deactivate-btn');
+  if(actBtn) actBtn.classList.toggle('hidden', hs.harvestActive);
+  if(deactBtn) deactBtn.classList.toggle('hidden', !hs.harvestActive);
+
+  var reentrySection=c('harvest-reentry-section');
+  if(hs.harvestActive){
+    reentrySection.classList.remove('hidden');
+    var trailing=trailingSAVIAvg(20);
+    var trailingAvg=trailing?trailing.avg:null;
+    var threshold=hs.baselineSAVI*1.2;
+    setText('hv-baseline-savi', (hs.baselineSAVI*100).toFixed(2)+'%');
+    setText('hv-trailing-savi', trailingAvg!=null?(trailingAvg*100).toFixed(2)+'% ('+trailing.n+'d)':'—');
+    setText('hv-threshold', (threshold*100).toFixed(2)+'%');
+    var belowThreshold = trailingAvg!=null && trailingAvg<threshold;
+    var trailEl=c('hv-trailing-savi'); if(trailEl) trailEl.style.color = belowThreshold?'var(--green2)':'var(--amber)';
+    setText('hv-consec-days', (hs.consecutiveQualifyingDays||0)+' / 3–5');
+    var daysElapsed=tradingDaysSinceHarvestStart(hs);
+    setText('hv-days-elapsed', daysElapsed+' / 24');
+    var daysEl=c('hv-days-elapsed'); if(daysEl) daysEl.style.color = daysElapsed>=24?'var(--red2)':daysElapsed>=18?'var(--amber)':'var(--muted)';
+
+    var alertEl=c('hv-reentry-alert');
+    if(daysElapsed>=24){
+      alertEl.style.display='block';
+      alertEl.style.cssText+=';background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);color:var(--red2)';
+      alertEl.textContent='⚠ MAX NO-HEDGE DURATION REACHED — re-hedge regardless of SAVI per policy Section 6.';
+    } else if((hs.consecutiveQualifyingDays||0)>=3){
+      alertEl.style.display='block';
+      alertEl.style.cssText+=';background:rgba(64,200,128,.1);border:1px solid rgba(64,200,128,.3);color:var(--green2)';
+      alertEl.textContent='✓ RE-ENTRY TRIGGER MET — trailing SAVI below baseline×1.20 for '+hs.consecutiveQualifyingDays+' consecutive days.';
+    } else {
+      alertEl.style.display='none';
+    }
+  } else {
+    reentrySection.classList.add('hidden');
+  }
+
+  var rk=getRankedTranchesForHarvest(tierInfo.targetPct||0);
+  var tbody=c('harvest-rank-tbody');
+  if(!rk.rows.length){
+    tbody.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No active tranches.</td></tr>';
+  } else {
+    var rows='';
+    rk.rows.forEach(function(row,i){
+      rows+='<tr'+(row.selected?' style="background:rgba(160,96,240,.08)"':'')+'>'
+        +'<td style="text-align:left;padding-left:12px">'+(i+1)+'</td>'
+        +'<td style="text-align:left">'+row.id+'</td>'
+        +'<td style="color:var(--muted)">'+row.expiry+'</td>'
+        +'<td>'+row.tteDays+'</td>'
+        +'<td style="color:var(--teal2)">'+row.contracts+'</td>'
+        +'<td style="color:var(--muted)">'+fRfull(row.entry)+'</td>'
+        +'<td style="color:'+(row.mtm>row.entry?'var(--green2)':'var(--amber)')+'">'+fRfull(row.mtm)+'</td>'
+        +'<td style="color:'+(row.pnlPct>=0?'var(--green2)':'var(--red2)')+';font-weight:700">'+(row.pnlPct>=0?'+':'')+row.pnlPct.toFixed(1)+'%</td>'
+        +'<td>'+row.cumPct.toFixed(0)+'%</td>'
+        +'<td style="text-align:center">'+(row.selected?'<span style="color:var(--purple);font-weight:700">✓ Harvest</span>':'<span style="color:var(--muted)">Hold</span>')+'</td>'
+        +'</tr>';
+    });
+    tbody.innerHTML=rows;
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -5711,6 +5967,7 @@ function refreshAllDisplays(){
   renderNavHistoryTable(); renderPerfChart();
   renderLog(); renderInflowLog();
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
+  renderHarvestPanel();
   calc();
 }
 
