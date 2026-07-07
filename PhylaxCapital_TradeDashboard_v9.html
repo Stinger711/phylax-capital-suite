@@ -5507,10 +5507,6 @@ function exportCSV(){
   });
   downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_TradeLog_'+todayStr()+'.csv');
 }
-function exportCSV(){
-  ...
-  downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_TradeLog_'+todayStr()+'.csv');
-}
 
 function exportClosedTradesCSV(){
   var trades=getClosedTrades();
@@ -5522,8 +5518,6 @@ function exportClosedTradesCSV(){
   downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_ClosedTrades_'+todayStr()+'.csv');
 }
 
-function exportNAVCSV(){
-  ...
 function exportNAVCSV(){
   var history=getNavHistory();
   if(!history.length){alert('No NAV history to export.');return;}
