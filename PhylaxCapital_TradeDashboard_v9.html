@@ -924,6 +924,10 @@ textarea:focus{border-color:var(--teal2)}
   <div class="modal-box" style="max-width:520px">
     <div class="modal-title" style="color:var(--teal2)">Step 4 — Confirm Tranche Purchase</div>
     <div class="modal-sub">Review the details below carefully before confirming. This will lock the position into your book.</div>
+    <div id="bc-expiry-warning" style="background:rgba(232,160,32,.1);border:1px solid rgba(232,160,32,.4);border-radius:2px;padding:10px 14px;margin-bottom:14px;text-align:center">
+      <div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-bottom:2px">⚠ Confirm Quarter Before Proceeding</div>
+      <div style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:var(--white)" id="bc-expiry-big">—</div>
+    </div>
     <div class="modal-section">Trade Summary</div>
     <div style="background:rgba(0,196,212,.05);border:1px solid rgba(0,196,212,.2);border-radius:2px;padding:14px 16px;margin-bottom:14px">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 20px">
@@ -937,6 +941,10 @@ textarea:focus{border-color:var(--teal2)}
         <div><div style="font-family:'Rajdhani',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">Held After Purchase</div><div style="font-family:'DM Mono',monospace;font-size:13px;color:var(--teal2)" id="bc-held-after">—</div></div>
       </div>
     </div>
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--plat)">
+      <input type="checkbox" id="bc-expiry-confirm-cb" onchange="onBuyConfirmInput()" style="width:auto;accent-color:var(--amber)"/>
+      I confirm the quarter above is the one I intend to buy
+    </label>
     <div class="modal-section">Step 5 — Type BUY to confirm</div>
     <input type="text" id="bc-confirm-input" placeholder='Type "BUY" to confirm'
       style="margin-bottom:12px;text-transform:uppercase;letter-spacing:.12em;font-size:13px"
@@ -1650,6 +1658,10 @@ textarea:focus{border-color:var(--teal2)}
 
     <div id="hedge-alert" class="hedge-alert"></div>
 
+    <div id="expiry-context-banner" style="margin-bottom:10px;padding:8px 14px;border-radius:2px;background:rgba(0,196,212,.08);border:1px solid rgba(0,196,212,.3);font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--teal2);text-align:center">
+      Evaluating Quarter: <span id="ecb-expiry">—</span> <span style="font-weight:400;text-transform:none;letter-spacing:normal;color:var(--muted)">— all figures below (recommendation, price, BS table) are for this expiry only</span>
+    </div>
+
     <div id="decision-box" class="decision-box hold">
       <div class="dec-action" id="dec-action">CALCULATING…</div>
       <div class="dec-contracts" id="dec-contracts">—</div>
@@ -1659,6 +1671,9 @@ textarea:focus{border-color:var(--teal2)}
       <div class="exec-panel" id="exec-panel" style="display:none">
         <!-- Step 1: Expiry selection with BS pricing per tenor -->
         <div class="expiry-select-label">Step 2 — Select expiry &amp; review pricing across tenors</div>
+        <div style="font-size:8.5px;color:var(--muted);margin-bottom:8px;font-family:'Rajdhani',sans-serif">
+          Clicking a quarter below updates the Option Expiry field in Option Parameters (left panel) and refreshes the recommendation, price, and BS table for that tenor. Nothing else changes.
+        </div>
         <div class="expiry-grid" id="expiry-grid">
           <!-- populated by renderExpiryGrid() -->
         </div>
@@ -3338,47 +3353,53 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   }
 
   // ── Decision box ───────────────────────────────────────────────────
+  var ecbEl=c('ecb-expiry'); if(ecbEl) ecbEl.textContent=expiryStr;
   var box=c('decision-box'),action=c('dec-action'),num=c('dec-contracts'),lbl=c('dec-label'),det=c('dec-details');
   var execPanel=c('exec-panel'), execQty=c('exec-qty'), execBtn=c('exec-btn');
+  // exec-panel (Near/Q2/Q3/Far grid + multi-quarter allocator + manual
+  // buy qty) now stays visible at all times, in place, regardless of
+  // BUY/HOLD/REDUCE for the currently-selected expiry — so any quarter's
+  // recommendation and the SAVI allocator can be checked anytime without
+  // needing a BUY signal first. Only the wording in dec-details and the
+  // decision-box colour differ by branch below.
+  execPanel.style.display='block';
+  execBtn.style.display='inline-block';
+  execQty.dataset.recommended=tradeRequiredLadder;
+  execQty.dataset.putPriceR=putPriceR;
+  execQty.dataset.strike=K;
+  // Pre-fill with the recommended gap (0 when at/over target) only if
+  // the user hasn't already typed something themselves.
+  if(!execQty.dataset.userEdited) execQty.value=Math.max(0,tradeRequiredLadder);
+
   if(tradeRequiredLadder>0){
     box.className='decision-box buy'; action.textContent='BUY'; action.style.color='var(--teal2)';
     num.textContent=tradeRequiredLadder; num.style.color='var(--teal2)'; lbl.textContent='Contracts to Purchase';
-    det.innerHTML='Increase from <strong>'+ladderHeldThisExpiry+'</strong> → <strong>'+recommended+'</strong> at '+expiryStr+'<br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);;
-    execPanel.style.display='block';
-    execBtn.style.display='inline-block';
-    // Pre-fill with recommended gap only if user hasn't already typed something
-    if(!execQty.dataset.userEdited) execQty.value=tradeRequiredLadder;
-    execQty.dataset.recommended=tradeRequiredLadder;
-    execQty.dataset.putPriceR=putPriceR;
-    execQty.dataset.strike=K;
-    // Reset selected expiry to default quarterly when advisory refreshes
-    if(!execQty.dataset.userEdited) window._selectedExpiry=null;
-    renderExpiryGrid();
-    onExecQtyInput();
-    // SAVI-conditioned allocation preset (unless user has manually adjusted)
-    if(!window._allocUserOverride){
-      var saviRec=saviConditionedPreset(iv);
-      window._allocYieldPcts=saviRec.pcts.slice();
-    }
-    var saviNow=saviConditionedPreset(iv);
-    var banner=c('savi-signal-banner');
-    if(banner){
-      banner.innerHTML='★ SAVI Signal (SAVI '+(iv*100).toFixed(1)+'%): '+saviNow.label;
-      banner.style.cssText='padding:8px 12px;border-radius:2px;margin:14px 0 10px;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;background:rgba(0,0,0,.2);border:1px solid;border-color:'+saviNow.color+';color:'+saviNow.color;
-    }
-    renderInlineAlloc();
+    det.innerHTML='Increase from <strong>'+ladderHeldThisExpiry+'</strong> → <strong>'+recommended+'</strong> at '+expiryStr+'<br>Strike: '+K.toLocaleString()+' &nbsp;·&nbsp; Premium: '+fR(putPriceR)+'/contract<br>Total cost: '+fRk(tradeRequiredLadder*putPriceR);
   } else if(tradeRequiredLadder<0){
     box.className='decision-box sell'; action.textContent='REDUCE'; action.style.color='var(--red)';
     num.textContent=Math.abs(tradeRequiredLadder); num.style.color='var(--red)'; lbl.textContent='Contracts to Reduce';
     det.innerHTML='Overhedged at '+expiryStr+': holding <strong>'+ladderHeldThisExpiry+'</strong> vs target <strong>'+recommended+'</strong><br>Carry ratio: '+carryRatio.toFixed(2)+'× &nbsp;·&nbsp; Max additional carry-neutral: '+maxCarryContracts
       +'<br><button onclick="openReduceModal('+Math.abs(tradeRequiredLadder)+')" style="margin-top:8px;padding:5px 14px;background:rgba(232,64,64,.15);border:1px solid rgba(232,64,64,.4);color:var(--red2);border-radius:2px;cursor:pointer;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">✕ Reduce Position</button>';
-    execPanel.style.display='none';
   } else {
     box.className='decision-box hold'; action.textContent='HOLD'; action.style.color='var(--amber)';
     num.textContent='0'; num.style.color='var(--amber)'; lbl.textContent='No Trade Required';
     det.innerHTML='Position optimal at <strong>'+ladderHeldThisExpiry+'</strong> contracts at '+expiryStr+'<br>Carry: '+(isFinite(carryRatio)?carryRatio.toFixed(2)+'×':'∞')+' &nbsp;·&nbsp; HM: '+hedgeMultiple.toFixed(2)+'×<br>Monitor ALSI and SAVI daily';
-    execPanel.style.display='none';
   }
+
+  renderExpiryGrid();
+  onExecQtyInput();
+  // SAVI-conditioned allocation preset (unless user has manually adjusted)
+  if(!window._allocUserOverride){
+    var saviRec=saviConditionedPreset(iv);
+    window._allocYieldPcts=saviRec.pcts.slice();
+  }
+  var saviNow=saviConditionedPreset(iv);
+  var banner=c('savi-signal-banner');
+  if(banner){
+    banner.innerHTML='★ SAVI Signal (SAVI '+(iv*100).toFixed(1)+'%): '+saviNow.label;
+    banner.style.cssText='padding:8px 12px;border-radius:2px;margin:14px 0 10px;font-family:\'Rajdhani\',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;background:rgba(0,0,0,.2);border:1px solid;border-color:'+saviNow.color+';color:'+saviNow.color;
+  }
+  renderInlineAlloc();
 
   // Store for use in execution
   window._calcRecommended=recommended;
@@ -4138,6 +4159,8 @@ function openBuyConfirmModal(){
   setText('bc-total-cost','−R '+Math.round(totalCost).toLocaleString('en-ZA'));
   c('bc-total-cost').style.color='var(--red2)';
   setText('bc-expiry',expStr+' ('+Math.round(T*365)+' days TTE)');
+     setText('bc-expiry-big',expStr+' — '+Math.round(T*365)+' days to expiry');
+     var expCb=c('bc-expiry-confirm-cb'); if(expCb) expCb.checked=false;
   setText('bc-budget-after','R '+Math.round(remainingAfter).toLocaleString('en-ZA'));
   c('bc-budget-after').style.color=remainingAfter>0?'var(--teal2)':'var(--red2)';
   setText('bc-vs-rec',vsRec);
@@ -4157,12 +4180,19 @@ function closeBuyConfirmModal(){ c('buy-confirm-modal').classList.add('hidden');
 // ── STEP 5: typed confirmation enables button ──────────────────────
 function onBuyConfirmInput(){
   var val=c('bc-confirm-input').value.trim().toUpperCase();
+  var expCb=c('bc-expiry-confirm-cb');
+  var expConfirmed=expCb?expCb.checked:true;
   var btn=c('bc-confirm-btn');
-  if(val==='BUY'){
+  if(val==='BUY' && expConfirmed){
     btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
     c('bc-warn').style.display='none';
   } else {
     btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
+    if(val==='BUY' && !expConfirmed){
+      c('bc-warn').style.display='block';
+      c('bc-warn').className='exec-warn under';
+      c('bc-warn').textContent='ℹ Please confirm the quarter above before proceeding.';
+    }
   }
 }
 
