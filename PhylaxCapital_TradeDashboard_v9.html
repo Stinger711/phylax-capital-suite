@@ -3024,6 +3024,31 @@ function contractsHeldForExpiry(expiryStr){
   });
   return map[expiries[best].toISOString().slice(0,10)]||0;
 }
+// Whole-book aggregates — every held tranche priced at its OWN strike/
+// expiry via bsBlack76. Single source of truth for MTM, theta bleed, and
+// delta-adjusted notional, so the KPI strip in calc() can never again
+// mix a single-expiry price/delta/theta against the whole book's
+// contract count (the exact bug that made Theta Bleed, Net Carry, Hedge
+// Multiple, and Option Book Value disagree with the Ladder totals row
+// and the Portfolio Hedge View panel whenever the book spans >1 quarter).
+function calcBookAggregates(S,r,q,iv){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var ladder=getLadder();
+  var totalContracts=0,totalCost=0,totalMTM=0,totalTheta=0,totalDeltaNotional=0;
+  (ladder.tranches||[]).forEach(function(t){
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var g76=bsBlack76(S,t.strikeLevel,r,q,iv,T);
+    var deltaSpotT=g76.delta*Math.exp((r-q)*Math.max(T,1e-6));
+    totalContracts+=t.contracts;
+    totalCost+=t.premiumTotal;
+    totalMTM+=g76.putPriceR*t.contracts;
+    totalTheta+=g76.thetaPerDayR*t.contracts;
+    totalDeltaNotional+=Math.abs(deltaSpotT)*t.contracts*10*S;
+  });
+  return {totalContracts:totalContracts,totalCost:totalCost,totalMTM:totalMTM,
+    totalTheta:totalTheta,totalDeltaNotional:totalDeltaNotional};
+}
 // Render the 4-expiry comparison grid in the exec panel
 function renderExpiryGrid(){
   var grid=c('expiry-grid'); if(!grid) return;
@@ -3227,14 +3252,8 @@ function calc(){
   // this, the carry ceiling only "accidentally" looked sane via the
   // held-subtraction trick below — it was still built on gross yield,
   // same root cause as the multi-quarter allocator bug fixed earlier.
-  var ladderForCarry=getLadder();
-  var totalExistingThetaBleedSingle=0;
-  (ladderForCarry.tranches||[]).forEach(function(t){
-    var texp=new Date(t.expiry);
-    var tT=Math.max(0,(texp-today)/(365*24*60*60*1000));
-    totalExistingThetaBleedSingle+=bsThetaPerDay(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
-  });
-  var netDailyYieldSingle=Math.max(0,dailyYield-totalExistingThetaBleedSingle);
+  var bookAgg=calcBookAggregates(S,r,q,iv);
+     var netDailyYieldSingle=Math.max(0,dailyYield-bookAgg.totalTheta);
   // Purely incremental — "how many MORE of this expiry can leftover net
   // yield support" — not a total-book target. Previously this baked in
   // the ENTIRE ladder's held count, which made "recommended" an implicit
@@ -3262,17 +3281,16 @@ function calc(){
   var recommended=Math.max(0,ladderHeldThisExpiry+maxAdditional);
   var maxCarryContracts=maxAdditionalCarry; // keeps existing "Max Carry-Neutral" display wired up
   var tradeRequired=recommended-held;
-  var dailyThetaBleed=thetaBleedPC*held;
-  var netCarry=dailyYield-dailyThetaBleed;
-  var carryRatio=dailyThetaBleed>0?dailyYield/dailyThetaBleed:Infinity;
+  var dailyThetaBleed=bookAgg.totalTheta;
+     var netCarry=dailyYield-dailyThetaBleed;
+     var carryRatio=dailyThetaBleed>0?dailyYield/dailyThetaBleed:Infinity;
   // bsBlack76's `delta` is the forward delta (∂P/∂F). Convert to spot
   // delta (∂P/∂S = ∂P/∂F × e^((r-q)T)) before using it as a spot-notional
   // hedge ratio — multiplying forward delta by spot S directly understates
   // or overstates hedge notional by the forward/spot conversion factor
   // whenever r ≠ q.
-  var deltaSpot=delta*Math.exp((r-q)*T);
-  var hedgeMultiple=NAV>0?(S*10*held*deltaSpot)/NAV:0;
-  var bookValue=putPriceR*held;
+  var hedgeMultiple=NAV>0?(bookAgg.totalDeltaNotional)/NAV:0;
+     var bookValue=bookAgg.totalMTM;
   var daysLeft=Math.round(T*365);
   // Strike & TTE
   c('i-strike-show').value=fmtInt(K)+' pts';
@@ -4881,22 +4899,14 @@ function renderHedgeView(){
     return;
   }
 
-  // ── Book-level aggregates ──────────────────────────────────────────
-  var totalContracts=0,totalCost=0,totalMTM=0,totalDeltaNotional=0;
-  ladder.tranches.forEach(function(t){
-    var exp=new Date(t.expiry);
-    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
-    var g76h=bsBlack76(S,t.strikeLevel,r,q,iv,Math.max(T,1e-6));
-    var mtm=g76h.putPriceR;
-    // Convert this tranche's forward delta to spot delta before using it
-    // as a spot-notional hedge ratio (see deltaSpot note in calc()).
-    var delta=g76h.delta*Math.exp((r-q)*Math.max(T,1e-6));
-    totalContracts+=t.contracts;
-    totalCost+=t.premiumTotal;
-    totalMTM+=mtm*t.contracts;
-    // Delta-adjusted notional: |delta_spot| × contracts × R10 × ALSI
-    totalDeltaNotional+=Math.abs(delta)*t.contracts*10*S;
-  });
+  // ── Book-level aggregates — shared with calc()'s KPI strip via
+  // calcBookAggregates(), so this panel and the top KPI cards can never
+  // independently drift from each other again. ──────────────────────
+  var bookAggHV=calcBookAggregates(S,r,q,iv);
+  var totalContracts=bookAggHV.totalContracts;
+  var totalCost=bookAggHV.totalCost;
+  var totalMTM=bookAggHV.totalMTM;
+  var totalDeltaNotional=bookAggHV.totalDeltaNotional;
 
   var bookPnl=totalMTM-totalCost;
   var bookPnlPct=totalCost>0?(bookPnl/totalCost*100):0;
