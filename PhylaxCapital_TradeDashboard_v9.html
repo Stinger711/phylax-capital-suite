@@ -634,6 +634,11 @@ textarea:focus{border-color:var(--teal2)}
       <input type="date" id="setup-inception" value="2026-07-01"/>
       <div class="hint">Use 1 July 2026 for a clean quarter start aligned to SAFEX Q3 expiry.</div>
     </div>
+    <div class="mfi">
+      <label>Primary Investor / Client Name</label>
+      <input type="text" id="setup-investor-name" placeholder="e.g. Royal Bafokeng Holdings"/>
+      <div class="hint">Recorded against this session and added to the Unit Holder Client List below.</div>
+    </div>
 
     <div class="modal-section">Portfolio Structure</div>
     <div class="modal-row">
@@ -1889,6 +1894,29 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ UNIT HOLDER CLIENT LIST ═══════════════════════════════════════ -->
+<div class="panel bpurple" id="unitholder-clients-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="sh c-purple" style="margin-bottom:0">Unit Holder Client List — All Sessions</div>
+    <button class="btn btn-ghost btn-xs" onclick="refreshUnitHolderClients()">↻ Refresh</button>
+  </div>
+  <div style="font-size:9px;color:var(--muted);margin-bottom:10px;line-height:1.5">Tracks each investor's total units and contributed capital across every session they've been part of — not just the currently active one.</div>
+  <div style="overflow-x:auto">
+    <table class="inv-register">
+      <thead><tr>
+        <th style="text-align:left">Client</th>
+        <th>Total Units</th>
+        <th>Total Contributed</th>
+        <th># Sessions</th>
+        <th style="text-align:left">Last Activity</th>
+      </tr></thead>
+      <tbody id="unitholder-clients-body">
+        <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- ══ BS INTERMEDIATES ══════════════════════════════════════════════ -->
 <div class="panel" style="margin-bottom:14px">
   <div class="sh c-plat" style="cursor:pointer" onclick="toggleBS()">
@@ -2325,6 +2353,7 @@ function navCol(id){ return sessionDoc(id).collection('navHistory'); }
 function inflowCol(id){ return sessionDoc(id).collection('inflows'); }
 function closedTradesCol(id){ return sessionDoc(id).collection('closedTrades'); }
 function liveInputsDoc(id){ return sessionDoc(id).collection('live').doc('inputs'); }
+function marketLogCol(id){ return sessionDoc(id).collection('marketLog'); }
 
 async function fbSaveSession(data){
   if(!CURRENT_SESSION) return;
@@ -2421,6 +2450,68 @@ function localSessionList(){
   }
   return out.sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
 }
+
+// ════════════════════════════════════════════════════════════════════
+// UNIT HOLDER CLIENT LIST — a top-level collection (outside any single
+// session doc) so a client's units/contributions are tracked across
+// every session they've been part of, not just the currently active
+// one. Written to on session creation and on every subscription/
+// redemption, keyed by a slugified display name so re-entering the
+// same investor name always resolves to the same client record.
+// ════════════════════════════════════════════════════════════════════
+function unitHoldersCol(){ return window.db.collection('unit_holder_clients'); }
+function slugifyClientName(name){
+  return String(name||'unnamed').trim().toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'')||'unnamed';
+}
+// Transactional — reads the currently committed client doc and applies
+// the delta atomically, so two sessions/tabs crediting the same client
+// at once can't clobber each other the way a plain merge:true would.
+async function upsertUnitHolderClient(name, sessionId, sessionName, opts){
+  if(!fbReady()) return {ok:false, offline:true};
+  var id=slugifyClientName(name);
+  var unitsDelta=(opts&&opts.unitsDelta)||0;
+  var cashDelta=(opts&&opts.cashDelta)||0;
+  try{
+    await window.db.runTransaction(async function(tx){
+      var ref=unitHoldersCol().doc(id);
+      var doc=await tx.get(ref);
+      var data=doc.exists?doc.data():{displayName:name,totalUnits:0,totalContributed:0,sessions:{},createdAt:new Date().toISOString()};
+      data.displayName=name;
+      data.totalUnits=(data.totalUnits||0)+unitsDelta;
+      data.totalContributed=(data.totalContributed||0)+cashDelta;
+      data.sessions=data.sessions||{};
+      var prev=data.sessions[sessionId]||{units:0,contributed:0};
+      data.sessions[sessionId]={sessionName:sessionName,units:prev.units+unitsDelta,contributed:prev.contributed+cashDelta,lastActivity:new Date().toISOString()};
+      data.lastActivity=new Date().toISOString();
+      tx.set(ref,data);
+    });
+    return {ok:true};
+  }catch(e){ console.error('upsertUnitHolderClient error:',e); return {ok:false,error:e}; }
+}
+async function loadUnitHolderClients(){
+  if(!fbReady()) return [];
+  try{
+    var snap=await unitHoldersCol().orderBy('lastActivity','desc').limit(100).get();
+    return snap.docs.map(function(d){ return Object.assign({id:d.id},d.data()); });
+  }catch(e){ console.error('loadUnitHolderClients error:',e); return []; }
+}
+function renderUnitHolderClients(list){
+  var tbody=c('unitholder-clients-body'); if(!tbody) return;
+  if(!list||!list.length){
+    tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No clients recorded yet.</td></tr>';
+    return;
+  }
+  var html='';
+  list.forEach(function(cl){
+    html+='<tr><td style="text-align:left;color:var(--plat)">'+escapeHtml(cl.displayName)+'</td>'
+      +'<td>'+Math.round(cl.totalUnits||0).toLocaleString('en-ZA')+'</td>'
+      +'<td>'+fRk(cl.totalContributed||0)+'</td>'
+      +'<td>'+Object.keys(cl.sessions||{}).length+'</td>'
+      +'<td style="color:var(--muted)">'+(cl.lastActivity?cl.lastActivity.slice(0,10):'—')+'</td></tr>';
+  });
+  tbody.innerHTML=html;
+}
+async function refreshUnitHolderClients(){ renderUnitHolderClients(await loadUnitHolderClients()); }
 
 // ════════════════════════════════════════════════════════════════════
 // SESSION DATA — config + aggregate state ONLY.
@@ -5420,7 +5511,8 @@ function openInflowModal(){
   onInflowModeChange();
   c('inflow-modal').classList.remove('hidden');
 }
-
+function closeInflowModal(){ c('inflow-modal').classList.add('hidden'); 
+}
 function onInflowModeChange(){
   var mode=(document.querySelector('input[name="inflow-mode"]:checked')||{}).value||'same';
   var isRealloc=mode==='realloc';
@@ -5545,8 +5637,14 @@ async function confirmInflow(){
       } else if(!result.offline){ setFBStatus('error','Cloud save failed'); }
     }catch(e){ console.error('Inflow save error:',e); setFBStatus('error','Cloud save failed'); }
   }
-  if(saveOk) showToast((plan.cashDelta>=0?'✓ Cash in ':'✓ Cash out ')+fRk(Math.abs(plan.cashDelta))+' — target now '+(plan.targetPctAfter*100).toFixed(1)+'%','success',6000);
-  else showToast('⚠ Saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  if(saveOk){
+    showToast((plan.cashDelta>=0?'✓ Cash in ':'✓ Cash out ')+fRk(Math.abs(plan.cashDelta))+' — target now '+(plan.targetPctAfter*100).toFixed(1)+'%','success',6000);
+    await upsertUnitHolderClient(investor, CURRENT_SESSION.sessionId, CURRENT_SESSION.sessionName,
+      {unitsDelta:newUnits, cashDelta:plan.cashDelta});
+    refreshUnitHolderClients();
+  } else {
+    showToast('⚠ Saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  }
 }
 
   
@@ -5665,8 +5763,14 @@ async function executeRedemption(){
       }
     }catch(e){ console.error('Redemption save error:',e); setFBStatus('error','Cloud save failed'); }
   }
-  if(saveOk) showToast('✓ Redemption R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+' processed & saved to Firebase','success',6000);
-  else showToast('⚠ Redemption saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  if(saveOk){
+    showToast('✓ Redemption R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+' processed & saved to Firebase','success',6000);
+    await upsertUnitHolderClient(investor, CURRENT_SESSION.sessionId, CURRENT_SESSION.sessionName,
+      {unitsDelta:-pr.units, cashDelta:-pr.redemptionValue});
+    refreshUnitHolderClients();
+  } else {
+    showToast('⚠ Redemption saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  }
 }
 
 function renderInflowLog(){
@@ -5816,6 +5920,7 @@ function openSetupModal(resetDefaults){
   if(resetDefaults){
     c('setup-name').value='Demo — R1bn Portfolio, 7% Phylax';
     c('setup-inception').value='2026-07-01';
+    c('setup-investor-name').value='';
     c('setup-total-port').value='1000000000';
     c('setup-phylax-pct').value='7';
     c('setup-jibar').value='7.50';
@@ -5880,6 +5985,7 @@ function updateSetupPreview(){
 async function createSession(){
   var sessionName=c('setup-name').value.trim()||'Demo Session';
   var inceptionDate=c('setup-inception').value||'2026-07-01';
+  var investorName=c('setup-investor-name').value.trim()||'Unnamed Investor';
   var totalPortfolio=getSetupTotal()||1000000000;
   var phylaxPct=getSetupPct()||7;
   var phylaxCapital=Math.round(totalPortfolio*(phylaxPct/100));
@@ -5892,7 +5998,7 @@ async function createSession(){
   var sessionId=c('setup-session-id').value||('PHYLAX_'+Date.now().toString(36).toUpperCase());
 
   CURRENT_SESSION={
-    sessionId, sessionName, inceptionDate,
+    sessionId, sessionName, inceptionDate, investorName,
     totalPortfolio, phylaxCapital, phylaxPct,
     jibar, zaroniaSpread, otm, dY, alsiInception,
     createdAt:new Date().toISOString()
@@ -5957,6 +6063,16 @@ async function createSession(){
   data.createdAt=CURRENT_SESSION.createdAt;
   await fbSaveSession(data);
   setFBStatus('ok','Session created & saved');
+
+  // Register this session's investor in the cross-session client list.
+  // Units credited at inception (capital / R100 inception unit price) —
+  // mirrors getOrInitUnitState()'s own inception math so the two never
+  // silently disagree on how many units a fresh session started with.
+  if(fbReady()){
+    await upsertUnitHolderClient(investorName, sessionId, sessionName,
+      {unitsDelta:phylaxCapital/UNIT_INCEPTION_PRICE, cashDelta:phylaxCapital});
+  }
+  refreshUnitHolderClients();
 }
 
 async function openExistingSession(){
@@ -5974,6 +6090,7 @@ function activateDashboard(){
   paintInceptionALSI();
   // Legacy sessions created before the inception-ALSI lock: allow a one-time entry
   enableLegacyInceptionEntry();
+  refreshUnitHolderClients();
 }
 // For sessions created before the inception ALSI was locked in the wizard:
 // let the user set it once directly in the banner field, then it locks.
