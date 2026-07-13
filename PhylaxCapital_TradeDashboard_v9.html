@@ -1183,6 +1183,18 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ DAILY MARKET LOG STRIP ══════════════════════════════════════════ -->
+<div style="display:flex;align-items:center;gap:16px;padding:8px 16px;background:rgba(160,96,240,.04);border:1px solid rgba(160,96,240,.15);border-radius:2px;margin-bottom:14px;flex-wrap:wrap">
+  <span style="font-family:'Rajdhani',sans-serif;font-size:8.5px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.14em">Today's Market Data</span>
+  <span style="font-size:9px;color:var(--muted)">Morning:</span>
+  <span id="mls-morning" style="font-family:'DM Mono',monospace;font-size:9.5px">—</span>
+  <span style="color:var(--muted)">|</span>
+  <span style="font-size:9px;color:var(--muted)">EOD:</span>
+  <span id="mls-eod" style="font-family:'DM Mono',monospace;font-size:9.5px">—</span>
+</div>
+
+<!-- ══ UNIT PRICE BAR ════════════════════════════════════════════════ -->
+
 <!-- ══ UNIT PRICE BAR ════════════════════════════════════════════════ -->
 <div class="unit-price-bar" id="unit-price-bar">
   <div class="up-cell">
@@ -2442,7 +2454,7 @@ function buildSessionData(){
 // ════════════════════════════════════════════════════════════════════
 function lsKey(k){ return 'phylax_v5_'+CURRENT_SESSION.sessionId+'_'+k; }
 
-var _LIVE = { trades:{}, cashBalance:0, navHistory:[], auditLog:[], inflowLog:[], closedTrades:[], inputs:{} };
+var _LIVE = { trades:{}, cashBalance:0, navHistory:[], auditLog:[], inflowLog:[], closedTrades:[], inputs:{}, dailyMarketLog:[] };
 var _LISTENERS = [];
 
 // ── Trade-sync race guard ───────────────────────────────────────────
@@ -2460,7 +2472,7 @@ var _LISTENERS = [];
 var TRADE_SYNC_GRACE_MS = 4000;
 var _tradeWriteTimestamps = {};   // tradeId -> ms of last local optimistic write
 var _tradeTombstones = {};        // tradeId -> ms of last local optimistic removal
-var _lastSyncedKeys = { navHistory:{}, auditLog:{}, inflowLog:{}, closedTrades:{} };
+var _lastSyncedKeys = { navHistory:{}, auditLog:{}, inflowLog:{}, closedTrades:{}, dailyMarketLog:{} };
 
 function getState(){ try{ var v=localStorage.getItem(lsKey('state')); return v?JSON.parse(v):defaultState(); }catch(e){ return defaultState(); } }
 function saveState(st){ try{ localStorage.setItem(lsKey('state'),JSON.stringify(st)); }catch(e){} }
@@ -2509,7 +2521,24 @@ function saveInflowLog(l){
   try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(l)); }catch(e){}
   _syncDiff('inflowLog', inflowCol, l);
 }
-
+function getDailyMarketLog(){ return (_LIVE.dailyMarketLog||[]).slice(); }
+function saveDailyMarketLog(l){
+  _LIVE.dailyMarketLog = l;
+  try{ localStorage.setItem(lsKey('marketlog'),JSON.stringify(l)); }catch(e){}
+  _syncDiff('dailyMarketLog', marketLogCol, l);
+}
+function getTodayMarketLogEntry(){
+  var log=getDailyMarketLog();
+  return log.find(function(e){ return e.date===todayStr(); })||null;
+}
+function upsertMarketLogEntry(patch){
+  var log=getDailyMarketLog();
+  var idx=log.findIndex(function(e){ return e.date===todayStr(); });
+  var entry = idx>=0 ? Object.assign({},log[idx],patch) : Object.assign({date:todayStr(),entryTs:todayStr()},patch);
+  if(idx>=0) log[idx]=entry; else log.push(entry);
+  saveDailyMarketLog(log);
+  return entry;
+}
 function getClosedTrades(){ return (_LIVE.closedTrades||[]).slice(); }
 function saveClosedTrades(l){
   _LIVE.closedTrades = l;
@@ -2751,6 +2780,13 @@ function attachLiveListeners(sessionId){
       try{ localStorage.setItem(lsKey('inflowlog'), JSON.stringify(_LIVE.inflowLog)); }catch(e){}
     }, function(e){ console.error('Inflow log listener error:',e); }));
 
+         _LISTENERS.push(marketLogCol(sessionId).onSnapshot(function(snap){
+         _LIVE.dailyMarketLog = snap.docs.map(function(d){return d.data();})
+               .sort(function(a,b){return (a.entryTs||'')>(b.entryTs||'')?1:-1;});
+          var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.dailyMarketLog=keys;
+          try{ localStorage.setItem(lsKey('marketlog'), JSON.stringify(_LIVE.dailyMarketLog)); }catch(e){}
+          }, function(e){ console.error('Market log listener error:',e); }));
+
     _LISTENERS.push(closedTradesCol(sessionId).onSnapshot(function(snap){
       _LIVE.closedTrades = snap.docs.map(function(d){return d.data();})
         .sort(function(a,b){return (a.entryTs||0)>(b.entryTs||0)?1:-1;});
@@ -2837,6 +2873,30 @@ function renderUnitPriceBar(){
   if(c('up-day-change')) c('up-day-change').style.color=dayChange>=0?'var(--green2)':'var(--red2)';
   setText('up-redeem','R '+up.unitPrice.toFixed(4));
   window._unitData=up;
+}
+function renderMarketLogStrip(){
+  var entry=getTodayMarketLogEntry();
+  var elM=c('mls-morning'), elE=c('mls-eod');
+  if(!elM||!elE) return;
+  if(!entry||!entry.morningStatus){
+    elM.textContent='⚠ NOT ENTERED — showing carried/stale values';
+    elM.style.color='var(--red2)';
+  } else if(entry.morningStatus==='skipped'){
+    elM.textContent='⚠ SKIPPED — using carried values';
+    elM.style.color='var(--amber)';
+  } else {
+    var t=entry.morningEnteredAt?new Date(entry.morningEnteredAt).toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'}):'—';
+    elM.textContent='✓ '+fmtInt(entry.morningAlsi)+' pts · '+(entry.morningSavi*100).toFixed(2)+'% SAVI · @ '+t;
+    elM.style.color='var(--green2)';
+  }
+  if(!entry||entry.eodAlsi==null){
+    elE.textContent='— Not yet closed';
+    elE.style.color='var(--muted)';
+  } else {
+    var devPct=(entry.morningAlsi&&entry.morningStatus==='entered')?Math.abs(entry.eodAlsi-entry.morningAlsi)/entry.morningAlsi*100:0;
+    elE.textContent='✓ '+fmtInt(entry.eodAlsi)+' pts'+(devPct>=5?' ⚠ '+devPct.toFixed(1)+'% move from open':'');
+    elE.style.color=devPct>=5?'var(--amber)':'var(--green2)';
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3501,6 +3561,7 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   renderBudgetPanel();
   renderHedgeView();
   renderHarvestPanel();
+  renderMarketLogStrip();
   updatePortfolio();
 }
 
@@ -5842,6 +5903,26 @@ async function createSession(){
   FVAL['i-jibar']=jibar;
   FVAL['i-otm']=otm;
   FVAL['i-dY']=dY;
+  FVAL['i-spot']=0;
+  FVAL['i-iv']=0;
+  FVAL['i-held']=0;
+  FVAL['i-nav']=phylaxCapital;
+  navOverrideActive=false;
+  window._selectedExpiry=null;
+  window._selectedPutR=null;
+  window._selectedK=null;
+  window._calc=null;
+  window._allocUserOverride=false;;
+  FVAL['i-spot']=0;
+  FVAL['i-iv']=0;
+  FVAL['i-held']=0;
+  FVAL['i-nav']=phylaxCapital;
+  navOverrideActive=false;
+  window._selectedExpiry=null;
+  window._selectedPutR=null;
+  window._selectedK=null;
+  window._calc=null;
+  window._allocUserOverride=false;
   ZARONIA_SPREAD_BPS=zaroniaSpread;
   c('sl-zaronia-spread').value=zaroniaSpread;
   setText('sl-zaronia-val',zaroniaSpread+' bps');
@@ -6143,7 +6224,7 @@ function refreshAllDisplays(){
   renderNavHistoryTable(); renderPerfChart();
   renderLog(); renderInflowLog();
   renderLadderPanel(); renderDailyNAV(); renderLiquidityStress();
-  renderHarvestPanel();
+  renderHarvestPanel(); renderMarketLogStrip();
   calc();
 }
 
@@ -6151,7 +6232,7 @@ function refreshAllDisplays(){
 // MORNING CHECKLIST
 // ════════════════════════════════════════════════════════════════════
 function morningChecklistNeeded(){
-  var raw=localStorage.getItem('phylax_morning_'+todayStr());
+  var raw=localStorage.getItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr());
   if(!raw) return true;
   if(raw==='skipped') return false;
   try{ var md=JSON.parse(raw); return !(md.alsi&&md.savi&&md.jibar&&md.dy); }
@@ -6268,7 +6349,12 @@ function morningChecklistConfirm(){
     alsi:alsi, savi:savi/100, jibar:jibar/100, dy:dy/100,
     ts:Date.now()
   };
-  localStorage.setItem('phylax_morning_'+todayStr(), JSON.stringify(morningData));
+  localStorage.setItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr(), JSON.stringify(morningData));
+  upsertMarketLogEntry({
+    morningAlsi:alsi, morningSavi:savi/100, morningJibar:jibar/100, morningDy:dy/100,
+    morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
+  });
+  renderMarketLogStrip();
 
   c('morning-modal').classList.add('hidden');
   try{ refreshAllDisplays(); calc(); }catch(e){ console.error('Refresh error:',e); }
@@ -6276,7 +6362,9 @@ function morningChecklistConfirm(){
 }
 
 function morningChecklistSkip(){
-  localStorage.setItem('phylax_morning_'+todayStr(),'skipped');
+  localStorage.setItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr(),'skipped');
+  upsertMarketLogEntry({morningStatus:'skipped', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()});
+  renderMarketLogStrip();
   c('morning-modal').classList.add('hidden');
   showToast('⚠ Morning inputs skipped — using carried values. Verify before trading.','error',6000);
 }
@@ -6336,7 +6424,7 @@ function dashboardInit(){
         refreshAllDisplays();
         setFBStatus('ok','Session loaded');
         // Restore today's morning inputs if already entered today
-        var morningKey='phylax_morning_'+todayStr();
+        var morningKey='phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr();
         var morningRaw=localStorage.getItem(morningKey);
         if(morningRaw && morningRaw!=='skipped'){
           try{
