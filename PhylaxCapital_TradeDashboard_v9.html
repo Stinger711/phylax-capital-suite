@@ -712,14 +712,30 @@ textarea:focus{border-color:var(--teal2)}
   <div class="modal-box" style="max-width:480px">
     <div class="modal-title">Capital Inflow — Add Funds</div>
     <div class="modal-sub">New capital arriving mid-quarter. The system will recalculate the FI leg, remaining option budget, and recommended additional contracts based on the time remaining to the next SAFEX expiry.</div>
-    <div class="modal-section">Inflow Details</div>
+    <div class="modal-section">Flow Type</div>
+    <div style="display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--plat)">
+        <input type="radio" name="inflow-mode" value="same" checked onchange="onInflowModeChange()" style="width:auto;accent-color:var(--purple)"/> Same allocation %
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--plat)">
+        <input type="radio" name="inflow-mode" value="realloc" onchange="onInflowModeChange()" style="width:auto;accent-color:var(--purple)"/> Change allocation % (cover)
+      </label>
+    </div>
+    <div id="inflow-mode-hint" style="font-size:9px;color:var(--muted);margin-bottom:12px;line-height:1.5">Client is sending the Phylax sleeve amount directly — total capital is implied from the current target %.</div>
+
+    <div class="modal-section">Flow Details</div>
     <div class="mfi">
       <label>Investor / DFM Name</label>
       <input type="text" id="inflow-investor" placeholder="e.g. Investor or DFM identifier"/>
     </div>
-    <div class="mfi">
-      <label>Inflow Amount (R)</label>
-      <input type="text" id="inflow-amount" placeholder="e.g. 10000000"/>
+    <div class="mfi" id="inflow-amount-wrap">
+      <label id="inflow-amount-label">Phylax Cash Amount (R) — negative = client withdrawing</label>
+      <input type="text" id="inflow-amount" placeholder="e.g. 10000000 or -10000000" oninput="previewInflow()"/>
+    </div>
+    <div class="mfi hidden" id="inflow-target-wrap">
+      <label>New Target Allocation %</label>
+      <input type="text" id="inflow-target-pct" placeholder="e.g. 10 (or 0 for full cover exit)" oninput="previewInflow()"/>
+      <div class="hint" style="color:var(--teal2)">Tracker sleeve is untouched. System computes the cash required (or returned, based on live NAV) to reach this target.</div>
     </div>
     <div class="mfi">
       <label>Inflow Date</label>
@@ -730,7 +746,11 @@ textarea:focus{border-color:var(--teal2)}
       <input type="text" id="inflow-notes" placeholder="e.g. New investor allocation — Q3 2026"/>
     </div>
     <div id="inflow-preview" class="modal-calc" style="display:none">
-      <div class="mc-row"><span class="mc-k">New Capital Added</span><span class="mc-v" id="inf-amount">—</span></div>
+      <div class="mc-row"><span class="mc-k">Current Target %</span><span class="mc-v" id="inf-target-before">—</span></div>
+      <div class="mc-row"><span class="mc-k">New Target %</span><span class="mc-v" id="inf-target-after">—</span></div>
+      <div class="mc-row"><span class="mc-k">Tracker Cost-Basis Delta</span><span class="mc-v" id="inf-tracker-delta">—</span></div>
+      <div class="mc-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <span class="mc-k">Phylax Cash Movement</span><span class="mc-v" id="inf-amount">—</span></div>
       <div class="mc-row"><span class="mc-k">NAV Before</span><span class="mc-v" id="inf-nav-before">—</span></div>
       <div class="mc-row"><span class="mc-k">NAV After</span><span class="mc-v" id="inf-nav-after">—</span></div>
       <div class="mc-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
@@ -2450,7 +2470,17 @@ function defaultState(){
     totalPortfolio: CURRENT_SESSION ? CURRENT_SESSION.totalPortfolio : 1000000000,
     inceptionDate: CURRENT_SESSION ? CURRENT_SESSION.inceptionDate : null,
     cashCoreInit: 0, residualCash: 0, jibarAtInception: 0.075,
-    totalInflows: 0
+    totalInflows: 0,
+    // Client's current Phylax cover target, e.g. 0.07 = 7%. Changed only
+    // by a "Change allocation %" flow — never inferred from a deposit.
+    targetPct: CURRENT_SESSION && CURRENT_SESSION.phylaxPct ? CURRENT_SESSION.phylaxPct/100 : 0.07,
+    // Tracker sleeve — a PERSISTENT running mark, not re-derived from
+    // (totalPortfolio − capital) on every read. Grows with the daily
+    // ALSI return; only moves on genuine cash flows. Survives cover
+    // dropping to 0% and being re-established later with no gap.
+    trackerNAV: CURRENT_SESSION ? (CURRENT_SESSION.totalPortfolio - CURRENT_SESSION.phylaxCapital) : 930000000,
+    trackerMarkALSI: 0,       // ALSI level trackerNAV is currently marked at
+    trackerCostBasis: CURRENT_SESSION ? (CURRENT_SESSION.totalPortfolio - CURRENT_SESSION.phylaxCapital) : 930000000
   };
 }
 
@@ -3490,6 +3520,51 @@ function showWarn(msg){
 // ════════════════════════════════════════════════════════════════════
 // PORTFOLIO COMPARISON
 // ════════════════════════════════════════════════════════════════════
+function getLiveTrackerNAV(){
+  var st=getState();
+  var mark=st.trackerMarkALSI||getInceptionALSI();
+  var base=st.trackerNAV!=null?st.trackerNAV:((st.totalPortfolio||0)-(st.capital||0));
+  var currentALSI=FVAL['i-spot']||mark;
+  if(!mark||mark<=0) return base;
+  return base*(currentALSI/mark);
+}
+function settleTrackerNAV(atALSI){
+  var st=getState();
+  var live=getLiveTrackerNAV();
+  st.trackerNAV=live;
+  st.trackerMarkALSI=atALSI||FVAL['i-spot']||st.trackerMarkALSI;
+  saveState(st);
+  return live;
+}
+function planSameAllocFlow(amount){
+  var st=getState();
+  var targetPct=st.targetPct>0?st.targetPct:0.07;
+  var impliedTotalDelta=amount/targetPct;
+  var trackerDelta=impliedTotalDelta-amount;
+  return {
+    mode:'same', targetPctBefore:targetPct, targetPctAfter:targetPct,
+    cashDelta:amount, capitalCostDelta:amount, trackerCostDelta:trackerDelta
+  };
+}
+function planReallocationFlow(newTargetPct){
+  var st=getState();
+  var targetPctBefore=st.targetPct>0?st.targetPct:0.07;
+  var liveTracker=getLiveTrackerNAV();
+  var navData=computeNAVFromState();
+  var phylaxNAVNow=navData?navData.total:(st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0));
+  var phylaxCapitalNow=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
+  var p=Math.max(0,Math.min(0.999999,newTargetPct));
+  var phylaxNAVTarget = p*liveTracker/(1-p);
+  var cashFlow=phylaxNAVTarget-phylaxNAVNow;
+  var scaleFactor = phylaxNAVNow>0 ? (phylaxNAVTarget/phylaxNAVNow) : 1;
+  var capitalDelta = phylaxCapitalNow*scaleFactor - phylaxCapitalNow;
+  return {
+    mode:'realloc', targetPctBefore:targetPctBefore, targetPctAfter:p,
+    cashDelta:cashFlow, capitalCostDelta:capitalDelta, trackerCostDelta:0,
+    liveTrackerNAV:liveTracker, phylaxNAVNow:phylaxNAVNow
+  };
+}
+
 function updatePortfolio(){
   if(!CURRENT_SESSION) return;
   var st=getState();
@@ -3503,18 +3578,20 @@ function updatePortfolio(){
 
   var totalPort=st.totalPortfolio||CURRENT_SESSION.totalPortfolio;
   var phylaxCapital=st.capital||CURRENT_SESSION.phylaxCapital;
-  var trackerCapital=totalPort-phylaxCapital;
 
-  // Tracker sleeve tracks ALSI from entry
-  var trackerNAV=alsiEntry>0?trackerCapital*(currentALSI/alsiEntry):trackerCapital;
-  var trackerRet=alsiEntry>0?((currentALSI-alsiEntry)/alsiEntry*100):0;
+  // Persistent running mark — NOT re-derived from totalPort−phylaxCapital.
+  var trackerNAV=getLiveTrackerNAV();
+  var trackerCostBasis=st.trackerCostBasis!=null?st.trackerCostBasis:(totalPort-phylaxCapital);
+  var trackerRet=trackerCostBasis>0?((trackerNAV-trackerCostBasis)/trackerCostBasis*100):0;
+  var trackerGrowthFactor=trackerCostBasis>0?(trackerNAV/trackerCostBasis):1;
 
   // Blended portfolio NAV
   var blendedNAV=phylaxNAV+trackerNAV;
   var blendedRet=(blendedNAV-totalPort)/totalPort*100;
 
-  // Counterfactual: what if 100% tracker (no Phylax)
-  var counterfactualNAV=alsiEntry>0?totalPort*(currentALSI/alsiEntry):totalPort;
+  // Counterfactual: what if 100% tracker (no Phylax) — total contributed
+  // capital grown at the tracker sleeve's actual realised path.
+  var counterfactualNAV=totalPort*trackerGrowthFactor;
   var counterfactualRet=(counterfactualNAV-totalPort)/totalPort*100;
 
   // Net benefit of Phylax
@@ -3615,10 +3692,9 @@ async function endOfDay(){
   // Carry today = interest on cash base only (no residual)
   var carryToday=cashBaseClose*zaronia/365;
 
-  // Tracker NAV calculation
-  var alsiEntry=getInceptionALSI()||eodTrackerLevel;
-  var trackerCapital=st.totalPortfolio-(st.capital||CURRENT_SESSION.phylaxCapital);
-  var trackerNAV=alsiEntry>0?trackerCapital*(eodTrackerLevel/alsiEntry):trackerCapital;
+  // Roll the persistent tracker mark forward to today's JSE close — this
+  // IS the daily mark-to-market step, independent of anything Phylax did.
+  var trackerNAV=settleTrackerNAV(eodTrackerLevel);
   var blendedNAV=closingNAV+trackerNAV;
 
   var history=getNavHistory();
@@ -5271,91 +5347,113 @@ function openInflowModal(){
   if(!CURRENT_SESSION){ alert('No active session.'); return; }
   c('inflow-investor').value='';
   c('inflow-amount').value='';
+  c('inflow-target-pct').value='';
   c('inflow-notes').value='';
   c('inflow-date').value=todayStr();
   c('inflow-preview').style.display='none';
+  document.querySelector('input[name="inflow-mode"][value="same"]').checked=true;
+  onInflowModeChange();
   c('inflow-modal').classList.remove('hidden');
-  // Live preview on amount change
-  c('inflow-amount').oninput=previewInflow;
 }
-function closeInflowModal(){ c('inflow-modal').classList.add('hidden'); }
+
+function onInflowModeChange(){
+  var mode=(document.querySelector('input[name="inflow-mode"]:checked')||{}).value||'same';
+  var isRealloc=mode==='realloc';
+  c('inflow-amount-wrap').classList.toggle('hidden', isRealloc);
+  c('inflow-target-wrap').classList.toggle('hidden', !isRealloc);
+  c('inflow-mode-hint').textContent = isRealloc
+    ? 'Client is changing cover. Tracker sleeve untouched — cash required/returned is computed off LIVE Phylax NAV.'
+    : 'Client is sending the Phylax sleeve amount directly — total capital is implied from the current target %.';
+  previewInflow();
+}
 
 function previewInflow(){
-  var amount=parseFloat(c('inflow-amount').value.replace(/[^\d.]/g,''))||0;
-  if(amount<=0){ c('inflow-preview').style.display='none'; return; }
+  var mode=(document.querySelector('input[name="inflow-mode"]:checked')||{}).value||'same';
+  var plan=null;
+  if(mode==='same'){
+    var amt=parseFloat((c('inflow-amount').value||'').replace(/[^\d.\-]/g,''))||0;
+    if(amt===0){ c('inflow-preview').style.display='none'; return; }
+    plan=planSameAllocFlow(amt);
+  } else {
+    var pctIn=parseFloat((c('inflow-target-pct').value||'').replace(/[^\d.]/g,''));
+    if(isNaN(pctIn)||pctIn<0||pctIn>=100){ c('inflow-preview').style.display='none'; return; }
+    plan=planReallocationFlow(pctIn/100);
+  }
   var st=getState();
   var navData=computeNAVFromState();
   var currentNAV=navData?navData.total:(st.capital||CURRENT_SESSION.phylaxCapital);
-  var newNAV=currentNAV+amount;
-  // Time to next SAFEX expiry
+  var newNAV=currentNAV+plan.cashDelta;
   var expiryStr=document.getElementById('i-expiry').value||safexExpiryStr(new Date());
   var today=new Date(); today.setHours(0,0,0,0);
   var expiry=new Date(expiryStr);
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
   var tteDays=Math.round(T*365);
   var r=FVAL['i-jibar'];
-  // FI leg for the inflow: amount goes into call account (full amount)
-  var incrementalFI=amount;
-  // Option budget for remaining tenor
-  var incrementalOptBudget=amount*(r*T/(1+r*T));
-  // Contracts suggested
+  var incrementalFI=plan.cashDelta;
+  var incrementalOptBudget=plan.cashDelta>0?plan.cashDelta*(r*T/(1+r*T)):0;
   var S=FVAL['i-spot'],q=FVAL['i-dY'],iv=FVAL['i-iv'],otm=FVAL['i-otm'];
   var K=Math.round(S*(1-otm));
   var putR=bsPutRepriceR(S,K,r,q,iv,T);
-  var contracts=putR>0?Math.floor(incrementalOptBudget/putR):0;
-  // Units to be issued at today's live unit price
+  var contracts=(putR>0&&incrementalOptBudget>0)?Math.floor(incrementalOptBudget/putR):0;
   var up=calcUnitPrice();
-  var subscriptionUnitPrice=up?up.unitPrice:UNIT_INCEPTION_PRICE;
-  var newUnits=amount/subscriptionUnitPrice;
-  c('inf-amount').textContent=fRk(amount);
+  var unitPrice=up?up.unitPrice:UNIT_INCEPTION_PRICE;
+  var newUnits=plan.cashDelta/unitPrice;
+
+  setText('inf-target-before',(plan.targetPctBefore*100).toFixed(2)+'%');
+  setText('inf-target-after',(plan.targetPctAfter*100).toFixed(2)+'%');
+  setText('inf-tracker-delta',(plan.trackerCostDelta>=0?'+':'')+fRk(plan.trackerCostDelta));
+  c('inf-amount').textContent=(plan.cashDelta>=0?'+':'')+fRk(plan.cashDelta);
+  c('inf-amount').style.color=plan.cashDelta>=0?'var(--green2)':'var(--red2)';
   c('inf-nav-before').textContent=fRk(currentNAV);
-  c('inf-nav-after').textContent=fRk(newNAV);
+  c('inf-nav-after').textContent=fRk(Math.max(0,newNAV));
   c('inf-tte').textContent=tteDays+' days';
-  c('inf-fi').textContent=fRk(incrementalFI)+' (full call account)';
+  c('inf-fi').textContent=fRk(incrementalFI)+(plan.cashDelta>=0?' (into call account)':' (out of call account)');
   c('inf-opt-budget').textContent=fRk(incrementalOptBudget);
   c('inf-contracts').textContent=contracts+' contracts';
-  if(c('inf-unit-price')) c('inf-unit-price').textContent='R '+subscriptionUnitPrice.toFixed(4)+'/unit';
-  if(c('inf-units')) c('inf-units').textContent=Math.round(newUnits).toLocaleString('en-ZA')+' units';
+  if(c('inf-unit-price')) c('inf-unit-price').textContent='R '+unitPrice.toFixed(4)+'/unit';
+  if(c('inf-units')) c('inf-units').textContent=(newUnits>=0?'+':'')+Math.round(newUnits).toLocaleString('en-ZA')+' units';
   c('inflow-preview').style.display='block';
-  window._inflowCalc={amount,currentNAV,newNAV,tteDays,incrementalFI,incrementalOptBudget,contracts,T,putR,K,S,subscriptionUnitPrice,newUnits};
+  window._inflowCalc={plan,currentNAV,newNAV,tteDays,incrementalFI,incrementalOptBudget,contracts,T,putR,K,S,unitPrice,newUnits};
 }
 
 async function confirmInflow(){
-  if(!window._inflowCalc){ alert('Enter an inflow amount first.'); return; }
-  var ic=window._inflowCalc;
-  var notes=c('inflow-notes').value||'Capital subscription';
+  if(!window._inflowCalc){ alert('Enter an amount or target % first.'); return; }
+  var ic=window._inflowCalc, plan=ic.plan;
+  if(Math.abs(plan.cashDelta)<1){ alert('No material cash movement — check the amount / target %.'); return; }
+  var notes=c('inflow-notes').value||(plan.mode==='same'?'Capital flow — same allocation':'Cover reallocation');
   var investor=c('inflow-investor').value||'Unnamed investor';
   var date=c('inflow-date').value||todayStr();
   var st=getState();
-  // Update fund state
-  var newCapital=(st.capital||CURRENT_SESSION.phylaxCapital)+ic.amount;
-  st.capital=newCapital;
-  st.totalInflows=(st.totalInflows||0)+ic.amount;
-  // Update total portfolio
-  st.totalPortfolio=(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+ic.amount;
-  saveState(st);
-  CURRENT_SESSION.phylaxCapital=newCapital;
-  CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
-  // Cash balance is NOT set locally here — the transaction below is the
-  // sole writer of ladderCashBalance, reading the server's committed
-  // value rather than this browser's possibly-stale local cache. Same
-  // class of fix as executeRedemption().
 
-  // ── Issue new units at the live unit price — this is what actually
-  //    records "new investor data" against the unitized NAV. ──────────
-  var subscriptionUnitPrice=ic.subscriptionUnitPrice||UNIT_INCEPTION_PRICE;
-  var newUnits=ic.newUnits||(ic.amount/subscriptionUnitPrice);
+  var liveTracker=settleTrackerNAV(FVAL['i-spot']);
+  st.trackerNAV=liveTracker+plan.trackerCostDelta;
+  st.trackerCostBasis=(st.trackerCostBasis!=null?st.trackerCostBasis:liveTracker)+plan.trackerCostDelta;
+  st.targetPct=plan.targetPctAfter;
+
+  var newCapital=(st.capital||CURRENT_SESSION.phylaxCapital)+plan.capitalCostDelta;
+  st.capital=Math.max(0,newCapital);
+  st.totalInflows=(st.totalInflows||0)+Math.max(0,plan.cashDelta);
+  st.totalPortfolio=Math.max(0,(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+plan.capitalCostDelta+plan.trackerCostDelta);
+  saveState(st);
+  CURRENT_SESSION.phylaxCapital=st.capital;
+  CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
+  CURRENT_SESSION.phylaxPct=plan.targetPctAfter*100;
+
+  var unitPrice=ic.unitPrice||UNIT_INCEPTION_PRICE;
+  var newUnits=ic.newUnits!=null?ic.newUnits:(plan.cashDelta/unitPrice);
   var us=getOrInitUnitState();
-  var runningUnits=us.unitsInIssue+newUnits;
+  var runningUnits=Math.max(0,us.unitsInIssue+newUnits);
   us.unitsInIssue=runningUnits;
   saveUnitState(us);
 
-  // Log the subscription to the investor register
   var inflowEntry={
-    date:date, investor:investor, type:'SUBSCRIPTION',
-    amount:ic.amount, unitPrice:subscriptionUnitPrice,
+    date:date, investor:investor,
+    type: plan.mode==='same' ? (plan.cashDelta>=0?'SUBSCRIPTION':'REDEMPTION') : (plan.cashDelta>=0?'COVER_INCREASE':'COVER_DECREASE'),
+    amount:plan.cashDelta, unitPrice:unitPrice,
     units:newUnits, runningUnits:runningUnits,
     navAfter:ic.newNAV, navBefore:ic.currentNAV,
+    targetPctBefore:plan.targetPctBefore, targetPctAfter:plan.targetPctAfter,
+    trackerCostDelta:plan.trackerCostDelta,
     incrementalFI:ic.incrementalFI, incrementalOptBudget:ic.incrementalOptBudget,
     contractsSuggested:ic.contracts, tteDays:ic.tteDays, notes:notes,
     entryTs:Date.now()
@@ -5367,12 +5465,10 @@ async function confirmInflow(){
   updateSimState();
   calc();
 
-  // Transactional cash addition + atomic inflow-doc write — same
-  // race-safe guarantee as a trade purchase or redemption.
   var saveOk=false;
   if(fbReady()){
     try{
-      var result=await adjustCommittedCash(ic.amount, {
+      var result=await adjustCommittedCash(plan.cashDelta, {
         ref: inflowCol(CURRENT_SESSION.sessionId).doc(String(inflowEntry.entryTs)),
         data: Object.assign({},inflowEntry,{_by:deviceLabel()}),
         sessionMerge: buildSessionData()
@@ -5381,14 +5477,14 @@ async function confirmInflow(){
       if(saveOk){
         _lastSyncedKeys.inflowLog[String(inflowEntry.entryTs)]=true;
         setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
-      } else if(!result.offline){
-        setFBStatus('error','Cloud save failed');
-      }
-    }catch(e){ console.error('Subscription save error:',e); setFBStatus('error','Cloud save failed'); }
+      } else if(!result.offline){ setFBStatus('error','Cloud save failed'); }
+    }catch(e){ console.error('Inflow save error:',e); setFBStatus('error','Cloud save failed'); }
   }
-  if(saveOk) showToast('✓ Subscription '+fRk(ic.amount)+' — '+Math.round(newUnits).toLocaleString('en-ZA')+' units issued at R'+subscriptionUnitPrice.toFixed(4),'success',6000);
-  else showToast('⚠ Subscription saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  if(saveOk) showToast((plan.cashDelta>=0?'✓ Cash in ':'✓ Cash out ')+fRk(Math.abs(plan.cashDelta))+' — target now '+(plan.targetPctAfter*100).toFixed(1)+'%','success',6000);
+  else showToast('⚠ Saved locally — Firebase unavailable. Do not close tab.','error',10000);
 }
+
+  
 
 // ════════════════════════════════════════════════════════════════════
 // REDEMPTION — burns units at the live unit price, pays cash T+1 from
@@ -5760,6 +5856,10 @@ async function createSession(){
   st.capital=phylaxCapital;
   st.totalPortfolio=totalPortfolio;
   st.cashCoreInit=0; // will be set on first EOD
+  st.targetPct=phylaxPct/100;
+  st.trackerNAV=totalPortfolio-phylaxCapital;
+  st.trackerCostBasis=totalPortfolio-phylaxCapital;
+  st.trackerMarkALSI=alsiInception>0?alsiInception:0;
   saveState(st);
   saveLadder({tranches:[],cashBalance:0});
   saveLog([]); saveNavHistory([]); saveInflowLog([]);
