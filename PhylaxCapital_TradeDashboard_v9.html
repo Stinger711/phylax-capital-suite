@@ -932,6 +932,10 @@ textarea:focus{border-color:var(--teal2)}
         style="font-size:8.5px;opacity:.6">
         Skip (use yesterday's values)
       </button>
+      <button class="btn btn-ghost" onclick="c('morning-modal').classList.add('hidden');openSessionList()"
+        style="font-size:8.5px;opacity:.6">
+        ↩ Switch Session Instead
+      </button>
     </div>
     <div style="font-size:8px;color:var(--muted);margin-top:8px;text-align:center">
       Skipping uses carried-forward values — ensure they are still valid before trading
@@ -6267,6 +6271,7 @@ function openMorningChecklist(){
   c('mc-confirm-btn').style.opacity='.4';
   c('mc-confirm-btn').style.cursor='not-allowed';
   c('morning-modal').classList.remove('hidden');
+  mcValidate();
   setTimeout(function(){ c('mc-alsi').focus(); },300);
 }
 
@@ -6321,6 +6326,7 @@ function mcValidate(){
 }
 
 function morningChecklistConfirm(){
+  if(!CURRENT_SESSION){ alert('No active session — close this dialog and select a session first.'); return; }
   var alsi=parseFloat(c('mc-alsi').value)||0;
   var savi=parseFloat(c('mc-savi').value)||0;
   var jibar=parseFloat(c('mc-jibar').value)||0;
@@ -6345,16 +6351,21 @@ function morningChecklistConfirm(){
   });
 
   // Record that morning inputs are done for today — save actual values
-  var morningData={
-    alsi:alsi, savi:savi/100, jibar:jibar/100, dy:dy/100,
-    ts:Date.now()
-  };
-  localStorage.setItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr(), JSON.stringify(morningData));
-  upsertMarketLogEntry({
-    morningAlsi:alsi, morningSavi:savi/100, morningJibar:jibar/100, morningDy:dy/100,
-    morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
-  });
-  renderMarketLogStrip();
+  try{
+    var morningData={
+      alsi:alsi, savi:savi/100, jibar:jibar/100, dy:dy/100,
+      ts:Date.now()
+    };
+    localStorage.setItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr(), JSON.stringify(morningData));
+    upsertMarketLogEntry({
+      morningAlsi:alsi, morningSavi:savi/100, morningJibar:jibar/100, morningDy:dy/100,
+      morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
+    });
+    renderMarketLogStrip();
+  }catch(mlErr){
+    console.error('Market log write error:',mlErr);
+    showToast('⚠ Market log save failed — check console. Inputs still applied.','error',6000);
+  }
 
   c('morning-modal').classList.add('hidden');
   try{ refreshAllDisplays(); calc(); }catch(e){ console.error('Refresh error:',e); }
