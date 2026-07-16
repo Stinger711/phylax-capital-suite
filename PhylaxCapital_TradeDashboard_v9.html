@@ -3125,7 +3125,7 @@ function restoreSessionFromFirebase(data){
   if(data.state){
     var st=data.state;
     st.residualCash=0;
-    if(data.ladderCashBalance>0){ st.cashCoreInit=data.ladderCashBalance; }
+    if(data.ladderCashBalance!=null){ st.cashCoreInit=data.ladderCashBalance; }
     saveState(st);
   }
   if(data.unitState) saveUnitState(data.unitState);
@@ -3340,7 +3340,7 @@ function computeNAVFromState(spotOverride,ivOverride){
   // otherwise fall back to full capital (no tranches yet)
   var ladder=getLadder();
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
-  var cashBase=hasTranches&&ladder.cashBalance>0 ? ladder.cashBalance : capital;
+  var cashBase=hasTranches&&ladder.cashBalance!=null ? ladder.cashBalance : capital;
 
   // Call account accrual on cash base
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
@@ -3810,7 +3810,7 @@ async function endOfDay(){
     // residualCash = 0 — ladder cashBalance is the single source of cash truth
     var ldr=getLadder();
     var hasTr=ldr.tranches&&ldr.tranches.length>0;
-    st.cashCoreInit=hasTr&&ldr.cashBalance>0?ldr.cashBalance:st.capital;
+    st.cashCoreInit=hasTr&&ldr.cashBalance!=null?ldr.cashBalance:st.capital;
     st.residualCash=0;
     saveState(st);
   }
@@ -3824,7 +3824,7 @@ async function endOfDay(){
   // Same formula as renderDailyNAV and computeNAVFromState
   var ldrClose=getLadder();
   var hasTrClose=ldrClose.tranches&&ldrClose.tranches.length>0;
-  var cashBaseClose=hasTrClose&&ldrClose.cashBalance>0?ldrClose.cashBalance:(st.cashCoreInit||st.capital);
+  var cashBaseClose=hasTrClose&&ldrClose.cashBalance!=null?ldrClose.cashBalance:(st.cashCoreInit||st.capital);
   var cashCoreClose=cashBaseClose*(1+zaronia*daysElapsed/365);
   var residualClose=0; // eliminated — ladder cashBalance is source of truth
 
@@ -5247,7 +5247,7 @@ function renderDailyNAV(){
   // Fall back to full capital only if no tranches exist yet
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
-  var cashBase=hasTranches&&ladder.cashBalance>0?ladder.cashBalance:capital;
+  var cashBase=hasTranches&&ladder.cashBalance!=null?ladder.cashBalance:capital;
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
   var residual=0; // eliminated — ladder cashBalance is cash source of truth
   var effectiveCash=cashCore;
@@ -6052,7 +6052,7 @@ async function createSession(){
   st.trackerCostBasis=totalPortfolio-phylaxCapital;
   st.trackerMarkALSI=alsiInception>0?alsiInception:0;
   saveState(st);
-  saveLadder({tranches:[],cashBalance:0});
+  saveLadder({tranches:[],cashBalance:phylaxCapital});
   saveLog([]); saveNavHistory([]); saveInflowLog([]);
 
   c('setup-modal').classList.add('hidden');
@@ -6310,7 +6310,7 @@ function toggleBS(){
 async function resetDemo(){
   if(!confirm('Reset this demo session?\n\nThis will clear ALL NAV history, ladder, and performance data for the current session.\nThe session config and audit log are preserved.\n\nThis cannot be undone.')) return;
   if(prompt('Type RESET to confirm:')!=='RESET'){ alert('Reset cancelled.'); return; }
-  saveNavHistory([]); saveLadder({tranches:[],cashBalance:0});
+  saveNavHistory([]); saveLadder({tranches:[],cashBalance:CURRENT_SESSION.phylaxCapital});
   var st=getState(); st.cashCoreInit=0; st.residualCash=0; saveState(st);
   FVAL['i-held']=0; c('i-held').value='0';
   c('eod-breakdown').style.display='none';
