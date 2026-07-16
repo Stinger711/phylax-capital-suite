@@ -1088,8 +1088,9 @@ textarea:focus{border-color:var(--teal2)}
   </div>
   <div class="perf-summary">
     <div class="ps-item"><div class="ps-label">Phylax Return</div><div class="ps-value ps-neu" id="ps-ret">—</div></div>
-    <div class="ps-item"><div class="ps-label">vs Tracker</div><div class="ps-value ps-neu" id="ps-vs-tracker">—</div></div>
-    <div class="ps-item"><div class="ps-label">Blended Portfolio</div><div class="ps-value ps-neu" id="ps-blended">—</div></div>
+<div class="ps-item"><div class="ps-label">Tracker Return</div><div class="ps-value ps-neu" id="ps-tracker-ret">—</div></div>
+<div class="ps-item"><div class="ps-label">Blended Portfolio Return</div><div class="ps-value ps-neu" id="ps-blended">—</div></div>
+<div class="ps-item"><div class="ps-label">Blended vs Tracker</div><div class="ps-value ps-neu" id="ps-blended-vs-tracker">—</div></div>
     <div class="ps-item"><div class="ps-label">Max Drawdown</div><div class="ps-value ps-neu" id="ps-dd">—</div></div>
     <div class="ps-item"><div class="ps-label">Days Running</div><div class="ps-value ps-neu" id="ps-days">—</div></div>
     <div class="ps-item" style="padding-right:12px">
@@ -3773,11 +3774,14 @@ function updatePortfolio(){
 
   // Perf summary bar
   c('ps-ret').textContent=(phylaxRet>=0?'+':'')+phylaxRet.toFixed(2)+'%';
-  c('ps-ret').className='ps-value '+(phylaxRet>=0?'ps-pos':'ps-neg');
-  c('ps-vs-tracker').textContent=(phylaxRet-trackerRet>=0?'+':'')+((phylaxRet-trackerRet).toFixed(2))+'%';
-  c('ps-vs-tracker').className='ps-value '+(phylaxRet>=trackerRet?'ps-pos':'ps-neg');
-  c('ps-blended').textContent=(blendedRet>=0?'+':'')+blendedRet.toFixed(2)+'%';
-  c('ps-blended').className='ps-value '+(blendedRet>=0?'ps-pos':'ps-neg');
+c('ps-ret').className='ps-value '+(phylaxRet>=0?'ps-pos':'ps-neg');
+c('ps-tracker-ret').textContent=(trackerRet>=0?'+':'')+trackerRet.toFixed(2)+'%';
+c('ps-tracker-ret').className='ps-value '+(trackerRet>=0?'ps-pos':'ps-neg');
+c('ps-blended').textContent=(blendedRet>=0?'+':'')+blendedRet.toFixed(2)+'%';
+c('ps-blended').className='ps-value '+(blendedRet>=0?'ps-pos':'ps-neg');
+var blendedVsTracker=blendedRet-trackerRet;
+c('ps-blended-vs-tracker').textContent=(blendedVsTracker>=0?'+':'')+blendedVsTracker.toFixed(2)+'%';
+c('ps-blended-vs-tracker').className='ps-value '+(blendedVsTracker>=0?'ps-pos':'ps-neg');
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3969,7 +3973,7 @@ function calcPerfMetrics(){
 function updatePerfSummary(){
   var m=calcPerfMetrics();
   if(!m){
-    ['ps-ret','ps-vs-tracker','ps-blended','ps-dd','ps-days'].forEach(function(id){
+    ['ps-ret','ps-tracker-ret','ps-blended','ps-blended-vs-tracker','ps-dd','ps-days'].forEach(function(id){
       var el=c(id); if(el){el.textContent='—';el.className='ps-value ps-neu';}
     });
     return;
