@@ -3650,16 +3650,25 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   c('b-c-budget').textContent=budgetContracts;c('b-c-carry').textContent=maxCarryContracts;
   c('b-c-rec').textContent=recommended;
 
-  // Closing ALSI Spot is entered manually and must start blank each new
-  // trading day (never inherit yesterday's value or silently equal the
-  // morning open). Closing Tracker Level clears alongside it — it's
-  // filled automatically from Closing Spot in fBlur() below.
+  // Closing ALSI Spot must start blank each new trading day — but a
+  // page reload on the SAME day was wrongly treated as "new day" too,
+  // because window._eodPrefillDay lives only in JS memory and resets
+  // on every reload. Now: if today's close is already recorded in
+  // dailyMarketLog (endOfDay() wrote it there), restore that value
+  // instead of blanking it — a reload no longer discards a closed day.
   var todayKey = todayStr();
   if (window._eodPrefillDay !== todayKey) {
     window._eodPrefillDay = todayKey;
-    c('eod-spot').value='';
-    c('eod-alsi-tracker').value='';
-    FVAL['eod-spot']=0;
+    var todaysCloseEntry = getTodayMarketLogEntry();
+    if (todaysCloseEntry && todaysCloseEntry.eodAlsi!=null) {
+      c('eod-spot').value=FCFG['eod-spot'].fmt(todaysCloseEntry.eodAlsi);
+      c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(todaysCloseEntry.eodAlsi);
+      FVAL['eod-spot']=todaysCloseEntry.eodAlsi;
+    } else {
+      c('eod-spot').value='';
+      c('eod-alsi-tracker').value='';
+      FVAL['eod-spot']=0;
+    }
   }
   // Opening ALSI Spot & Closing IV are locked — always mirror this
   // morning's inputs, since neither is something you re-enter at EOD.
