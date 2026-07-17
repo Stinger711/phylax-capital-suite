@@ -3958,7 +3958,8 @@ async function endOfDay(){
   // just-closed NAV history row. The next morning checklist naturally
   // moves these forward again to the new day's open.
   setFieldVal('i-spot', eodSpot);
-  setFieldVal('i-iv', eodIV);
+     setFieldVal('i-iv', eodIV);
+     saveInputsLocal(); // persist the snap-to-close, or it reverts on next reload/sync
 
   updateSimState();
   updatePerfSummary();
