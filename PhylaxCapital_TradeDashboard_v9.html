@@ -2873,6 +2873,9 @@ function attachLiveListeners(sessionId){
         .sort(function(a,b){return (a.entryTs||0)>(b.entryTs||0)?1:-1;});
       var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.navHistory=keys;
       try{ localStorage.setItem(lsKey('navhistory'), JSON.stringify(_LIVE.navHistory)); }catch(e){}
+      if(typeof renderNavHistoryTable==='function') renderNavHistoryTable();
+      if(typeof renderPerfChart==='function') renderPerfChart();
+      if(typeof updatePerfSummary==='function') updatePerfSummary();
     }, function(e){ console.error('NAV history listener error:',e); }));
 
     _LISTENERS.push(auditCol(sessionId).onSnapshot(function(snap){
@@ -2880,6 +2883,7 @@ function attachLiveListeners(sessionId){
         .sort(function(a,b){return (a.entryTs||0)>(b.entryTs||0)?1:-1;});
       var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.auditLog=keys;
       try{ localStorage.setItem(lsKey('log'), JSON.stringify(_LIVE.auditLog)); }catch(e){}
+      if(typeof renderLog==='function') renderLog();
     }, function(e){ console.error('Audit log listener error:',e); }));
 
     _LISTENERS.push(inflowCol(sessionId).onSnapshot(function(snap){
@@ -2887,24 +2891,21 @@ function attachLiveListeners(sessionId){
         .sort(function(a,b){return (a.entryTs||0)>(b.entryTs||0)?1:-1;});
       var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.inflowLog=keys;
       try{ localStorage.setItem(lsKey('inflowlog'), JSON.stringify(_LIVE.inflowLog)); }catch(e){}
+      if(typeof renderInflowLog==='function') renderInflowLog();
     }, function(e){ console.error('Inflow log listener error:',e); }));
 
-         _LISTENERS.push(marketLogCol(sessionId).onSnapshot(function(snap){
-         _LIVE.dailyMarketLog = snap.docs.map(function(d){return d.data();})
-               .sort(function(a,b){return (a.entryTs||'')>(b.entryTs||'')?1:-1;});
-          var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.dailyMarketLog=keys;
-          try{ localStorage.setItem(lsKey('marketlog'), JSON.stringify(_LIVE.dailyMarketLog)); }catch(e){}
-          if(typeof renderMarketLogStrip==='function') renderMarketLogStrip();
-          }, function(e){ console.error('Market log listener error:',e); }));
-
-    _LISTENERS.push(closedTradesCol(sessionId).onSnapshot(function(snap){
+         _LISTENERS.push(closedTradesCol(sessionId).onSnapshot(function(snap){
       _LIVE.closedTrades = snap.docs.map(function(d){return d.data();})
         .sort(function(a,b){return (a.entryTs||0)>(b.entryTs||0)?1:-1;});
       var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.closedTrades=keys;
       try{ localStorage.setItem(lsKey('closedtrades'), JSON.stringify(_LIVE.closedTrades)); }catch(e){}
+      // No dedicated render function exists for closed trades — it's
+      // surfaced only via CSV export (exportClosedTradesCSV), which
+      // always reads live from getClosedTrades() at click-time, so
+      // there's nothing to refresh here. Cache update above is enough.
     }, function(e){ console.error('Closed trades listener error:',e); }));
 
-    _LISTENERS.push(liveInputsDoc(sessionId).onSnapshot(function(doc){
+        _LISTENERS.push(liveInputsDoc(sessionId).onSnapshot(function(doc){
       if(doc.exists){
         var d=doc.data();
         // Don't clobber what THIS browser is actively typing into — only
