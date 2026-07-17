@@ -3952,6 +3952,14 @@ async function endOfDay(){
     c('fb-save-status').textContent='⚠ Offline — saved locally only';
   }
 
+  // Snap the live Market Inputs (i-spot/i-iv) to today's confirmed close —
+  // otherwise the live NAV banner keeps pricing the option book off
+  // whatever was in the morning fields, silently diverging from the
+  // just-closed NAV history row. The next morning checklist naturally
+  // moves these forward again to the new day's open.
+  setFieldVal('i-spot', eodSpot);
+  setFieldVal('i-iv', eodIV);
+
   updateSimState();
   updatePerfSummary();
   renderNavHistoryTable();
