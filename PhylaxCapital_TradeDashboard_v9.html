@@ -6599,7 +6599,7 @@ function dashboardInit(){
   if(activeId){
     // Try to load from Firebase
     setFBStatus('connecting','Loading session…');
-    fbLoadSession(activeId).then(function(data){
+    fbLoadSession(activeId).then(async function(data){
       if(data&&data.config){
         CURRENT_SESSION=data.config;
         CURRENT_SESSION.sessionId=activeId;
@@ -6635,7 +6635,22 @@ function dashboardInit(){
         // the morning checklist's own separate localStorage key and
         // silently reverted a closed day's fields back to the morning
         // open on every reload, regardless of what EOD had set.
-        var todaysEntry=getTodayMarketLogEntry();
+        // Fetch today's market log entry directly by its known doc ID
+        // (the date string) rather than trusting getTodayMarketLogEntry(),
+        // which reads _LIVE.dailyMarketLog — populated only once the
+        // marketLogCol onSnapshot listener's first callback arrives.
+        // That's a network round-trip that hasn't completed yet at this
+        // point in dashboardInit(), so relying on it here was a race:
+        // today's real close existed in Firestore but hadn't been heard
+        // from yet, so it was silently treated as "not closed."
+        var todaysEntry=null;
+        try{
+          if(fbReady()){
+            var todayDoc=await marketLogCol(activeId).doc(todayStr()).get();
+            if(todayDoc.exists) todaysEntry=todayDoc.data();
+          }
+        }catch(e){ console.error('Today market log fetch error:',e); }
+        if(!todaysEntry) todaysEntry=getTodayMarketLogEntry();
         var morningKey='phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr();
         var morningRaw=localStorage.getItem(morningKey);
         if(todaysEntry && todaysEntry.eodAlsi!=null){
