@@ -2920,6 +2920,14 @@ function attachLiveListeners(sessionId){
         }
       }
     }, function(e){ console.error('Live inputs listener error:',e); }));
+
+    _LISTENERS.push(marketLogCol(sessionId).onSnapshot(function(snap){
+      _LIVE.dailyMarketLog = snap.docs.map(function(d){return d.data();})
+        .sort(function(a,b){return (a.date||'')>(b.date||'')?1:-1;});
+      var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.dailyMarketLog=keys;
+      try{ localStorage.setItem(lsKey('marketlog'), JSON.stringify(_LIVE.dailyMarketLog)); }catch(e){}
+      if(typeof renderMarketLogStrip==='function') renderMarketLogStrip();
+    }, function(e){ console.error('Market log listener error:',e); }));
   }catch(e){ console.error('attachLiveListeners error:',e); }
 }
 function detachLiveListeners(){
