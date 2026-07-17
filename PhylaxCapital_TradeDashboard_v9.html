@@ -2281,6 +2281,7 @@ function fBlur(el){
   if(el.id==='eod-spot'){ c('eod-alsi-tracker').value=el.value; }
   if(['i-spot','i-jibar','i-dY','i-otm','i-iv','i-held','i-nav'].indexOf(el.id)>=0){
     saveInputsLocal(); calc();
+    if(['i-spot','i-iv','i-jibar','i-dY'].indexOf(el.id)>=0) syncMorningLogFromInputsIfNeeded();
   }
 }
 
@@ -2634,6 +2635,19 @@ function upsertMarketLogEntry(patch){
   saveDailyMarketLog(log);
   return entry;
 }
+function syncMorningLogFromInputsIfNeeded(){
+  if(!CURRENT_SESSION) return;
+  var existing=getTodayMarketLogEntry();
+  if(existing && existing.morningStatus) return; // already recorded today
+  if(FVAL['i-spot']>0 && FVAL['i-iv']>0 && FVAL['i-jibar']>0 && FVAL['i-dY']>0){
+    upsertMarketLogEntry({
+      morningAlsi:FVAL['i-spot'], morningSavi:FVAL['i-iv'],
+      morningJibar:FVAL['i-jibar'], morningDy:FVAL['i-dY'],
+      morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
+    });
+    renderMarketLogStrip();
+  }
+}
 function getClosedTrades(){ return (_LIVE.closedTrades||[]).slice(); }
 function saveClosedTrades(l){
   _LIVE.closedTrades = l;
@@ -2880,6 +2894,7 @@ function attachLiveListeners(sessionId){
                .sort(function(a,b){return (a.entryTs||'')>(b.entryTs||'')?1:-1;});
           var keys={}; snap.forEach(function(d){keys[d.id]=true;}); _lastSyncedKeys.dailyMarketLog=keys;
           try{ localStorage.setItem(lsKey('marketlog'), JSON.stringify(_LIVE.dailyMarketLog)); }catch(e){}
+          if(typeof renderMarketLogStrip==='function') renderMarketLogStrip();
           }, function(e){ console.error('Market log listener error:',e); }));
 
     _LISTENERS.push(closedTradesCol(sessionId).onSnapshot(function(snap){
