@@ -3970,12 +3970,17 @@ function calcPerfMetrics(){
   var today=new Date(); today.setHours(0,0,0,0);
   var daysRunning=Math.round((today-inception)/86400000);
 
-  // Tracker return
+  // Tracker return — measured from the TRUE inception ALSI (locked at
+  // session creation), not the first EOD close. Those two can differ
+  // if the ALSI moved between session setup and the first recorded
+  // close, and using the wrong one here desynced this KPI from the
+  // Tracker NAV actually embedded in blendedNAV (which always compounds
+  // off the true inception mark via getLiveTrackerNAV()/settleTrackerNAV()).
   var trackerRet=0;
-  if(history.length>0&&history[0].alsiTracker&&history[history.length-1].alsiTracker){
-    var firstALSI=history[0].alsiTracker;
+  var alsiEntryForRet=getInceptionALSI();
+  if(history.length>0&&alsiEntryForRet>0&&history[history.length-1].alsiTracker){
     var lastALSI=history[history.length-1].alsiTracker;
-    trackerRet=(lastALSI-firstALSI)/firstALSI*100;
+    trackerRet=(lastALSI-alsiEntryForRet)/alsiEntryForRet*100;
   }
   // Blended return
   var lastEntry=history[history.length-1];
@@ -4027,7 +4032,9 @@ function renderPerfChart(){
   emptyEl.style.display='none'; canvas.style.display='block';
   var labels=history.map(function(h){return h.date;});
   var navIdx=history.map(function(h){return +((h.nav/capital*100).toFixed(3));});
-  var firstALSI=history[0].alsiTracker||history[0].alsi;
+  // Same true-inception baseline as calcPerfMetrics()'s trackerRet —
+  // keeps the chart line and the KPI number in agreement.
+  var firstALSI=getInceptionALSI()||history[0].alsiTracker||history[0].alsi;
   var trackerIdx=history.map(function(h){var a=h.alsiTracker||h.alsi;return +((a/firstALSI*100).toFixed(3));});
   var blendedIdx=history.map(function(h){return h.blendedNAV?+((h.blendedNAV/totalPort*100).toFixed(3)):null;});
 
@@ -4040,12 +4047,13 @@ function renderPerfChart(){
     data:{
       labels:labels,
       datasets:[
-        {label:'Phylax NAV',data:navIdx,borderColor:'#00c4d4',backgroundColor:'rgba(0,196,212,.07)',
-         borderWidth:2.5,fill:true,tension:0.35,pointRadius:3,pointBackgroundColor:'#00c4d4'},
-        {label:'ALSI Tracker',data:trackerIdx,borderColor:'#c8a84a',backgroundColor:'transparent',
-         borderWidth:1.8,fill:false,tension:0.35,borderDash:[5,4],pointRadius:2,pointBackgroundColor:'#c8a84a'},
-        {label:'Blended Portfolio',data:blendedIdx,borderColor:'#60e8a0',backgroundColor:'transparent',
-         borderWidth:2,fill:false,tension:0.35,borderDash:[2,3],pointRadius:2,pointBackgroundColor:'#60e8a0'}
+        {label:'Blended Portfolio',data:blendedIdx,borderColor:'#60e8a0',backgroundColor:'rgba(96,232,160,.06)',
+         borderWidth:3,fill:true,tension:0.35,pointRadius:3,pointBackgroundColor:'#60e8a0'},
+        {label:'ALSI Tracker (naked)',data:trackerIdx,borderColor:'#c8a84a',backgroundColor:'transparent',
+         borderWidth:2.5,fill:false,tension:0.35,pointRadius:3,pointBackgroundColor:'#c8a84a'},
+        {label:'Phylax Sleeve NAV',data:navIdx,borderColor:'#00c4d4',backgroundColor:'transparent',
+         borderWidth:1.5,fill:false,tension:0.35,borderDash:[4,3],pointRadius:1.5,pointBackgroundColor:'#00c4d4'}
+      ]
       ]
     },
     options:{
