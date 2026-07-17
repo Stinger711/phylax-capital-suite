@@ -1811,20 +1811,20 @@ textarea:focus{border-color:var(--teal2)}
   </div>
   <div class="eod-grid">
     <div class="fi" style="margin-bottom:0">
-      <div class="fi-l">Opening ALSI Spot</div>
-      <input type="text" id="eod-open" placeholder="Day's open" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      <div class="fi-l">Opening ALSI Spot <span class="fi-badge auto">Auto</span></div>
+      <input type="text" id="eod-open" class="auto-field" readonly placeholder="Day's open"/>
     </div>
     <div class="fi" style="margin-bottom:0">
       <div class="fi-l">Closing ALSI Spot</div>
       <input type="text" id="eod-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
     </div>
     <div class="fi" style="margin-bottom:0">
-      <div class="fi-l">Closing ALSI Tracker Level (for portfolio)</div>
-      <input type="text" id="eod-alsi-tracker" placeholder="Same as closing spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      <div class="fi-l">Closing ALSI Tracker Level (for portfolio) <span class="fi-badge auto">Auto</span></div>
+      <input type="text" id="eod-alsi-tracker" class="auto-field" readonly placeholder="Mirrors closing spot"/>
     </div>
     <div class="fi" style="margin-bottom:0">
-      <div class="fi-l">Closing IV (SAVI %)</div>
-      <input type="text" id="eod-iv" onfocus="fFocus(this)" onblur="fBlur(this)"/>
+      <div class="fi-l">Closing IV (SAVI %) <span class="fi-badge auto">Auto</span></div>
+      <input type="text" id="eod-iv" class="auto-field" readonly/>
     </div>
     <button class="btn btn-eod" onclick="endOfDay()">▶ &nbsp;End of Day Close</button>
   </div>
@@ -2272,14 +2272,13 @@ function fFocus(el){
 }
 function fBlur(el){
   if(el.id==='i-nav' && !navOverrideActive){ return; }
-  if(el.id==='eod-open') window._eodOpenTouched=true;
-  if(el.id==='eod-alsi-tracker') window._eodTrackerTouched=true;
-  if(el.id==='eod-spot') window._eodSpotTouched=true;
-  if(el.id==='eod-iv') window._eodIvTouched=true;
   var cfg=FCFG[el.id]; if(!cfg) return;
   var raw=cfg.parse(el.value);
   if(!isNaN(raw) && raw>0){ FVAL[el.id]=raw; }
   el.value=cfg.fmt(FVAL[el.id]||0);
+  // Closing Tracker Level always mirrors Closing ALSI Spot — it's a
+  // locked field, filled the instant the spot close is entered.
+  if(el.id==='eod-spot'){ c('eod-alsi-tracker').value=el.value; }
   if(['i-spot','i-jibar','i-dY','i-otm','i-iv','i-held','i-nav'].indexOf(el.id)>=0){
     saveInputsLocal(); calc();
   }
@@ -3626,19 +3625,21 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   c('b-c-budget').textContent=budgetContracts;c('b-c-carry').textContent=maxCarryContracts;
   c('b-c-rec').textContent=recommended;
 
-  // Pre-fill EOD fields once per calendar day; never clobber a value already typed today
+  // Closing ALSI Spot is entered manually and must start blank each new
+  // trading day (never inherit yesterday's value or silently equal the
+  // morning open). Closing Tracker Level clears alongside it — it's
+  // filled automatically from Closing Spot in fBlur() below.
   var todayKey = todayStr();
   if (window._eodPrefillDay !== todayKey) {
     window._eodPrefillDay = todayKey;
-    window._eodOpenTouched = false;
-    window._eodTrackerTouched = false;
-    window._eodSpotTouched = false;
-    window._eodIvTouched = false;
+    c('eod-spot').value='';
+    c('eod-alsi-tracker').value='';
+    FVAL['eod-spot']=0;
   }
-  if(!window._eodOpenTouched){ FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S); }
-  if(!window._eodTrackerTouched){ c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(S); }
-  if(!window._eodSpotTouched){ FVAL['eod-spot']=S; c('eod-spot').value=FCFG['eod-spot'].fmt(S); }
-  if(!window._eodIvTouched){ FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv); }
+  // Opening ALSI Spot & Closing IV are locked — always mirror this
+  // morning's inputs, since neither is something you re-enter at EOD.
+  FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S);
+  FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
 
   window._calc={S,K,T:T.toFixed(6),r,iv,q,d1:f4(d1),d2:f4(d2),Nd1:f4(Nd1),Nd2:f4(Nd2),nd1:f4(nd1),
     putPrice:f4(putPrice),putPriceR:Math.round(putPriceR),delta:f4(delta),thetaD:f4(thetaD),
