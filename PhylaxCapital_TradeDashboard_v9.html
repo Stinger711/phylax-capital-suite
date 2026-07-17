@@ -2628,6 +2628,17 @@ function getTodayMarketLogEntry(){
   var log=getDailyMarketLog();
   return log.find(function(e){ return e.date===todayStr(); })||null;
 }
+// True only when today's recorded close is still the MOST RECENT thing
+// that happened today — i.e. nobody has re-run the morning checklist
+// since. Checking eodAlsi presence alone (the old behaviour) meant a
+// close, once recorded, permanently won every future reload even after
+// a deliberate morning re-entry — silently reverting the operator's own
+// fresh input back to stale closing values.
+function todayCloseIsCurrent(entry){
+  if(!entry || entry.eodAlsi==null) return false;
+  if(!entry.morningEnteredAt) return true;
+  return (entry.eodEnteredAt||0) >= entry.morningEnteredAt;
+}
 function upsertMarketLogEntry(patch){
   var log=getDailyMarketLog();
   var idx=log.findIndex(function(e){ return e.date===todayStr(); });
@@ -3660,7 +3671,7 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   if (window._eodPrefillDay !== todayKey) {
     window._eodPrefillDay = todayKey;
     var todaysCloseEntry = getTodayMarketLogEntry();
-    if (todaysCloseEntry && todaysCloseEntry.eodAlsi!=null) {
+    if (todayCloseIsCurrent(todaysCloseEntry)) {
       c('eod-spot').value=FCFG['eod-spot'].fmt(todaysCloseEntry.eodAlsi);
       c('eod-alsi-tracker').value=FCFG['eod-alsi-tracker'].fmt(todaysCloseEntry.eodAlsi);
       FVAL['eod-spot']=todaysCloseEntry.eodAlsi;
@@ -6651,9 +6662,21 @@ function dashboardInit(){
           }
         }catch(e){ console.error('Today market log fetch error:',e); }
         if(!todaysEntry) todaysEntry=getTodayMarketLogEntry();
+        // Seed _LIVE.dailyMarketLog with this directly-fetched entry so
+        // every OTHER reader of getTodayMarketLogEntry() — calc()'s own
+        // eod-prefill guard, renderMarketLogStrip() — sees it immediately
+        // too, not just this block. Without this they still raced against
+        // the marketLogCol listener's first callback and saw an empty
+        // cache even though we'd just fetched the real data above.
+        if(todaysEntry){
+          var mlogSeed=getDailyMarketLog();
+          var mlIdx=mlogSeed.findIndex(function(e){return e.date===todayStr();});
+          if(mlIdx>=0) mlogSeed[mlIdx]=Object.assign({},mlogSeed[mlIdx],todaysEntry); else mlogSeed.push(todaysEntry);
+          _LIVE.dailyMarketLog=mlogSeed;
+        }
         var morningKey='phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr();
         var morningRaw=localStorage.getItem(morningKey);
-        if(todaysEntry && todaysEntry.eodAlsi!=null){
+        if(todayCloseIsCurrent(todaysEntry)){
           setFieldVal('i-spot',todaysEntry.eodAlsi);
           setFieldVal('i-iv',todaysEntry.eodSavi!=null?todaysEntry.eodSavi:FVAL['i-iv']);
           if(morningRaw && morningRaw!=='skipped'){
