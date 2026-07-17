@@ -3900,6 +3900,16 @@ async function endOfDay(){
   saveNavHistory(history);
   updateHarvestReentryTracking();
 
+  // Mark today's market log entry as closed — the status strip's "EOD"
+  // indicator reads eodAlsi off dailyMarketLog, not navHistory, so
+  // without this write the strip can never leave "Not yet closed"
+  // regardless of how many times endOfDay() runs.
+  upsertMarketLogEntry({
+    eodAlsi: eodSpot, eodSavi: eodIV, eodOpen: eodOpen,
+    eodEnteredAt: Date.now(), eodEnteredBy: deviceLabel()
+  });
+  renderMarketLogStrip();
+
   // Display breakdown
   var eodBD=c('eod-breakdown'); eodBD.style.display='grid';
   c('eb-nav').textContent=fRk(closingNAV);
