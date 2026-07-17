@@ -3970,17 +3970,20 @@ function calcPerfMetrics(){
   var today=new Date(); today.setHours(0,0,0,0);
   var daysRunning=Math.round((today-inception)/86400000);
 
-  // Tracker return — measured from the TRUE inception ALSI (locked at
-  // session creation), not the first EOD close. Those two can differ
-  // if the ALSI moved between session setup and the first recorded
-  // close, and using the wrong one here desynced this KPI from the
-  // Tracker NAV actually embedded in blendedNAV (which always compounds
-  // off the true inception mark via getLiveTrackerNAV()/settleTrackerNAV()).
+  // Tracker return — derived from the ACTUAL trackerNAV figure stored
+  // per day (the same number already embedded inside blendedNAV), not
+  // recalculated from ALSI levels. An ALSI-ratio recalculation can
+  // silently diverge from the real trackerNAV if the persistent
+  // day-to-day settlement chain (settleTrackerNAV) was ever interrupted
+  // — which happened during this session's setup/testing. Deriving from
+  // trackerNAV directly guarantees Blended Return can never fall outside
+  // the range bounded by Phylax Return and Tracker Return, since it's
+  // then a true weighted average by construction.
   var trackerRet=0;
-  var alsiEntryForRet=getInceptionALSI();
-  if(history.length>0&&alsiEntryForRet>0&&history[history.length-1].alsiTracker){
-    var lastALSI=history[history.length-1].alsiTracker;
-    trackerRet=(lastALSI-alsiEntryForRet)/alsiEntryForRet*100;
+  var trackerBase=(st.totalPortfolio||0)-(capital||0);
+  if(history.length>0&&trackerBase>0&&history[history.length-1].trackerNAV!=null){
+    var lastTrackerNAV=history[history.length-1].trackerNAV;
+    trackerRet=(lastTrackerNAV-trackerBase)/trackerBase*100;
   }
   // Blended return
   var lastEntry=history[history.length-1];
@@ -4032,10 +4035,11 @@ function renderPerfChart(){
   emptyEl.style.display='none'; canvas.style.display='block';
   var labels=history.map(function(h){return h.date;});
   var navIdx=history.map(function(h){return +((h.nav/capital*100).toFixed(3));});
-  // Same true-inception baseline as calcPerfMetrics()'s trackerRet —
-  // keeps the chart line and the KPI number in agreement.
-  var firstALSI=getInceptionALSI()||history[0].alsiTracker||history[0].alsi;
-  var trackerIdx=history.map(function(h){var a=h.alsiTracker||h.alsi;return +((a/firstALSI*100).toFixed(3));});
+  // Same trackerNAV-derived basis as calcPerfMetrics()'s trackerRet —
+  // plots the tracker sleeve's actual value path, not a recalculated
+  // ALSI ratio that can drift from what's really embedded in blendedNAV.
+  var trackerBaseChart=totalPort-capital;
+  var trackerIdx=history.map(function(h){return h.trackerNAV!=null&&trackerBaseChart>0?+((h.trackerNAV/trackerBaseChart*100).toFixed(3)):null;});
   var blendedIdx=history.map(function(h){return h.blendedNAV?+((h.blendedNAV/totalPort*100).toFixed(3)):null;});
 
   Chart.defaults.color='#5a7888';
