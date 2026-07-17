@@ -3722,11 +3722,20 @@ function getLiveTrackerNAV(){
 }
 function settleTrackerNAV(atALSI){
   var st=getState();
-  var live=getLiveTrackerNAV();
-  st.trackerNAV=live;
-  st.trackerMarkALSI=atALSI||FVAL['i-spot']||st.trackerMarkALSI;
+  // Deliberately does NOT call getLiveTrackerNAV() — that function reads
+  // the live/volatile FVAL['i-spot'], which meant every re-run of EOD
+  // re-grew the tracker off whatever spot happened to be sitting in the
+  // field at click time, ratcheting trackerNAV upward on every repeat
+  // close regardless of whether the closing level had actually changed.
+  // Settlement must be a pure function of (persisted state, atALSI) only.
+  var mark=st.trackerMarkALSI||getInceptionALSI();
+  var base=st.trackerNAV!=null?st.trackerNAV:((st.totalPortfolio||0)-(st.capital||0));
+  var closeLevel=atALSI||mark;
+  var settled=(mark>0)?base*(closeLevel/mark):base;
+  st.trackerNAV=settled;
+  st.trackerMarkALSI=closeLevel;
   saveState(st);
-  return live;
+  return settled;
 }
 function planSameAllocFlow(amount){
   var st=getState();
@@ -6620,9 +6629,31 @@ function dashboardInit(){
         c('setup-modal').classList.add('hidden');
         refreshAllDisplays();
         setFBStatus('ok','Session loaded');
-        // Restore today's morning inputs if already entered today
+        // Restore today's inputs on reload. If the day has ALREADY been
+        // closed (endOfDay() wrote eodAlsi to today's market log entry),
+        // restore the CLOSING values — otherwise this always fell back to
+        // the morning checklist's own separate localStorage key and
+        // silently reverted a closed day's fields back to the morning
+        // open on every reload, regardless of what EOD had set.
+        var todaysEntry=getTodayMarketLogEntry();
         var morningKey='phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr();
         var morningRaw=localStorage.getItem(morningKey);
+        if(todaysEntry && todaysEntry.eodAlsi!=null){
+          setFieldVal('i-spot',todaysEntry.eodAlsi);
+          setFieldVal('i-iv',todaysEntry.eodSavi!=null?todaysEntry.eodSavi:FVAL['i-iv']);
+          if(morningRaw && morningRaw!=='skipped'){
+            try{
+              var mdClosed=JSON.parse(morningRaw);
+              if(mdClosed.jibar) setFieldVal('i-jibar',mdClosed.jibar);
+              if(mdClosed.dy) setFieldVal('i-dY',mdClosed.dy);
+            }catch(e){}
+          }
+          Object.keys(FCFG).forEach(function(id){
+            var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
+          });
+          try{ calc(); }catch(e){}
+          return;
+        }
         if(morningRaw && morningRaw!=='skipped'){
           try{
             var md=JSON.parse(morningRaw);
