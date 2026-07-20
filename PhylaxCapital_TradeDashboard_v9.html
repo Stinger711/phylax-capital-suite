@@ -5092,6 +5092,7 @@ function renderLadderPanel(){
            }).join('')
           +'</tbody></table>')
         +'</td></tr>';
+    }
   });
   tbody.innerHTML=rows;
   Object.keys(window._historyExpanded).forEach(function(hid){
@@ -5101,7 +5102,6 @@ function renderLadderPanel(){
     var hist=reconstructTrancheHistory(tr);
     if(hist.length>=2) renderTrancheHistoryChart(hid, hist, tr.premiumPerContract);
   });
-  tbody.innerHTML=rows;
 
   // ── Roll-due summary banner ────────────────────────────────────────
   var rollAlertEl=c('roll-alert');
