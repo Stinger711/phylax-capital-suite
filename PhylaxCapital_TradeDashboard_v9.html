@@ -5082,9 +5082,16 @@ function renderLadderPanel(){
           +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">MTM per contract vs entry</div>'
           +'<div style="position:relative;height:130px;margin-bottom:16px"><canvas id="hist-mtm-'+t.id+'"></canvas></div>'
           +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Market drivers — ALSI spot vs SAVI</div>'
-          +'<div style="position:relative;height:130px;margin-bottom:16px"><canvas id="hist-mkt-'+t.id+'"></canvas></div>')
+          +'<div style="position:relative;height:130px;margin-bottom:16px"><canvas id="hist-mkt-'+t.id+'"></canvas></div>'
+          +'<table style="width:100%;border-collapse:separate;border-spacing:0 2px;font-size:10px;font-family:\'DM Mono\',monospace">'
+          +'<thead><tr style="font-family:\'Rajdhani\',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em">'
+          +'<th style="text-align:left;padding:4px 8px">Date</th><th style="text-align:right;padding:4px 8px">ALSI</th><th style="text-align:right;padding:4px 8px">SAVI</th><th style="text-align:right;padding:4px 8px">MTM/c</th><th style="text-align:right;padding:4px 8px">Cum. P&amp;L</th></tr></thead><tbody>'
+          +hist.map(function(h){
+             var pnl=h.mtm-t.premiumPerContract;
+             return '<tr><td style="padding:5px 8px;text-align:left;color:var(--muted)">'+h.date+'</td><td style="padding:5px 8px;text-align:right">'+Math.round(h.alsi).toLocaleString('en-ZA')+'</td><td style="padding:5px 8px;text-align:right">'+(h.savi*100).toFixed(1)+'%</td><td style="padding:5px 8px;text-align:right;color:var(--amber)">'+fRfull(h.mtm)+'</td><td style="padding:5px 8px;text-align:right;color:'+(pnl>=0?'var(--green2)':'var(--red2)')+'">'+(pnl>=0?'+':'')+fRfull(pnl)+'</td></tr>';
+           }).join('')
+          +'</tbody></table>')
         +'</td></tr>';
-    }
   });
   tbody.innerHTML=rows;
   Object.keys(window._historyExpanded).forEach(function(hid){
