@@ -2694,6 +2694,76 @@ function getLadder(){
              .sort(function(a,b){return (a.addedTs||0)-(b.addedTs||0);}),
            cashBalance: _LIVE.cashBalance||0 };
 }
+
+// ── Per-tranche history reconstruction ──────────────────────────────
+// Walks dailyMarketLog (from whenever it was first populated, or the
+// tranche's buy date, whichever is later) and re-runs bsBlack76() for
+// each day's stored ALSI/SAVI against this tranche's fixed strike/expiry.
+// No daily MTM is ever stored — this recomputes it from scratch each
+// time it's viewed. r/q (JIBAR, dividend yield) aren't logged historically,
+// so today's live values are used as a proxy throughout — a reasonable
+// approximation since both move slowly (monthly/quarterly), but real if
+// you changed either materially during the tranche's life.
+function reconstructTrancheHistory(t){
+  var log=getDailyMarketLog().filter(function(e){return e.date>=t.buyDate;})
+    .sort(function(a,b){return a.date<b.date?-1:(a.date>b.date?1:0);});
+  var r=FVAL['i-jibar'], q=FVAL['i-dY'];
+  var expiry=new Date(t.expiry);
+  var out=[];
+  log.forEach(function(e){
+    var S = e.eodAlsi!=null?e.eodAlsi:e.morningAlsi;
+    var iv = e.eodSavi!=null?e.eodSavi:e.morningSavi;
+    if(S==null||iv==null) return;
+    var d=new Date(e.date); d.setHours(0,0,0,0);
+    var T=Math.max(0,(expiry-d)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    out.push({date:e.date, alsi:S, savi:iv, mtm:mtm});
+  });
+  return out;
+}
+
+window._historyExpanded = window._historyExpanded || {};
+window._historyCharts = window._historyCharts || {};
+function toggleTrancheHistory(id){
+  window._historyExpanded[id] = !window._historyExpanded[id];
+  renderLadderPanel();
+}
+function renderTrancheHistoryChart(id, hist, costBasis){
+  var mtmCanvas=c('hist-mtm-'+id), mktCanvas=c('hist-mkt-'+id);
+  if(!mtmCanvas||!mktCanvas) return;
+  if(window._historyCharts[id+'-mtm']) window._historyCharts[id+'-mtm'].destroy();
+  if(window._historyCharts[id+'-mkt']) window._historyCharts[id+'-mkt'].destroy();
+  var dates=hist.map(function(h){return h.date.slice(5);});
+  Chart.defaults.color='#5a7888';
+  Chart.defaults.font.family="'DM Mono', monospace";
+  window._historyCharts[id+'-mtm']=new Chart(mtmCanvas.getContext('2d'),{
+    type:'line',
+    data:{labels:dates,datasets:[
+      {label:'MTM/contract',data:hist.map(function(h){return h.mtm;}),borderColor:'#e8a020',
+       backgroundColor:'rgba(232,160,32,.08)',fill:true,tension:.3,pointRadius:2,borderWidth:2},
+      {label:'Entry price',data:dates.map(function(){return costBasis;}),borderColor:'#5a7888',
+       borderDash:[4,3],pointRadius:0,borderWidth:1}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:9,family:"'Rajdhani', sans-serif"},color:'#b8c8d4',boxWidth:10}}},
+      scales:{x:{ticks:{font:{size:8}},grid:{color:'rgba(0,196,212,.06)'}},
+        y:{ticks:{font:{size:8},callback:function(v){return fRk(v);}},grid:{color:'rgba(0,196,212,.06)'}}}}
+  });
+  window._historyCharts[id+'-mkt']=new Chart(mktCanvas.getContext('2d'),{
+    type:'line',
+    data:{labels:dates,datasets:[
+      {label:'ALSI spot',data:hist.map(function(h){return h.alsi;}),borderColor:'#00c4d4',
+       yAxisID:'yAlsi',fill:false,tension:.3,pointRadius:2,borderWidth:2},
+      {label:'SAVI %',data:hist.map(function(h){return h.savi*100;}),borderColor:'#a060f0',
+       yAxisID:'ySavi',fill:false,tension:.3,pointRadius:2,borderWidth:2}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{font:{size:9,family:"'Rajdhani', sans-serif"},color:'#b8c8d4',boxWidth:10}}},
+      scales:{x:{ticks:{font:{size:8}},grid:{color:'rgba(0,196,212,.06)'}},
+        yAlsi:{position:'left',ticks:{font:{size:8},color:'#00c4d4'},grid:{color:'rgba(0,196,212,.06)'}},
+        ySavi:{position:'right',ticks:{font:{size:8},color:'#a060f0',callback:function(v){return v.toFixed(0)+'%';}},grid:{display:false}}}}
+  });
+}
 // ⚠ FIRE-AND-FORGET — do not call this for a live trade purchase, close,
 // or reduce. Only the two remaining callers of this exact function are
 // safe by construction: session setup (initializing a brand-new, empty
@@ -4999,8 +5069,30 @@ function renderLadderPanel(){
       +'<td style="color:var(--blue2)">'+deltaTranche.toFixed(4)+'</td>'
       +'<td style="color:var(--red2)">−'+fRfull(theta*t.contracts)+'</td>'
       +'<td style="color:var(--muted)">'+daysHeld+'d</td>'
-      +'<td style="text-align:center"><button class="btn-close-tranche" onclick="closeTranche(\''+t.id+'\')">✕ Close</button></td>'
+      +'<td style="text-align:center"><button class="btn-close-tranche" onclick="closeTranche(\''+t.id+'\')">✕ Close</button>'
+      +'<button class="btn-close-tranche" style="margin-left:4px;background:rgba(0,196,212,.08);border-color:rgba(0,196,212,.25);color:var(--teal2)" onclick="toggleTrancheHistory(\''+t.id+'\')">'+(window._historyExpanded[t.id]?'▲':'▼')+' History</button></td>'
       +'</tr>';
+    if(window._historyExpanded[t.id]){
+      var hist=reconstructTrancheHistory(t);
+      var logStart=(getDailyMarketLog()[0]||{}).date||'—';
+      rows+='<tr><td colspan="16" style="padding:14px;background:rgba(0,196,212,.03);border:1px solid rgba(0,196,212,.12)">'
+        +(hist.length<2
+          ? '<div style="color:var(--muted);font-size:10px;padding:8px;text-align:center">Not enough daily market log history yet to chart this tranche (log starts '+logStart+').</div>'
+          : '<div style="font-family:\'Rajdhani\',sans-serif;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Data from '+hist[0].date+' (log start: '+logStart+') · r/q held at today\'s values throughout</div>'
+          +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">MTM per contract vs entry</div>'
+          +'<div style="position:relative;height:130px;margin-bottom:16px"><canvas id="hist-mtm-'+t.id+'"></canvas></div>'
+          +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:8.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Market drivers — ALSI spot vs SAVI</div>'
+          +'<div style="position:relative;height:130px;margin-bottom:16px"><canvas id="hist-mkt-'+t.id+'"></canvas></div>')
+        +'</td></tr>';
+    }
+  });
+  tbody.innerHTML=rows;
+  Object.keys(window._historyExpanded).forEach(function(hid){
+    if(!window._historyExpanded[hid]) return;
+    var tr=(ladder.tranches||[]).find(function(x){return x.id===hid;});
+    if(!tr) return;
+    var hist=reconstructTrancheHistory(tr);
+    if(hist.length>=2) renderTrancheHistoryChart(hid, hist, tr.premiumPerContract);
   });
   tbody.innerHTML=rows;
 
