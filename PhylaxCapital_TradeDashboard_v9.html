@@ -6709,8 +6709,16 @@ function dashboardInit(){
             }
           }catch(e){}
         }
-        // Show morning checklist if inputs not yet entered today
-        if(morningChecklistNeeded()){
+        // Show morning checklist if inputs not yet entered today — but
+        // never on a weekend. JSE doesn't trade Sat/Sun, so there's no
+        // real ALSI/SAVI to enter; forcing a checklist those days either
+        // re-enters Friday's numbers as a fake "new" morning or invites
+        // synthetic data into the market log and NAV history.
+        var dayOfWeek=new Date().getDay(); // 0=Sun, 6=Sat
+        var isWeekend=(dayOfWeek===0||dayOfWeek===6);
+        if(isWeekend){
+          renderMarketLogStrip();
+        } else if(morningChecklistNeeded()){
           setTimeout(function(){ openMorningChecklist(); },600);
         }
       } else {
