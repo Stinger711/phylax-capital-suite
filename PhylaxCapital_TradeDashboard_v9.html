@@ -2309,6 +2309,7 @@ function deviceLabel(){
 // local-only. Fixes the cross-browser input desync from earlier: two
 // browsers on the same session now see the same spot/JIBAR/IV/etc.
 // ════════════════════════════════════════════════════════════════════
+var _lastAppliedInputsAt = 0; // timestamp of the most recent inputs write we've actually applied, ours or remote — guards against a stale sync winning purely by arrival order
 function saveInputsLocal(){
   if(!CURRENT_SESSION) return;
   var data={spot:FVAL['i-spot'],jibar:FVAL['i-jibar'],dY:FVAL['i-dY'],
@@ -2316,6 +2317,7 @@ function saveInputsLocal(){
     navOverride:navOverrideActive?FVAL['i-nav']:0,
     expiry:document.getElementById('i-expiry').value,
     updatedAt:Date.now(), updatedBy:deviceLabel()};
+  _lastAppliedInputsAt = data.updatedAt;
   _LIVE.inputs = data;
   try{ localStorage.setItem('phylax_v5_inputs_'+CURRENT_SESSION.sessionId, JSON.stringify(data)); }catch(e){}
   if(fbReady()){
@@ -2339,6 +2341,15 @@ function loadInputsLocal(){
   if(d.otm)   FVAL['i-otm']=d.otm;
   if(d.iv)    FVAL['i-iv']=d.iv;
   if(d.held!=null) FVAL['i-held']=d.held;
+  // Repaint the actual visible fields, not just FVAL — without this,
+  // a sync from another device updates every downstream calculation
+  // (NAV, eod-open, everything) but leaves the on-screen ALSI Spot box
+  // showing whatever was last typed directly into it, creating exactly
+  // the kind of split where the input box and the "Opening ALSI Spot"
+  // readout disagree even though both are technically live.
+  ['i-spot','i-jibar','i-dY','i-otm','i-iv'].forEach(function(id){
+    var el=c(id); if(el && !el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
+  });
   if(d.expiry) document.getElementById('i-expiry').value=d.expiry;
   if(d.navOverride && d.navOverride>0){ FVAL['i-nav']=d.navOverride; activateOverride(true); }
 }
@@ -2990,6 +3001,16 @@ function attachLiveListeners(sessionId){
         _LISTENERS.push(liveInputsDoc(sessionId).onSnapshot(function(doc){
       if(doc.exists){
         var d=doc.data();
+        // Only apply an inputs sync if it's genuinely NEWER than whatever
+        // we've already applied — by timestamp, not merely "from a
+        // different device". Without this, a stale write left sitting in
+        // Firestore (e.g. a close run on another device that nothing
+        // since has superseded there) can win a later sync purely
+        // because of arrival order, silently overwriting fresher local
+        // data — which is exactly what happened here.
+        var incomingAt = d.updatedAt||0;
+        if(incomingAt <= _lastAppliedInputsAt) return;
+        _lastAppliedInputsAt = incomingAt;
         // Don't clobber what THIS browser is actively typing into — only
         // apply an update that came from a different device.
         if(d.updatedBy && d.updatedBy!==deviceLabel()){
@@ -6654,6 +6675,12 @@ function morningChecklistConfirm(){
   Object.keys(FCFG).forEach(function(id){
     var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
   });
+
+  // Push to the live cross-device sync channel too — endOfDay() already
+  // does this on close, but the morning checklist never did, leaving a
+  // stale close from another device as the permanent "last word" in
+  // liveInputsDoc until something else happened to overwrite it.
+  saveInputsLocal();
 
   // Record that morning inputs are done for today — save actual values
   try{
