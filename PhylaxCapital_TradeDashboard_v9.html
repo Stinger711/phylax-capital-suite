@@ -6562,6 +6562,17 @@ function refreshAllDisplays(){
 // MORNING CHECKLIST
 // ════════════════════════════════════════════════════════════════════
 function morningChecklistNeeded(){
+  // Check the SHARED record first — getTodayMarketLogEntry() reads from
+  // _LIVE.dailyMarketLog, which dashboardInit() now seeds directly from
+  // Firestore before this runs. Without this check, each device only
+  // ever looked at its own local flag, so completing the checklist on
+  // one device never stopped it re-prompting on any other — correctly
+  // pre-filled with synced data, but still an unnecessary interruption
+  // every time, with Skip being the wrong (destructive) way to dismiss it.
+  var sharedEntry=getTodayMarketLogEntry();
+  if(sharedEntry && sharedEntry.morningStatus){
+    return false;
+  }
   var raw=localStorage.getItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr());
   if(!raw) return true;
   if(raw==='skipped') return false;
