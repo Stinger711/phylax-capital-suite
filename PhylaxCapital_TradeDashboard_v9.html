@@ -312,12 +312,42 @@ textarea:focus{border-color:var(--teal2)}
 /* ── EOD ───────────────────────────────────────────────────────── */
 .eod-note{font-size:10px;color:var(--muted);line-height:1.6;margin-bottom:14px}
 .eod-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:12px}
-.eod-breakdown{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;
+.eod-breakdown{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;
   padding:12px;background:rgba(0,196,212,.04);border-radius:2px;border:1px solid var(--border2)}
 .eb-item{text-align:center}
 .eb-l{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);
   text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
 .eb-v{font-family:'DM Mono',monospace;font-size:12px}
+
+/* ── FEE ECONOMICS PANEL ───────────────────────────────────────── */
+.fee-rates-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:14px}
+.fee-rate-field label{display:block;font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:700;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.fee-rate-field input{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:2px;
+  padding:7px 9px;color:var(--plat);font-family:'DM Mono',monospace;font-size:12px}
+.fee-rate-field input:focus{outline:none;border-color:var(--teal2)}
+.fee-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  background:linear-gradient(135deg,rgba(232,160,32,.06),rgba(0,196,212,.02));
+  border:1px solid rgba(232,160,32,.22);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.fp-cell{padding:11px 14px;border-right:1px solid rgba(232,160,32,.12);text-align:center}
+.fp-cell:last-child{border-right:none}
+.fp-label{font-family:'Rajdhani',sans-serif;font-size:8px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.fp-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
+.fp-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
+.perf-fee-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  background:rgba(160,96,240,.04);border:1px solid rgba(160,96,240,.2);border-radius:2px;margin-bottom:12px;overflow:hidden}
+.pf-cell{padding:10px 12px;border-right:1px solid rgba(160,96,240,.12);text-align:center}
+.pf-cell:last-child{border-right:none}
+.pf-label{font-family:'Rajdhani',sans-serif;font-size:7.5px;font-weight:700;color:var(--purple);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.pf-val{font-family:'DM Mono',monospace;font-size:12px}
+.fp-pending-box{padding:14px;background:rgba(232,160,32,.07);border:1px solid rgba(232,160,32,.35);
+  border-radius:2px;margin-bottom:12px}
+.fp-pending-table{width:100%;border-collapse:collapse;font-size:9.5px;margin-top:10px}
+.fp-pending-table th{text-align:center;padding:5px 6px;color:var(--muted);font-family:'Rajdhani',sans-serif;
+  font-size:8px;text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border2)}
+.fp-pending-table td{text-align:center;padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.04)}
 
 /* ── PORTFOLIO CHART WRAPPER ───────────────────────────────────── */
 .chart-wrap{position:relative;height:280px;margin:12px 0}
@@ -1214,6 +1244,103 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ FEE ECONOMICS PANEL ═══════════════════════════════════════════ -->
+<div class="panel" id="fee-panel" style="margin-bottom:14px;border-color:rgba(232,160,32,.3)">
+  <div class="sh" style="color:var(--gold)">Fee Economics — Management, Service &amp; Performance Fee</div>
+
+  <div class="fee-rates-row">
+    <div class="fee-rate-field">
+      <label>Management Fee (% p.a. on AUM)</label>
+      <input type="text" id="fee-mgmt-input" value="1.50"/>
+    </div>
+    <div class="fee-rate-field">
+      <label>Service Fee (% p.a. on AUM)</label>
+      <input type="text" id="fee-svc-input" value="0.40"/>
+    </div>
+    <div class="fee-rate-field">
+      <label>Performance Fee (% above hurdle)</label>
+      <input type="text" id="fee-perf-input" value="20.0"/>
+    </div>
+    <button class="btn btn-amber btn-sm" onclick="saveFeeRates()" style="height:32px">✓ Save Rates</button>
+  </div>
+
+  <div class="fee-summary">
+    <div class="fp-cell">
+      <div class="fp-label">Today's Fee Accrued</div>
+      <div class="fp-val" id="fp-today-fee" style="color:var(--gold)">—</div>
+      <div class="fp-sub">Mgmt+Svc, live estimate</div>
+    </div>
+    <div class="fp-cell">
+      <div class="fp-label">Cumulative Fees</div>
+      <div class="fp-val" id="fp-cumulative" style="color:var(--gold)">—</div>
+      <div class="fp-sub">Daily + crystallized, since inception</div>
+    </div>
+    <div class="fp-cell">
+      <div class="fp-label">Gross NAV</div>
+      <div class="fp-val" id="fp-gross" style="color:var(--muted)">—</div>
+      <div class="fp-sub">Net + cumulative fees</div>
+    </div>
+    <div class="fp-cell">
+      <div class="fp-label">Net NAV</div>
+      <div class="fp-val" id="fp-net" style="color:var(--teal2)">—</div>
+      <div class="fp-sub">Real fund NAV — what's on screen everywhere else</div>
+    </div>
+    <div class="fp-cell">
+      <div class="fp-label">Fee Drag</div>
+      <div class="fp-val" id="fp-drag-bps" style="color:var(--amber)">—</div>
+      <div class="fp-sub">Cumulative, gross vs net</div>
+    </div>
+  </div>
+
+  <div class="sh c-purple" style="font-size:9px;margin-bottom:8px">Performance Fee — Unit Price Hurdle &amp; High Water Mark</div>
+  <div class="perf-fee-grid">
+    <div class="pf-cell">
+      <div class="pf-label">Hurdle Unit Price</div>
+      <div class="pf-val" id="fp-hurdle" style="color:var(--purple)">—</div>
+    </div>
+    <div class="pf-cell">
+      <div class="pf-label">High Water Mark</div>
+      <div class="pf-val" id="fp-hwm" style="color:var(--purple)">—</div>
+    </div>
+    <div class="pf-cell">
+      <div class="pf-label">Net Unit Price</div>
+      <div class="pf-val" id="fp-unitprice">—</div>
+    </div>
+    <div class="pf-cell">
+      <div class="pf-label">Crystallization Base</div>
+      <div class="pf-val" id="fp-crystbase" style="color:var(--gold)">—</div>
+    </div>
+    <div class="pf-cell">
+      <div class="pf-label">Next SAFEX Expiry</div>
+      <div class="pf-val" id="fp-nextexpiry" style="color:var(--teal2)">—</div>
+    </div>
+  </div>
+  <div style="font-size:9.5px;color:var(--muted);margin-bottom:14px">Estimated fee if crystallizing today: <span id="fp-estfee" style="font-family:'DM Mono',monospace">—</span></div>
+
+  <div class="fp-pending-box hidden" id="fp-pending-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:8px">
+      <div>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em">⚠ Performance Fee Crystallization Due</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">SAFEX expiry <span id="fp-pending-expiry">—</span> — fee due <strong style="color:var(--gold)" id="fp-pending-amount">—</strong></div>
+      </div>
+      <button class="btn btn-amber btn-sm" onclick="crystallizePerformanceFee()">✓ Crystallize &amp; Deduct Fee</button>
+    </div>
+    <div style="font-size:9.5px;color:var(--muted);margin-bottom:4px">Suggested tranches to fund it (same ranking as Crash Harvest — nearest-dated preferred on ties). Selling is optional before confirming; cash can also come from the general pool.</div>
+    <div style="overflow-x:auto">
+      <table class="fp-pending-table">
+        <thead><tr>
+          <th>Expiry</th><th>Contracts</th><th>Entry (R/c)</th><th>MTM (R/c)</th>
+          <th>P&amp;L %</th><th>Proceeds</th><th>Suggested</th><th></th>
+        </tr></thead>
+        <tbody id="fp-pending-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="sh c-teal" style="font-size:9px;margin-bottom:6px">Crystallization History</div>
+  <div id="fp-history"></div>
+</div>
+
 <!-- ══ REMAINING BUDGET PANEL ════════════════════════════════════════ -->
 <div class="budget-panel" id="budget-panel">
   <div class="bp-cell">
@@ -1805,8 +1932,10 @@ textarea:focus{border-color:var(--teal2)}
   </div>
   <div class="eod-breakdown" id="eod-breakdown" style="display:none">
     <div class="eb-item"><div class="eb-l">Closing NAV</div><div class="eb-v" id="eb-nav" style="color:var(--teal2)">—</div></div>
+    <div class="eb-item"><div class="eb-l">Gross NAV</div><div class="eb-v" id="eb-gross" style="color:var(--muted)">—</div></div>
     <div class="eb-item"><div class="eb-l">Cash Core</div><div class="eb-v" id="eb-cash" style="color:var(--plat)">—</div></div>
     <div class="eb-item"><div class="eb-l">Option Book</div><div class="eb-v" id="eb-book" style="color:var(--amber)">—</div></div>
+    <div class="eb-item"><div class="eb-l">Mgmt+Svc Fee</div><div class="eb-v" id="eb-fee" style="color:var(--gold)">—</div></div>
     <div class="eb-item"><div class="eb-l">Day P&amp;L</div><div class="eb-v" id="eb-pnl">—</div></div>
     <div class="eb-item"><div class="eb-l">vs Initial Capital</div><div class="eb-v" id="eb-vs">—</div></div>
   </div>
@@ -2590,11 +2719,13 @@ function buildSessionData(){
   var st = getState();
   var us = getUnitState();
   var hs = getHarvestState();
+  var fs = getFeeState();
   return {
     config: CURRENT_SESSION,
     state: st,
     unitState: us,
     harvestState: hs,
+    feeState: fs,
     lastSaved: new Date().toISOString(),
     lastSavedBy: deviceLabel(),
     createdAt: CURRENT_SESSION.createdAt || new Date().toISOString()
@@ -2641,6 +2772,10 @@ function defaultState(){
     totalPortfolio: CURRENT_SESSION ? CURRENT_SESSION.totalPortfolio : 1000000000,
     inceptionDate: CURRENT_SESSION ? CURRENT_SESSION.inceptionDate : null,
     cashCoreInit: 0, residualCash: 0, jibarAtInception: 0.075,
+    // Date cash was last settled (ZARONIA compounded + fees deducted)
+    // at an EOD close. Cash grows from THIS point forward, not from
+    // inception — see endOfDay() and computeNAVFromState().
+    lastCashSettleDate: null,
     totalInflows: 0,
     jibarLastAckTs: 0, // last time JIBAR was confirmed/updated (for the SARB reminder)
     // Client's current Phylax cover target, e.g. 0.07 = 7%. Changed only
@@ -3102,6 +3237,62 @@ function detachLiveListeners(){
 // ════════════════════════════════════════════════════════════════════
 var UNIT_INCEPTION_PRICE=100.00;
 
+// ════════════════════════════════════════════════════════════════════
+// FEE STATE — management + service fee (daily, on AUM) and performance
+// fee (quarterly crystallization, HWM + hurdle on the unit price).
+//
+// Design (confirmed):
+//  · Mgmt/service fee = editable % p.a. on AUM (cash+optBook), accrued
+//    daily and deducted from cash only (can't sell options to fund it —
+//    it's economically a yield haircut, so it shrinks the convexity
+//    budget automatically since that's derived from NAV).
+//  · Performance fee hurdle = a shadow "hurdle unit price" starting at
+//    UNIT_INCEPTION_PRICE and compounding at ZARONIA — flow-agnostic by
+//    construction, unlike a capital-value hurdle, because it never
+//    touches unitsInIssue. HWM tracks the highest NET unit price fees
+//    have already been crystallized against (updated only when a
+//    crystallization actually happens, never continuously).
+//  · Crystallization aligns to SAFEX quarterly expiry dates. It is
+//    DETECTED automatically (endOfDay()) but never auto-executed —
+//    which tranches get sold to fund it is always the operator's call,
+//    same principle as Crash Harvest. See renderFeePanel().
+// ════════════════════════════════════════════════════════════════════
+function defaultFeeState(){
+  return {
+    mgmtFeePct:0.015, svcFeePct:0.004, perfFeePct:0.20,
+    cumulativeFeesDeducted:0,      // running total: daily mgmt+svc + crystallized perf fees — Gross NAV = Net NAV + this
+    lastFeeAccrualDate:null,       // idempotency guard, also doubles as the cash "last settled" marker for display
+    hwmUnitPrice:UNIT_INCEPTION_PRICE,  // high-water mark on NET unit price — moves only at crystallization
+    lastCrystallizationDate:null,  // SAFEX expiry date (YYYY-MM-DD) last crystallized against
+    pendingCrystallization:null,   // {expiryDate,detectedDate,netUnitPriceAtExpiry,hurdleUnitPriceAtExpiry,hwmAtExpiry,crystallizationBase,unitsInIssue,feeDue} once due & unconfirmed
+    crystallizationHistory:[]      // past confirmed crystallizations — {expiryDate,confirmedDate,feeDue,unitPriceAtExpiry,hwmBefore,hwmAfter}. Quarterly at most, kept inline rather than a new subcollection.
+  };
+}
+function getFeeState(){ try{ var v=localStorage.getItem(lsKey('feestate')); return v?Object.assign(defaultFeeState(),JSON.parse(v)):defaultFeeState(); }catch(e){ return defaultFeeState(); } }
+function saveFeeState(fs){
+  try{ localStorage.setItem(lsKey('feestate'),JSON.stringify(fs)); }catch(e){}
+  if(fbReady()&&CURRENT_SESSION){
+    sessionDoc(CURRENT_SESSION.sessionId).set({feeState:fs},{merge:true})
+      .catch(function(e){ console.error('Fee state sync error:',e); });
+  }
+}
+
+// Shadow hurdle unit price — R100 inception, compounding at ZARONIA
+// over total days since fund inception. Same single-current-rate-over-
+// full-elapsed-period simplification as the existing cash core formula
+// (see the flagged ZARONIA accrual bug) — acceptable for now since both
+// share the same precision level, but a rate change will retroactively
+// re-rate the whole elapsed period until that's fixed properly.
+function calcHurdleUnitPrice(){
+  var st=getState();
+  if(!st.inceptionDate) return UNIT_INCEPTION_PRICE;
+  var zaronia=getZaronia();
+  var today=new Date(); today.setHours(0,0,0,0);
+  var inception=new Date(st.inceptionDate);
+  var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
+  return UNIT_INCEPTION_PRICE*(1+zaronia*daysElapsed/365);
+}
+
 function getUnitState(){ try{ var v=localStorage.getItem(lsKey('unitstate')); return v?JSON.parse(v):{unitsInIssue:0,inceptionUnitPrice:UNIT_INCEPTION_PRICE}; }catch(e){ return {unitsInIssue:0,inceptionUnitPrice:UNIT_INCEPTION_PRICE}; } }
 function saveUnitState(us){ try{ localStorage.setItem(lsKey('unitstate'),JSON.stringify(us)); }catch(e){} }
 
@@ -3270,6 +3461,34 @@ function getRankedTranchesForHarvest(targetPct, spotOverride){
   return {rows:rows,totalContracts:totalContracts,targetContracts:targetContracts};
 }
 
+// Same ranking rule as getRankedTranchesForHarvest (P&L% per contract
+// descending, near-dated preferred on ties) — "same logic, different
+// trigger" per design: this one selects by cumulative RAND proceeds
+// against a target (the performance fee due) rather than a tier %.
+// Selection is always the operator's call — this only ranks/suggests,
+// closeTranche() is still the one place a tranche actually gets sold.
+function getRankedTranchesForFeeFunding(targetRand){
+  var ladder=getLadder();
+  var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
+  var today=new Date(); today.setHours(0,0,0,0);
+  var rows=(ladder.tranches||[]).map(function(t){
+    var exp=new Date(t.expiry);
+    var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
+    var mtm=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
+    var pnlPct=t.premiumPerContract>0?(mtm-t.premiumPerContract)/t.premiumPerContract*100:0;
+    return {id:t.id,expiry:t.expiry,contracts:t.contracts,entry:t.premiumPerContract,mtm:mtm,
+      pnlPct:pnlPct,tteDays:Math.round(T*365),proceeds:mtm*t.contracts};
+  });
+  rows.sort(function(a,b){ if(Math.abs(a.pnlPct-b.pnlPct)<0.5) return a.tteDays-b.tteDays; return b.pnlPct-a.pnlPct; });
+  var cum=0;
+  rows.forEach(function(row){
+    row.selected = cum<(targetRand||0);
+    cum += row.proceeds;
+    row.cumProceeds=cum;
+  });
+  return {rows:rows,totalProceedsAvailable:cum,targetRand:targetRand||0};
+}
+
 function tradingDaysSinceHarvestStart(hs){
   if(!hs.harvestStartDate) return 0;
   return getNavHistory().filter(function(h){return h.date>=hs.harvestStartDate;}).length;
@@ -3326,6 +3545,7 @@ function restoreSessionFromFirebase(data){
   }
   if(data.unitState) saveUnitState(data.unitState);
   if(data.harvestState) saveHarvestState(data.harvestState);
+  if(data.feeState) saveFeeState(data.feeState);
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -3342,6 +3562,30 @@ function nextSAFEXExpiry(fromDate){
   return new Date(y,nextQ,1+thu+14);
 }
 function safexExpiryStr(fromDate){ return nextSAFEXExpiry(fromDate).toISOString().slice(0,10); }
+
+// Most recent SAFEX quarterly expiry ON OR BEFORE fromDate — the mirror
+// image of nextSAFEXExpiry(). Used to detect which quarterly expiry a
+// performance fee crystallization should align to.
+function previousSAFEXExpiry(fromDate){
+  var d=fromDate?new Date(fromDate):new Date(); d.setHours(0,0,0,0);
+  var m=d.getMonth(),y=d.getFullYear();
+  var quarters=[2,5,8,11];
+  function expiryFor(qy,qm){
+    var first=new Date(qy,qm,1),day=first.getDay();
+    var thu=day<=4?4-day:11-day;
+    return new Date(qy,qm,1+thu+14);
+  }
+  var candQ=quarters.filter(function(q){return q<=m;}).pop();
+  var candY=y;
+  if(candQ===undefined){ candQ=11; candY=y-1; }
+  var exp=expiryFor(candY,candQ);
+  if(exp>d){
+    var idx=quarters.indexOf(candQ);
+    if(idx===0){ candQ=11; candY-=1; } else { candQ=quarters[idx-1]; }
+    exp=expiryFor(candY,candQ);
+  }
+  return exp;
+}
 
 // Get next N SAFEX quarterly expiry dates from today
 // ════════════════════════════════════════════════════════════════════
@@ -3527,18 +3771,23 @@ function computeNAVFromState(spotOverride,ivOverride){
   var st=getState();
   if(!st.inceptionDate) return null;
   var today=new Date(); today.setHours(0,0,0,0);
-  var inception=new Date(st.inceptionDate);
-  var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
   var zaronia=getZaronia();
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
 
-  // Cash base: use ladder cashBalance if set (premium already deducted),
-  // otherwise fall back to full capital (no tranches yet)
+  // Cash base: use ladder cashBalance if set (premium + fees already
+  // deducted as of the last EOD settlement), otherwise fall back to
+  // full capital (no tranches yet, nothing settled)
   var ladder=getLadder();
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
-  var cashBase=hasTranches&&ladder.cashBalance!=null ? ladder.cashBalance : capital;
+  var cashBase=ladder.cashBalance!=null ? ladder.cashBalance : capital;
 
-  // Call account accrual on cash base
+  // Live accrual grows from the last SETTLED point (endOfDay() close),
+  // not from inception every time — cashBase already embeds all prior
+  // periods' correctly-compounded growth+fees as of that settle date,
+  // so only the still-open live period needs the linear approximation.
+  var lastSettle=st.lastCashSettleDate?new Date(st.lastCashSettleDate):new Date(st.inceptionDate);
+  lastSettle.setHours(0,0,0,0);
+  var daysElapsed=Math.max(0,Math.round((today-lastSettle)/86400000));
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
   // residualCash eliminated — ladder cashBalance is single cash source of truth
 
@@ -3555,8 +3804,10 @@ function computeNAVFromState(spotOverride,ivOverride){
     });
   }
 
-  var totalNAV=cashCore+optBook; // residual eliminated — ladder cashBalance is cash source of truth
-  return {cashCore,residual:0,optBook,total:totalNAV,daysElapsed,zaronia,cashBase};
+  var totalNAV=cashCore+optBook; // NET NAV — residual eliminated, ladder cashBalance is cash source of truth
+  var fs=getFeeState();
+  var grossNAV=totalNAV+(fs.cumulativeFeesDeducted||0); // reconstructed, not simulated — see feeState comment
+  return {cashCore,residual:0,optBook,total:totalNAV,grossTotal:grossNAV,daysElapsed,zaronia,cashBase};
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -4025,26 +4276,63 @@ async function endOfDay(){
     st.capital=CURRENT_SESSION.phylaxCapital;
     st.totalPortfolio=CURRENT_SESSION.totalPortfolio;
     st.jibarAtInception=r;
-    // cashCoreInit = ladder cash balance (capital minus premiums paid)
-    // residualCash = 0 — ladder cashBalance is the single source of cash truth
+    // cashCoreInit = ladder cash balance (capital minus premiums paid).
+    // NOT gated on tranches existing — ladder.cashBalance is seeded to
+    // full capital at session setup and is reliable from day one; a
+    // tranches-existence gate here was a latent bug (see cashBaseClose
+    // below for why it matters once cash moves daily via fees).
     var ldr=getLadder();
-    var hasTr=ldr.tranches&&ldr.tranches.length>0;
-    st.cashCoreInit=hasTr&&ldr.cashBalance!=null?ldr.cashBalance:st.capital;
+    st.cashCoreInit=ldr.cashBalance!=null?ldr.cashBalance:st.capital;
     st.residualCash=0;
     saveState(st);
   }
 
   var zaronia=getZaronia();
-  var inception=new Date(st.inceptionDate);
   var todayDate=new Date(); todayDate.setHours(0,0,0,0);
-  var daysElapsed=Math.max(0,Math.round((todayDate-inception)/86400000));
+  var fs=getFeeState();
 
-  // ── Unified NAV: Cash (after premiums) + Accrual + Per-tranche MTM ──
+  // ── Unified NAV: Cash (after premiums+fees) + Accrual + Per-tranche MTM ──
   // Same formula as renderDailyNAV and computeNAVFromState
   var ldrClose=getLadder();
   var hasTrClose=ldrClose.tranches&&ldrClose.tranches.length>0;
-  var cashBaseClose=hasTrClose&&ldrClose.cashBalance!=null?ldrClose.cashBalance:(st.cashCoreInit||st.capital);
-  var cashCoreClose=cashBaseClose*(1+zaronia*daysElapsed/365);
+  // NOT gated on hasTrClose — ladder.cashBalance is the live, correctly
+  // updated source of truth (fees, interest, subscriptions, redemptions
+  // all mutate it directly now) regardless of whether any tranches
+  // happen to be open today. Gating this on tranche existence was a
+  // real bug: any day with zero open tranches (before the first trade,
+  // or between a full close-out and the next buy) would silently
+  // discard all of that — cash, fees, interest — and revert to the
+  // frozen initial capital. Harmless before fees existed (cash rarely
+  // moved without a trade); actively wrong now that fees mutate cash
+  // every single day regardless of tranche state.
+  var cashBaseClose=ldrClose.cashBalance!=null?ldrClose.cashBalance:(st.cashCoreInit||st.capital);
+
+  // Cash settles once per EOD close — grow from the last SETTLED date
+  // (not from inception every time; that was the flagged ZARONIA
+  // compounding bug, and fixing it here is necessary anyway since fees
+  // now mutate the cash principal daily instead of only at trade
+  // events). A same-day re-run of endOfDay() is a no-op on cash — it
+  // was already settled once today, matching the existing same-day
+  // replace behaviour of the NAV history entry itself.
+  var alreadySettledToday = st.lastCashSettleDate===today;
+  var lastSettle = st.lastCashSettleDate?new Date(st.lastCashSettleDate):new Date(st.inceptionDate);
+  lastSettle.setHours(0,0,0,0);
+  var daysSinceSettle=Math.max(0,Math.round((todayDate-lastSettle)/86400000));
+  var history=getNavHistory();
+  var prevNAV=history.length>0?history[history.length-1].nav:st.capital;
+
+  var cashCoreGrossClose, dailyMgmtSvcFee, cashCoreClose;
+  if(alreadySettledToday){
+    cashCoreGrossClose=cashBaseClose; dailyMgmtSvcFee=0; cashCoreClose=cashBaseClose;
+  } else {
+    cashCoreGrossClose=cashBaseClose*(1+zaronia*daysSinceSettle/365);
+    // Mgmt+service fee accrues daily on AUM (cash+optBook), taken from
+    // cash only — can't sell options to fund it. Based on prevNAV (the
+    // last officially closed NET NAV) to avoid same-day circularity;
+    // daysSinceSettle covers any gap (weekend, missed close) in one go.
+    dailyMgmtSvcFee=(fs.mgmtFeePct+fs.svcFeePct)/365*daysSinceSettle*prevNAV;
+    cashCoreClose=cashCoreGrossClose-dailyMgmtSvcFee;
+  }
   var residualClose=0; // eliminated — ladder cashBalance is source of truth
 
   // Option book: sum across all ladder tranches at closing prices
@@ -4062,7 +4350,7 @@ async function endOfDay(){
     optBookClose=bsCalcPutPrice(eodSpot,K,r,q,eodIV,T)*10*held;
   }
 
-  var closingNAV=cashCoreClose+optBookClose;
+  var closingNAV=cashCoreClose+optBookClose;           // NET — real fund NAV
 
   // Carry today = interest on cash base only (no residual)
   var carryToday=cashBaseClose*zaronia/365;
@@ -4072,31 +4360,87 @@ async function endOfDay(){
   var trackerNAV=settleTrackerNAV(eodTrackerLevel);
   var blendedNAV=closingNAV+trackerNAV;
 
-  var history=getNavHistory();
-  var prevNAV=history.length>0?history[history.length-1].nav:st.capital;
   var dayPnl=closingNAV-prevNAV;
   var optionPnl=dayPnl-carryToday;
 
-  // Unit price at EOD close
+  // Unit price at EOD close — NET, since that's what redemptions pay
   var us=getOrInitUnitState();
   var closingUnitPrice=us.unitsInIssue>0?closingNAV/us.unitsInIssue:UNIT_INCEPTION_PRICE;
   var totalIntrinsicClose=(ldrClose.tranches||[]).reduce(function(s,t){return s+Math.max(0,t.strikeLevel-eodSpot)*10*t.contracts;},0);
   var closingUnitFloor=us.unitsInIssue>0?(cashCoreClose+totalIntrinsicClose)/us.unitsInIssue:UNIT_INCEPTION_PRICE;
 
+  // ── Commit the cash settlement (fee deduction + interest) ──────────
+  // Reuses the same transactional, race-safe path subscriptions and
+  // redemptions already use, so a concurrent trade in another browser
+  // can never be silently stomped by this write. If it fails (offline/
+  // Firestore error), DON'T advance lastCashSettleDate or
+  // cumulativeFeesDeducted — fall back to the unsettled cash figure so
+  // what's displayed/saved for today matches what's actually persisted.
+  // The gap self-heals: daysSinceSettle already handles multi-day
+  // catch-up, so the next successful close simply settles 2 days at once.
+  var settleFailed=false;
+  if(!alreadySettledToday){
+    var cashDelta=cashCoreClose-cashBaseClose;
+    var settleRes=await adjustCommittedCash(cashDelta);
+    if(settleRes.ok){
+      fs.cumulativeFeesDeducted=(fs.cumulativeFeesDeducted||0)+dailyMgmtSvcFee;
+      fs.lastFeeAccrualDate=today;
+      st.lastCashSettleDate=today;
+      saveState(st);
+    } else {
+      settleFailed=true;
+      // Roll back to unsettled figures — nothing was actually persisted
+      cashCoreClose=cashBaseClose; cashCoreGrossClose=cashBaseClose; dailyMgmtSvcFee=0;
+      closingNAV=cashCoreClose+optBookClose;
+      dayPnl=closingNAV-prevNAV; optionPnl=dayPnl-carryToday;
+      closingUnitPrice=us.unitsInIssue>0?closingNAV/us.unitsInIssue:UNIT_INCEPTION_PRICE;
+      closingUnitFloor=us.unitsInIssue>0?(cashCoreClose+totalIntrinsicClose)/us.unitsInIssue:UNIT_INCEPTION_PRICE;
+    }
+  }
+
   var entry={
     date:today, alsiOpen:eodOpen, alsi:eodSpot, alsiTracker:eodTrackerLevel, iv:eodIV,
     contracts:held, cashCore:cashCoreClose, optBook:optBookClose,
-    residual:0, nav:closingNAV,
+    // grossNav = net + FULL cumulative fees ever deducted (same simple,
+    // reconstructed-not-simulated definition used live in
+    // computeNAVFromState()/renderDailyNAV()) — NOT cashCoreGrossClose,
+    // which only reflects today's single day of fee and would silently
+    // understate gross more and more each day as fee history accrues.
+    residual:0, nav:closingNAV, grossNav:closingNAV+(fs.cumulativeFeesDeducted||0),
+    dailyFee:dailyMgmtSvcFee, cumulativeFees:fs.cumulativeFeesDeducted||0,
     unitPrice:closingUnitPrice, unitsInIssue:us.unitsInIssue, unitFloor:closingUnitFloor,
     trackerNAV:trackerNAV, blendedNAV:blendedNAV,
     dayPnl:dayPnl, carryToday:carryToday, optionPnl:optionPnl,
     putPriceR:optBookClose>0&&held>0?optBookClose/held:0, zaronia:zaronia,
     entryTs:today // stable, date-keyed — EOD is naturally one entry/day
   };
+  if(settleFailed) showToast('⚠ Cash settlement (fee + interest) could not be saved — offline or Firestore error. Will catch up automatically on the next successful close.','warning',8000);
   var existing=history.findIndex(function(h){return h.date===today;});
   if(existing>=0) history[existing]=entry; else history.push(entry);
   saveNavHistory(history);
   updateHarvestReentryTracking();
+
+  // ── Performance fee crystallization — DETECT only, never auto-fund.
+  // Which tranches get sold to raise the cash is always the operator's
+  // call (same principle as Crash Harvest) — see renderFeePanel() and
+  // crystallizePerformanceFee().
+  var lastPassedExpiry=previousSAFEXExpiry(todayDate);
+  var lastPassedExpiryStr=lastPassedExpiry.toISOString().slice(0,10);
+  if(todayDate.getTime()>=lastPassedExpiry.getTime()
+     && fs.lastCrystallizationDate!==lastPassedExpiryStr
+     && (!fs.pendingCrystallization||fs.pendingCrystallization.expiryDate!==lastPassedExpiryStr)){
+    var hurdleUP=calcHurdleUnitPrice();
+    var crystBase=Math.max(hurdleUP,fs.hwmUnitPrice||UNIT_INCEPTION_PRICE);
+    var feeDue=Math.max(0,fs.perfFeePct*(closingUnitPrice-crystBase))*us.unitsInIssue;
+    fs.pendingCrystallization={
+      expiryDate:lastPassedExpiryStr, detectedDate:today,
+      netUnitPriceAtExpiry:closingUnitPrice, hurdleUnitPriceAtExpiry:hurdleUP,
+      hwmAtExpiry:fs.hwmUnitPrice||UNIT_INCEPTION_PRICE, crystallizationBase:crystBase,
+      unitsInIssue:us.unitsInIssue, feeDue:feeDue
+    };
+    if(feeDue>0) showToast('⚠ Performance fee crystallization due: '+fRk(feeDue)+' — see Fee Economics panel','warning',8000);
+  }
+  saveFeeState(fs);
 
   // Mark today's market log entry as closed — the status strip's "EOD"
   // indicator reads eodAlsi off dailyMarketLog, not navHistory, so
@@ -4117,6 +4461,8 @@ async function endOfDay(){
   c('eb-pnl').style.color=dayPnl>=0?'var(--green2)':'var(--red2)';
   c('eb-vs').textContent=(((closingNAV-st.capital)/st.capital*100)>=0?'+':'')+((closingNAV-st.capital)/st.capital*100).toFixed(2)+'%';
   c('eb-vs').style.color=closingNAV>=st.capital?'var(--green2)':'var(--red2)';
+  if(c('eb-gross')) c('eb-gross').textContent=fRk(closingNAV+(fs.cumulativeFeesDeducted||0));
+  if(c('eb-fee')) c('eb-fee').textContent='−'+fRk(dailyMgmtSvcFee);
   c('fb-save-status').textContent='';
 
   // Firebase sync — await BOTH the parent doc AND the actual NAV entry
@@ -4304,7 +4650,7 @@ function renderNavHistoryTable(){
   var capital=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:70000000);
   var tbody=c('nav-history-body');
   if(history.length===0){
-    tbody.innerHTML='<tr><td colspan="14" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;color:var(--muted);padding:16px;font-size:11px">No EOD closes yet.</td></tr>';
     return;
   }
   var html='';
@@ -4320,6 +4666,7 @@ function renderNavHistoryTable(){
       +'<td style="color:var(--teal2)">'+h.contracts+'</td>'
       +'<td>'+fRk(h.cashCore)+'</td>'
       +'<td style="color:var(--amber)">'+fRk(h.optBook)+'</td>'
+      +'<td style="color:var(--muted)">'+(h.grossNav!=null?fRk(h.grossNav):'—')+'</td>'
       +'<td style="color:var(--teal2);font-weight:600">'+fRk(h.nav)+'</td>'
       +'<td style="color:var(--purple);font-weight:600">'+(h.unitPrice?'R '+h.unitPrice.toFixed(4):'—')+'</td>'
       +'<td style="color:'+pnlC+'">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
@@ -5320,6 +5667,150 @@ function renderHarvestPanel(){
 // ════════════════════════════════════════════════════════════════════
 // REMAINING BUDGET PANEL
 // ════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// FEE ECONOMICS PANEL
+// Mgmt/service fee accrual + gross-vs-net NAV display, plus the
+// performance fee hurdle/HWM/crystallization surface. Rates are
+// editable here. Crystallization is DETECTED in endOfDay() but only
+// ever executed here, explicitly, with typed confirmation — same
+// "operator picks the tranches" principle as Crash Harvest.
+// ════════════════════════════════════════════════════════════════════
+function renderFeePanel(){
+  if(!CURRENT_SESSION) return;
+  var fs=getFeeState();
+  var ln=window._ladderNAV;
+  if(!ln) return;
+
+  // Rate inputs — don't clobber a field the operator is mid-edit on
+  if(c('fee-mgmt-input')&&document.activeElement!==c('fee-mgmt-input')) c('fee-mgmt-input').value=(fs.mgmtFeePct*100).toFixed(2);
+  if(c('fee-svc-input')&&document.activeElement!==c('fee-svc-input')) c('fee-svc-input').value=(fs.svcFeePct*100).toFixed(2);
+  if(c('fee-perf-input')&&document.activeElement!==c('fee-perf-input')) c('fee-perf-input').value=(fs.perfFeePct*100).toFixed(1);
+
+  var netNAV=ln.totalNAV, grossNAV=ln.grossNAV;
+  var dragBps=grossNAV>0?((grossNAV-netNAV)/grossNAV*10000):0;
+  setText('fp-today-fee',fRk(ln.estDailyFee||0));
+  setText('fp-cumulative',fRk(fs.cumulativeFeesDeducted||0));
+  setText('fp-gross',fRk(grossNAV));
+  setText('fp-net',fRk(netNAV));
+  setText('fp-drag-bps',dragBps.toFixed(1)+' bps cumulative drag');
+
+  // Performance fee hurdle/HWM — all in unit-price terms, flow-agnostic
+  var hurdleUP=calcHurdleUnitPrice();
+  var hwm=fs.hwmUnitPrice||UNIT_INCEPTION_PRICE;
+  var up=calcUnitPrice();
+  var netUP=up?up.unitPrice:UNIT_INCEPTION_PRICE;
+  var crystBase=Math.max(hurdleUP,hwm);
+  var nextExp=nextSAFEXExpiry(new Date());
+  var today=new Date(); today.setHours(0,0,0,0);
+  var daysToExpiry=Math.round((nextExp-today)/86400000);
+  var estFee=Math.max(0,fs.perfFeePct*(netUP-crystBase))*(up?up.unitsInIssue:0);
+
+  setText('fp-hurdle','R '+hurdleUP.toFixed(4));
+  setText('fp-hwm','R '+hwm.toFixed(4));
+  setText('fp-unitprice','R '+netUP.toFixed(4));
+  if(c('fp-unitprice')) c('fp-unitprice').style.color=netUP>=crystBase?'var(--green2)':'var(--muted)';
+  setText('fp-crystbase','R '+crystBase.toFixed(4));
+  setText('fp-nextexpiry',nextExp.toISOString().slice(0,10)+' (T-'+daysToExpiry+'d)');
+  setText('fp-estfee',fRk(estFee)+(estFee>0?' if crystallizing today (non-binding estimate)':' — below hurdle/HWM'));
+  if(c('fp-estfee')) c('fp-estfee').style.color=estFee>0?'var(--gold)':'var(--muted)';
+
+  // Pending crystallization — detected in endOfDay(), needs explicit
+  // operator confirmation before anything is actually deducted
+  var box=c('fp-pending-box');
+  if(box){
+    if(fs.pendingCrystallization&&fs.pendingCrystallization.feeDue>0){
+      box.classList.remove('hidden');
+      var pc=fs.pendingCrystallization;
+      setText('fp-pending-amount',fRk(pc.feeDue));
+      setText('fp-pending-expiry',pc.expiryDate);
+      var ranked=getRankedTranchesForFeeFunding(pc.feeDue);
+      var tbody=c('fp-pending-tbody');
+      if(tbody){
+        var html='';
+        ranked.rows.forEach(function(row){
+          html+='<tr'+(row.selected?' style="background:rgba(0,230,180,.06)"':'')+'>'
+            +'<td>'+row.expiry+'</td><td>'+row.contracts+'</td>'
+            +'<td>'+fR(row.entry)+'</td><td>'+fR(row.mtm)+'</td>'
+            +'<td style="color:'+(row.pnlPct>=0?'var(--green2)':'var(--red2)')+'">'+row.pnlPct.toFixed(1)+'%</td>'
+            +'<td>'+fRk(row.proceeds)+'</td>'
+            +'<td>'+(row.selected?'<span style="color:var(--green2)">suggested</span>':'—')+'</td>'
+            +'<td><button class="btn btn-ghost btn-xs" onclick="closeTranche(\''+row.id+'\')">Close</button></td>'
+            +'</tr>';
+        });
+        tbody.innerHTML=html||'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:10px">No open tranches to fund from.</td></tr>';
+      }
+    } else if(fs.pendingCrystallization&&!(fs.pendingCrystallization.feeDue>0)){
+      // Detected but nothing owed (unit price at/below hurdle-or-HWM) — clear silently, nothing to confirm
+      fs.lastCrystallizationDate=fs.pendingCrystallization.expiryDate;
+      fs.pendingCrystallization=null;
+      saveFeeState(fs);
+      box.classList.add('hidden');
+    } else {
+      box.classList.add('hidden');
+    }
+  }
+
+  // Crystallization history — small list, rides along on feeState sync
+  var histEl=c('fp-history');
+  if(histEl){
+    var hist=(fs.crystallizationHistory||[]).slice().reverse();
+    histEl.innerHTML=hist.length?hist.map(function(h){
+      return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:9.5px">'
+        +'<span style="color:var(--muted)">'+h.expiryDate+'</span>'
+        +'<span style="color:var(--gold)">'+fRk(h.feeDue)+'</span>'
+        +'<span style="color:var(--muted)">HWM → R'+h.hwmAfter.toFixed(4)+'</span></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:9.5px;padding:4px 0">No crystallizations yet.</div>';
+  }
+}
+
+function saveFeeRates(){
+  var fs=getFeeState();
+  var mgmt=parseFloat((c('fee-mgmt-input').value||'').replace(/[^\d.]/g,''));
+  var svc=parseFloat((c('fee-svc-input').value||'').replace(/[^\d.]/g,''));
+  var perf=parseFloat((c('fee-perf-input').value||'').replace(/[^\d.]/g,''));
+  if(isFinite(mgmt)&&mgmt>=0) fs.mgmtFeePct=mgmt/100;
+  if(isFinite(svc)&&svc>=0) fs.svcFeePct=svc/100;
+  if(isFinite(perf)&&perf>=0) fs.perfFeePct=perf/100;
+  saveFeeState(fs);
+  showToast('✓ Fee rates updated — Mgmt '+(fs.mgmtFeePct*100).toFixed(2)+'% · Svc '+(fs.svcFeePct*100).toFixed(2)+'% · Perf '+(fs.perfFeePct*100).toFixed(1)+'%','success',4000);
+  calc();
+}
+
+// Explicit, typed-confirmation crystallization — deducts the pending
+// fee from cash (transactionally, via the same path subscriptions and
+// redemptions use), re-bases the HWM to today's post-fee unit price,
+// and records the event. Never auto-fires — the operator decides when,
+// having already reviewed (and optionally acted on) the suggested
+// tranches in the pending-crystallization panel.
+async function crystallizePerformanceFee(){
+  var fs=getFeeState();
+  var pc=fs.pendingCrystallization;
+  if(!pc||!(pc.feeDue>0)){ alert('No performance fee currently due.'); return; }
+  var typed=prompt('This will deduct '+fRk(pc.feeDue)+' from the cash account and crystallize the performance fee for the '+pc.expiryDate+' SAFEX expiry.\n\nThis re-bases the High Water Mark to today\'s post-fee unit price and cannot be undone.\n\nType CRYSTALLIZE to confirm:');
+  if(typed!=='CRYSTALLIZE'){ if(typed!==null) alert('Not confirmed — you must type CRYSTALLIZE exactly.'); return; }
+
+  var res=await adjustCommittedCash(-pc.feeDue);
+  if(!res.ok){
+    alert('Could not deduct performance fee — '+(res.offline?'you are offline. Try again once reconnected.':'Firestore write failed. Try again.'));
+    return;
+  }
+  var hwmBefore=fs.hwmUnitPrice||UNIT_INCEPTION_PRICE;
+  var hwmAfter=pc.netUnitPriceAtExpiry-(pc.feeDue/pc.unitsInIssue);
+  fs.cumulativeFeesDeducted=(fs.cumulativeFeesDeducted||0)+pc.feeDue;
+  fs.hwmUnitPrice=hwmAfter;
+  fs.lastCrystallizationDate=pc.expiryDate;
+  fs.pendingCrystallization=null;
+  fs.crystallizationHistory=(fs.crystallizationHistory||[]);
+  fs.crystallizationHistory.push({
+    expiryDate:pc.expiryDate, confirmedDate:todayStr(), feeDue:pc.feeDue,
+    unitPriceAtExpiry:pc.netUnitPriceAtExpiry, hwmBefore:hwmBefore, hwmAfter:hwmAfter
+  });
+  saveFeeState(fs);
+
+  showToast('✓ Performance fee crystallized: '+fRk(pc.feeDue)+' — HWM re-based to R'+hwmAfter.toFixed(4)+'/unit','success',7000);
+  renderLadderPanel(); renderDailyNAV(); renderBudgetPanel(); renderFeePanel(); calc();
+}
+
 function renderBudgetPanel(){
   if(!CURRENT_SESSION) return;
   var st=getState();
@@ -5514,18 +6005,23 @@ function renderDailyNAV(){
   if(!CURRENT_SESSION) return;
   var ladder=getLadder();
   var st=getState();
+  var fs=getFeeState();
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
   var today=new Date(); today.setHours(0,0,0,0);
   var zaronia=getZaronia();
   var dailyZaronia=zaronia/365;
-  var inception=st.inceptionDate?new Date(st.inceptionDate):today;
-  var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
+  // Grow from the last EOD settlement, not from inception every time —
+  // see computeNAVFromState() for the full rationale.
+  var lastSettle=st.lastCashSettleDate?new Date(st.lastCashSettleDate):(st.inceptionDate?new Date(st.inceptionDate):today);
+  lastSettle.setHours(0,0,0,0);
+  var daysElapsed=Math.max(0,Math.round((today-lastSettle)/86400000));
 
-  // Cash base: ladder cashBalance has premiums already deducted
-  // Fall back to full capital only if no tranches exist yet
+  // Cash base: ladder cashBalance has premiums + fees already deducted
+  // as of the last settle. Fall back to full capital only if no
+  // tranches exist yet
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
   var hasTranches=ladder.tranches&&ladder.tranches.length>0;
-  var cashBase=hasTranches&&ladder.cashBalance!=null?ladder.cashBalance:capital;
+  var cashBase=ladder.cashBalance!=null?ladder.cashBalance:capital;
   var cashCore=cashBase*(1+zaronia*daysElapsed/365);
   var residual=0; // eliminated — ladder cashBalance is cash source of truth
   var effectiveCash=cashCore;
@@ -5541,7 +6037,9 @@ function renderDailyNAV(){
     totalIntrinsic+=Math.max(0,t.strikeLevel-S)*10*t.contracts;
   });
 
-  var totalNAV=effectiveCash+optBook;
+  var totalNAV=effectiveCash+optBook; // NET NAV
+  var grossNAV=totalNAV+(fs.cumulativeFeesDeducted||0); // reconstructed: net + everything ever deducted
+  var estDailyFee=(fs.mgmtFeePct+fs.svcFeePct)/365*totalNAV;
   var floor=effectiveCash+totalIntrinsic;
   var initialCap=capital;
   var navVsCap=(totalNAV-initialCap)/initialCap*100;
@@ -5566,8 +6064,9 @@ function renderDailyNAV(){
   if(c('dn-floor')) c('dn-floor').style.color=floor>=initialCap?'var(--green2)':'var(--amber)';
   setText('dn-pnl',(dayPnl>=0?'+':'')+fRk(dayPnl));
   if(c('dn-pnl')) c('dn-pnl').style.color=dayPnl>=0?'var(--green2)':'var(--red2)';
-  window._ladderNAV={effectiveCash,optBook,totalNAV,floor,initialCap,totalTheta,dailyCashAccrual,zaronia};
+  window._ladderNAV={effectiveCash,optBook,totalNAV,grossNAV,floor,initialCap,totalTheta,dailyCashAccrual,zaronia,estDailyFee};
   renderThetaSnapshot();
+  renderFeePanel();
 }
 
 function renderThetaSnapshot(){
@@ -6428,13 +6927,15 @@ function exportClosedTradesCSV(){
 function exportNAVCSV(){
   var history=getNavHistory();
   if(!history.length){alert('No NAV history to export.');return;}
-  var headers=['Date','ALSI_Open','ALSI_Close','Tracker_Level','IV','Contracts','CashCore_R','OptionBook_R','Residual_R','PhylaxNAV_R','TrackerNAV_R','BlendedNAV_R','DayPnL_R','CarryToday_R','OptionPnL_R','vs_Capital_%'];
+  var headers=['Date','ALSI_Open','ALSI_Close','Tracker_Level','IV','Contracts','CashCore_R','OptionBook_R','Residual_R','GrossNAV_R','PhylaxNAV_R','DailyFee_R','CumulativeFees_R','TrackerNAV_R','BlendedNAV_R','DayPnL_R','CarryToday_R','OptionPnL_R','vs_Capital_%'];
   var st=getState(); var capital=st.capital||CURRENT_SESSION.phylaxCapital;
   var rows=history.map(function(h){
     var vsC=((h.nav-capital)/capital*100).toFixed(2);
     return [h.date,h.alsiOpen||h.alsi,h.alsi,h.alsiTracker||h.alsi,(h.iv*100).toFixed(2),h.contracts,
       Math.round(h.cashCore),Math.round(h.optBook),Math.round(h.residual||0),
-      Math.round(h.nav),Math.round(h.trackerNAV||0),Math.round(h.blendedNAV||0),
+      Math.round(h.grossNav!=null?h.grossNav:h.nav),Math.round(h.nav),
+      Math.round(h.dailyFee||0),Math.round(h.cumulativeFees||0),
+      Math.round(h.trackerNAV||0),Math.round(h.blendedNAV||0),
       Math.round(h.dayPnl||0),Math.round(h.carryToday||0),Math.round(h.optionPnl||0),vsC].join(',');
   });
   downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_NAVHistory_'+todayStr()+'.csv');
@@ -6486,6 +6987,7 @@ function exportMonthlyReport(){
   var blendedRet=lastH.blendedNAV?((lastH.blendedNAV-totalPort)/totalPort*100).toFixed(2):'N/A';
   var inflowLog=getInflowLog();
   var totalInflows=inflowLog.reduce(function(s,i){return s+i.amount;},0);
+  var feeSt=getFeeState();
   // Build simple HTML report
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phylax Capital — Monthly Report</title>'
     +'<style>body{font-family:Arial,sans-serif;color:#111;max-width:800px;margin:40px auto;padding:0 20px}'
@@ -6519,14 +7021,25 @@ function exportMonthlyReport(){
     +'<tr><td>Total Portfolio Size</td><td>'+fRk(totalPort)+'</td></tr>'
     +'<tr><td>Phylax Sleeve %</td><td>'+((capital/totalPort)*100).toFixed(1)+'%</td></tr>'
     +'<tr><td>Total Capital Inflows</td><td>'+fRk(totalInflows)+'</td></tr>'
-    +'<tr><td>Latest Phylax NAV</td><td>'+fRk(lastH.nav)+'</td></tr>'
+    +'<tr><td>Latest Phylax NAV (Net)</td><td>'+fRk(lastH.nav)+'</td></tr>'
+    +'<tr><td>Latest Phylax NAV (Gross)</td><td>'+fRk(lastH.grossNav!=null?lastH.grossNav:lastH.nav)+'</td></tr>'
     +'<tr><td>Capital Floor (Cash)</td><td>'+fRk(lastH.cashCore||0)+'</td></tr>'
     +'</table>'
+    +'<h2>Fee Economics</h2>'
+    +'<table><tr><th>Item</th><th>Value</th></tr>'
+    +'<tr><td>Management Fee (p.a. on AUM)</td><td>'+(feeSt.mgmtFeePct*100).toFixed(2)+'%</td></tr>'
+    +'<tr><td>Service Fee (p.a. on AUM)</td><td>'+(feeSt.svcFeePct*100).toFixed(2)+'%</td></tr>'
+    +'<tr><td>Performance Fee</td><td>'+(feeSt.perfFeePct*100).toFixed(1)+'% above hurdle/HWM</td></tr>'
+    +'<tr><td>Cumulative Fees Deducted (Mgmt+Svc+Perf)</td><td>'+fRk(feeSt.cumulativeFeesDeducted||0)+'</td></tr>'
+    +'<tr><td>High Water Mark (Net Unit Price)</td><td>R '+(feeSt.hwmUnitPrice||UNIT_INCEPTION_PRICE).toFixed(4)+'</td></tr>'
+    +'<tr><td>Last Crystallization</td><td>'+(feeSt.lastCrystallizationDate||'None yet')+'</td></tr>'
+    +'</table>'
     +'<h2>Daily NAV History</h2>'
-    +'<table><tr><th>Date</th><th>ALSI</th><th>Phylax NAV</th><th>Tracker NAV</th><th>Blended</th><th>Day P&L</th><th>vs Capital</th></tr>';
+    +'<table><tr><th>Date</th><th>ALSI</th><th>Gross NAV</th><th>Net NAV</th><th>Tracker NAV</th><th>Blended</th><th>Day P&L</th><th>vs Capital</th></tr>';
   history.slice(-30).reverse().forEach(function(h){
     var vsC=((h.nav-capital)/capital*100).toFixed(2);
-    html+='<tr><td>'+h.date+'</td><td>'+Math.round(h.alsi).toLocaleString('en-ZA')+'</td><td>'+fRk(h.nav)+'</td>'
+    html+='<tr><td>'+h.date+'</td><td>'+Math.round(h.alsi).toLocaleString('en-ZA')+'</td>'
+      +'<td>'+fRk(h.grossNav!=null?h.grossNav:h.nav)+'</td><td>'+fRk(h.nav)+'</td>'
       +'<td>'+fRk(h.trackerNAV||0)+'</td><td>'+fRk(h.blendedNAV||0)+'</td>'
       +'<td style="color:'+(h.dayPnl>=0?'#007050':'#c00000')+'">'+(h.dayPnl>=0?'+':'')+fRk(h.dayPnl||0)+'</td>'
       +'<td>'+(parseFloat(vsC)>=0?'+':'')+vsC+'%</td></tr>';
