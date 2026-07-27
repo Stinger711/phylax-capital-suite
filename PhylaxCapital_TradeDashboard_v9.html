@@ -7320,11 +7320,15 @@ function dashboardInit(){
         restoreSessionFromFirebase(data);
         attachLiveListeners(activeId);
         activateDashboard();
-        loadInputsLocal();
-        // Restore FVAL from session config
+        // Session-config fallback FIRST — only takes effect if there's
+        // no live-edited value yet (brand-new session). loadInputsLocal()
+        // runs after and always wins when a live value exists, so an
+        // edited JIBAR/OTM/dY never reverts to whatever was frozen in
+        // session config at setup time on a page refresh.
         if(CURRENT_SESSION.jibar) FVAL['i-jibar']=CURRENT_SESSION.jibar;
         if(CURRENT_SESSION.otm)   FVAL['i-otm']=CURRENT_SESSION.otm;
         if(CURRENT_SESSION.dY)    FVAL['i-dY']=CURRENT_SESSION.dY;
+        loadInputsLocal();
         // Set default expiry
         if(!c('i-expiry').value){
           c('i-expiry').value=safexExpiryStr(new Date(CURRENT_SESSION.inceptionDate||new Date()));
