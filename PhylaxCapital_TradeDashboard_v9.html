@@ -667,12 +667,7 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mfi">
         <label>JIBAR Rate (%)</label>
         <input type="text" id="setup-jibar" value="7.50"/>
-        <div class="hint">Current 3M JIBAR. Update after SARB meetings.</div>
-      </div>
-      <div class="mfi">
-        <label>ZARONIA Spread (bps below JIBAR)</label>
-        <input type="text" id="setup-zaronia-spread" value="-15"/>
-        <div class="hint">Typically −15bps. Call account may be 0bps.</div>
+        <div class="hint">Current 3M JIBAR. ZARONIA is fixed at JIBAR − 15bps (call account rate) — update JIBAR itself from the Daily Market Log strip after SARB MPC decisions.</div>
       </div>
     </div>
 
@@ -854,7 +849,6 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc-pip" id="mc-pip-1"></div>
       <div class="mc-pip" id="mc-pip-2"></div>
       <div class="mc-pip" id="mc-pip-3"></div>
-      <div class="mc-pip" id="mc-pip-4"></div>
     </div>
 
     <!-- Step 1: ALSI Spot -->
@@ -885,23 +879,9 @@ textarea:focus{border-color:var(--teal2)}
       </div>
     </div>
 
-    <!-- Step 3: JIBAR (monthly) -->
+    <!-- Step 3: Dividend Yield (quarterly) -->
     <div class="mc-step">
       <div class="mc-num" id="mc-num-3">3</div>
-      <div class="mc-body">
-        <div class="mc-label">JIBAR Rate (Monthly update)</div>
-        <div class="mc-sub" id="mc-jibar-sub">3-month JIBAR. Update monthly or after SARB MPC decision. ZARONIA = JIBAR − 15bps.</div>
-        <div class="mc-input-row">
-          <input type="number" class="mc-field" id="mc-jibar" placeholder="e.g. 6.99" step="0.01" oninput="mcValidate()"/>
-          <span class="mc-unit">% p.a.</span>
-          <span class="mc-carried" id="mc-jibar-prev"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 4: Dividend Yield (quarterly) -->
-    <div class="mc-step">
-      <div class="mc-num" id="mc-num-4">4</div>
       <div class="mc-body">
         <div class="mc-label">ALSI Dividend Yield (Quarterly update)</div>
         <div class="mc-sub">Continuous dividend yield for Black-Scholes. Update quarterly. Omitting causes ~25% mispricing.</div>
@@ -1178,18 +1158,8 @@ textarea:focus{border-color:var(--teal2)}
     </div>
   </div>
   <div class="zs-meta">
-    <strong style="color:var(--plat)">BN90 RIHF Structure:</strong> Cash sits in call account, accreting daily at ZARONIA (≈JIBAR−15bps). Full T+1 liquidity — no fixed-term lock-up.
+    <strong style="color:var(--plat)">BN90 RIHF Structure:</strong> Cash sits in call account, accreting daily at ZARONIA (JIBAR−15bps, fixed). Full T+1 liquidity — no fixed-term lock-up.
     SAFEX puts marked to market daily. Capital floor guaranteed at each quarterly expiry.
-  </div>
-  <div style="margin-left:auto;text-align:right">
-    <div style="font-size:8.5px;color:var(--muted);font-family:'Rajdhani',sans-serif;text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">ZARONIA Spread vs JIBAR</div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:9px;color:var(--muted)">−50bps</span>
-      <input type="range" id="sl-zaronia-spread" min="-50" max="0" step="5" value="-15"
-        style="width:100px" oninput="onZaroniaSpreadInput(this)"/>
-      <span style="font-size:9px;color:var(--muted)">0</span>
-      <span id="sl-zaronia-val" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);min-width:40px">−15bps</span>
-    </div>
   </div>
 </div>
 
@@ -1201,6 +1171,10 @@ textarea:focus{border-color:var(--teal2)}
   <span style="color:var(--muted)">|</span>
   <span style="font-size:9px;color:var(--muted)">EOD:</span>
   <span id="mls-eod" style="font-family:'DM Mono',monospace;font-size:9.5px">—</span>
+  <span style="color:var(--muted)">|</span>
+  <span style="font-size:9px;color:var(--muted)">JIBAR:</span>
+  <span id="mls-jibar" onclick="editJibarInline()" style="font-family:'DM Mono',monospace;font-size:9.5px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" title="Click to update the JIBAR rate">—</span>
+  <button class="btn btn-ghost btn-xs" onclick="ackJibar()" style="font-size:8px;padding:2px 6px" title="Confirm JIBAR/repo rate checked — no change needed">✓ Confirm current</button>
   <button class="btn btn-ghost btn-sm" onclick="openMorningChecklist()" style="margin-left:auto">↻ Re-run Morning</button>
 </div>
 
@@ -2241,9 +2215,86 @@ var FCFG = {
 var navOverrideActive = false;
 var bsHidden = true;
 var perfChart = null;
+// Fixed spread — ZARONIA is no longer user-adjustable (was a slider that
+// silently reverted on every reload since it was never persisted to the
+// session config). When ZARONIA itself replaces JIBAR as the entered rate
+// (year end), set this to 0 and relabel the JIBAR field/readouts to
+// "ZARONIA" — getZaronia() and the rest of the accrual chain need no
+// other change.
 var ZARONIA_SPREAD_BPS = -15;
 
 function getZaronia(){ return (FVAL['i-jibar']||0.075) + ZARONIA_SPREAD_BPS/10000; }
+
+// ════════════════════════════════════════════════════════════════════
+// SARB MPC REMINDER — JIBAR only moves ~6x/year, around SARB repo rate
+// decisions. Dates below are the confirmed/sourced 2026 MPC briefing
+// dates; update/extend this list directly each year (SARB publishes it
+// in advance — resbank.co.za MPC calendar).
+// ════════════════════════════════════════════════════════════════════
+var SARB_MPC_DATES_2026 = [
+  '2026-01-29', // held
+  '2026-05-28', // MPC hiked 25bps (repo -> 7.00%)
+  '2026-07-23', // held
+  '2026-09-23', // confirmed
+  '2026-11-19'  // confirmed
+  // Note: 19 Mar 2026 meeting also occurred but its exact date wasn't
+  // verified when this list was built — add it if you want a complete
+  // historical record; it doesn't affect the forward-looking reminder.
+];
+
+// Reminder is "pending" when today falls in the window around a SARB
+// date AND JIBAR hasn't been acknowledged/updated since that date —
+// so once you confirm or update, that meeting's reminder clears itself
+// even if the rate didn't change.
+function pendingSARBReminder(){
+  var today=new Date(); today.setHours(0,0,0,0);
+  var st=getState();
+  var lastAck=st.jibarLastAckTs?new Date(st.jibarLastAckTs):null;
+  var match=null;
+  SARB_MPC_DATES_2026.forEach(function(ds){
+    var d=new Date(ds+'T00:00:00');
+    var daysFrom=Math.round((today-d)/86400000); // 0 = meeting day, negative = upcoming
+    var inWindow = daysFrom>=-1 && daysFrom<=2; // from 1 day before to 2 days after
+    var ackedSince = lastAck && lastAck>=d;
+    if(inWindow && !ackedSince) match={date:ds, daysFrom:daysFrom};
+  });
+  return match;
+}
+
+function jibarDaysSinceAck(){
+  var st=getState();
+  if(!st.jibarLastAckTs) return null;
+  return Math.floor((Date.now()-st.jibarLastAckTs)/86400000);
+}
+
+// Bump the "last checked" timestamp without changing the rate — clears
+// any pending SARB reminder for meetings up to today.
+function ackJibar(){
+  var st=getState();
+  st.jibarLastAckTs=Date.now();
+  saveState(st);
+  fbSaveSession(buildSessionData());
+  renderMarketLogStrip();
+  showToast('✓ JIBAR confirmed current','success',2500);
+}
+
+// Actually change the rate. Also counts as an acknowledgement.
+function editJibarInline(){
+  var current=((FVAL['i-jibar']||0)*100).toFixed(2);
+  var raw=prompt('Update JIBAR rate (%):', current);
+  if(raw===null) return;
+  var v=parseFloat(raw);
+  if(isNaN(v)||v<=0||v>30){ alert('Enter a valid JIBAR rate, e.g. 6.85'); return; }
+  setFieldVal('i-jibar', v/100);
+  FVAL['i-jibar']=v/100;
+  saveInputsLocal();
+  var st=getState();
+  st.jibarLastAckTs=Date.now();
+  saveState(st);
+  fbSaveSession(buildSessionData());
+  calc(); renderDailyNAV(); renderLiquidityStress(); renderMarketLogStrip();
+  showToast('✓ JIBAR updated to '+v.toFixed(2)+'%','success',3000);
+}
 
 // Inception ALSI is locked at session creation. Read from session config,
 // falling back to the (legacy) banner field for sessions created before this existed.
@@ -2591,6 +2642,7 @@ function defaultState(){
     inceptionDate: CURRENT_SESSION ? CURRENT_SESSION.inceptionDate : null,
     cashCoreInit: 0, residualCash: 0, jibarAtInception: 0.075,
     totalInflows: 0,
+    jibarLastAckTs: 0, // last time JIBAR was confirmed/updated (for the SARB reminder)
     // Client's current Phylax cover target, e.g. 0.07 = 7%. Changed only
     // by a "Change allocation %" flow — never inferred from a deposit.
     targetPct: CURRENT_SESSION && CURRENT_SESSION.phylaxPct ? CURRENT_SESSION.phylaxPct/100 : 0.07,
@@ -3118,6 +3170,23 @@ function renderMarketLogStrip(){
     var devPct=(entry.morningAlsi&&entry.morningStatus==='entered')?Math.abs(entry.eodAlsi-entry.morningAlsi)/entry.morningAlsi*100:0;
     elE.textContent='✓ '+fmtInt(entry.eodAlsi)+' pts'+(devPct>=5?' ⚠ '+devPct.toFixed(1)+'% move from open':'');
     elE.style.color=devPct>=5?'var(--amber)':'var(--green2)';
+  }
+
+  // JIBAR readout + SARB MPC reminder
+  var elJ=c('mls-jibar');
+  if(elJ){
+    var jibarPct=(FVAL['i-jibar']||0)*100;
+    var daysSince=jibarDaysSinceAck();
+    var sarb=pendingSARBReminder();
+    var ackText = daysSince==null ? 'not yet confirmed' : (daysSince===0 ? 'confirmed today' : 'confirmed '+daysSince+'d ago');
+    if(sarb){
+      var when = sarb.daysFrom<0 ? 'meets tomorrow' : sarb.daysFrom===0 ? 'meets today' : 'met '+sarb.daysFrom+'d ago';
+      elJ.textContent='⚠ '+jibarPct.toFixed(2)+'% · SARB '+when+' ('+sarb.date+') — check repo rate';
+      elJ.style.color='var(--amber)';
+    } else {
+      elJ.textContent=jibarPct.toFixed(2)+'% · '+ackText;
+      elJ.style.color='var(--muted)';
+    }
   }
 }
 
@@ -6133,7 +6202,6 @@ function openSetupModal(resetDefaults){
     c('setup-total-port').value='1000000000';
     c('setup-phylax-pct').value='7';
     c('setup-jibar').value='7.50';
-    c('setup-zaronia-spread').value='-15';
     c('setup-otm').value='10';
     c('setup-dY').value='3.80';
     c('setup-alsi-inception').value='';
@@ -6200,7 +6268,6 @@ async function createSession(){
   var phylaxCapital=Math.round(totalPortfolio*(phylaxPct/100));
   if(phylaxCapital<=0) phylaxCapital=70000000;
   var jibar=parseFloat(c('setup-jibar').value)||7.5; if(jibar>1) jibar/=100;
-  var zaroniaSpread=parseFloat(c('setup-zaronia-spread').value)||-15;
   var otm=parseFloat(c('setup-otm').value)||10; if(otm>1) otm/=100;
   var dY=parseFloat(c('setup-dY').value)||3.8; if(dY>1) dY/=100;
   var alsiInception=parseFloat((c('setup-alsi-inception').value||'').replace(/[^\d.]/g,''))||0;
@@ -6209,7 +6276,7 @@ async function createSession(){
   CURRENT_SESSION={
     sessionId, sessionName, inceptionDate, investorName,
     totalPortfolio, phylaxCapital, phylaxPct,
-    jibar, zaroniaSpread, otm, dY, alsiInception,
+    jibar, otm, dY, alsiInception,
     createdAt:new Date().toISOString()
   };
   saveSessionConfigLocal();
@@ -6242,9 +6309,6 @@ async function createSession(){
   window._selectedK=null;
   window._calc=null;
   window._allocUserOverride=false;
-  ZARONIA_SPREAD_BPS=zaroniaSpread;
-  c('sl-zaronia-spread').value=zaroniaSpread;
-  setText('sl-zaronia-val',zaroniaSpread+' bps');
 
   // Set default SAFEX expiry (Sep 2026 for Jul inception)
   var nextExp=safexExpiryStr(new Date(inceptionDate));
@@ -6496,15 +6560,6 @@ function exportGoogleDrive(){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// ZARONIA SPREAD INPUT
-// ════════════════════════════════════════════════════════════════════
-function onZaroniaSpreadInput(el){
-  ZARONIA_SPREAD_BPS=parseInt(el.value);
-  setText('sl-zaronia-val',ZARONIA_SPREAD_BPS+' bps');
-  renderDailyNAV(); renderLiquidityStress();
-}
-
-// ════════════════════════════════════════════════════════════════════
 // BS TOGGLE
 // ════════════════════════════════════════════════════════════════════
 function toggleBS(){
@@ -6576,7 +6631,7 @@ function morningChecklistNeeded(){
   var raw=localStorage.getItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr());
   if(!raw) return true;
   if(raw==='skipped') return false;
-  try{ var md=JSON.parse(raw); return !(md.alsi&&md.savi&&md.jibar&&md.dy); }
+  try{ var md=JSON.parse(raw); return !(md.alsi&&md.savi&&md.dy); }
   catch(e){ return true; }
 }
 
@@ -6584,22 +6639,19 @@ function openMorningChecklist(){
   // Pre-fill with yesterday's carried values so user can see what changed
   var alsi=FVAL['i-spot']||0;
   var savi=(FVAL['i-iv']||0)*100;
-  var jibar=(FVAL['i-jibar']||0)*100;
   var dy=(FVAL['i-dY']||0)*100;
 
   c('mc-alsi').value=alsi>0?Math.round(alsi):'';
   c('mc-savi').value=savi>0?savi.toFixed(2):'';
-  c('mc-jibar').value=jibar>0?jibar.toFixed(2):'';
   c('mc-dy').value=dy>0?dy.toFixed(2):'';
 
   // Show carried labels
   if(alsi>0) setText('mc-alsi-prev','← yesterday: '+Math.round(alsi).toLocaleString('en-ZA'));
   if(savi>0) setText('mc-savi-prev','← yesterday: '+savi.toFixed(2)+'%');
-  if(jibar>0) setText('mc-jibar-prev','← yesterday: '+jibar.toFixed(2)+'%');
   if(dy>0) setText('mc-dy-prev','← yesterday: '+dy.toFixed(2)+'%');
 
   // Reset progress pips
-  [1,2,3,4].forEach(function(i){
+  [1,2,3].forEach(function(i){
     c('mc-pip-'+i).className='mc-pip';
     c('mc-num-'+i).className='mc-num';
   });
@@ -6615,11 +6667,13 @@ function openMorningChecklist(){
 function mcValidate(){
   var alsi=parseFloat(c('mc-alsi').value)||0;
   var savi=parseFloat(c('mc-savi').value)||0;
-  var jibar=parseFloat(c('mc-jibar').value)||0;
   var dy=parseFloat(c('mc-dy').value)||0;
+  // JIBAR is no longer entered here — it's a persistent main-dashboard
+  // value (see mls-jibar / editJibarInline). Just read it for the summary.
+  var jibar=(FVAL['i-jibar']||0)*100;
 
   // Update progress pips
-  var steps=[alsi>50000, savi>1&&savi<100, jibar>1&&jibar<30, dy>0&&dy<15];
+  var steps=[alsi>50000, savi>1&&savi<100, dy>0&&dy<15];
   steps.forEach(function(ok,i){
     c('mc-pip-'+(i+1)).className='mc-pip'+(ok?' done':'');
     c('mc-num-'+(i+1)).className='mc-num'+(ok?' done':'');
@@ -6636,7 +6690,7 @@ function mcValidate(){
     var today=new Date(); today.setHours(0,0,0,0);
     var T=Math.max(0,(new Date(expiryStr)-today)/(365*24*60*60*1000));
     var putR=T>0?bsPutRepriceR(alsi,K,r,q,iv,T):0;
-    var zaronia=Math.max(0,r-0.0015);
+    var zaronia=Math.max(0,r+ZARONIA_SPREAD_BPS/10000);
     var nav=FVAL['i-nav']||(window._ladderNAV?window._ladderNAV.totalNAV:0)||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
     var dailyCarry=nav*zaronia/365;
     var ladder=getLadder();
@@ -6644,7 +6698,7 @@ function mcValidate(){
 
     setText('mc-s-alsi',Math.round(alsi).toLocaleString('en-ZA')+' pts');
     setText('mc-s-savi',savi.toFixed(2)+'%');
-    setText('mc-s-jibar',jibar.toFixed(2)+'% (ZARONIA: '+(zaronia*100).toFixed(2)+'%)');
+    setText('mc-s-jibar',jibar.toFixed(2)+'% (ZARONIA: '+(zaronia*100).toFixed(2)+'%) — set on dashboard, not here');
     setText('mc-s-dy',dy.toFixed(2)+'%');
     setText('mc-s-strike',K.toLocaleString('en-ZA')+' pts');
     setText('mc-s-premium',putR>0?'R '+Math.round(putR).toLocaleString('en-ZA')+'/contract':'—');
@@ -6666,20 +6720,17 @@ function morningChecklistConfirm(){
   if(!CURRENT_SESSION){ alert('No active session — close this dialog and select a session first.'); return; }
   var alsi=parseFloat(c('mc-alsi').value)||0;
   var savi=parseFloat(c('mc-savi').value)||0;
-  var jibar=parseFloat(c('mc-jibar').value)||0;
   var dy=parseFloat(c('mc-dy').value)||0;
-  if(!alsi||!savi||!jibar||!dy){ alert('Complete all fields.'); return; }
+  if(!alsi||!savi||!dy){ alert('Complete all fields.'); return; }
 
-  // Push values into dashboard inputs
+  // Push values into dashboard inputs (JIBAR untouched — persistent, set via editJibarInline)
   setFieldVal('i-spot', alsi);
   setFieldVal('i-iv', savi/100);
-  setFieldVal('i-jibar', jibar/100);
   setFieldVal('i-dY', dy/100);
 
   // Update FVAL
   FVAL['i-spot']=alsi;
   FVAL['i-iv']=savi/100;
-  FVAL['i-jibar']=jibar/100;
   FVAL['i-dY']=dy/100;
 
   // Format displayed fields
@@ -6693,15 +6744,17 @@ function morningChecklistConfirm(){
   // liveInputsDoc until something else happened to overwrite it.
   saveInputsLocal();
 
-  // Record that morning inputs are done for today — save actual values
+  // Record that morning inputs are done for today — save actual values.
+  // JIBAR is logged for audit reference (what rate was in effect this
+  // morning) even though it isn't entered here.
   try{
     var morningData={
-      alsi:alsi, savi:savi/100, jibar:jibar/100, dy:dy/100,
+      alsi:alsi, savi:savi/100, dy:dy/100,
       ts:Date.now()
     };
     localStorage.setItem('phylax_morning_'+CURRENT_SESSION.sessionId+'_'+todayStr(), JSON.stringify(morningData));
     upsertMarketLogEntry({
-      morningAlsi:alsi, morningSavi:savi/100, morningJibar:jibar/100, morningDy:dy/100,
+      morningAlsi:alsi, morningSavi:savi/100, morningJibar:FVAL['i-jibar']||0, morningDy:dy/100,
       morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
     });
     renderMarketLogStrip();
@@ -6755,12 +6808,6 @@ function dashboardInit(){
         attachLiveListeners(activeId);
         activateDashboard();
         loadInputsLocal();
-        // Set ZARONIA spread from session
-        if(CURRENT_SESSION.zaroniaSpread!=null){
-          ZARONIA_SPREAD_BPS=CURRENT_SESSION.zaroniaSpread;
-          c('sl-zaronia-spread').value=ZARONIA_SPREAD_BPS;
-          setText('sl-zaronia-val',ZARONIA_SPREAD_BPS+' bps');
-        }
         // Restore FVAL from session config
         if(CURRENT_SESSION.jibar) FVAL['i-jibar']=CURRENT_SESSION.jibar;
         if(CURRENT_SESSION.otm)   FVAL['i-otm']=CURRENT_SESSION.otm;
@@ -6819,7 +6866,6 @@ function dashboardInit(){
           if(morningRaw && morningRaw!=='skipped'){
             try{
               var mdClosed=JSON.parse(morningRaw);
-              if(mdClosed.jibar) setFieldVal('i-jibar',mdClosed.jibar);
               if(mdClosed.dy) setFieldVal('i-dY',mdClosed.dy);
             }catch(e){}
           }
@@ -6832,10 +6878,9 @@ function dashboardInit(){
         if(morningRaw && morningRaw!=='skipped'){
           try{
             var md=JSON.parse(morningRaw);
-            if(md.alsi&&md.savi&&md.jibar&&md.dy){
+            if(md.alsi&&md.savi&&md.dy){
               setFieldVal('i-spot',md.alsi);
               setFieldVal('i-iv',md.savi);
-              setFieldVal('i-jibar',md.jibar);
               setFieldVal('i-dY',md.dy);
               Object.keys(FCFG).forEach(function(id){
                 var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
