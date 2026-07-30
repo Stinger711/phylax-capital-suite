@@ -486,6 +486,15 @@ textarea:focus{border-color:var(--teal2)}
 .mc-unit{font-size:9px;color:var(--muted);font-family:'Rajdhani',sans-serif;
   text-transform:uppercase;letter-spacing:.08em}
 .mc-carried{font-size:9px;color:var(--amber);font-family:'DM Mono',monospace}
+.mc-pd{border:1px solid rgba(232,160,32,.45);background:rgba(232,160,32,.07);
+  border-radius:3px;padding:11px 13px;margin-bottom:4px}
+.mc-pd.ok{border-color:rgba(64,200,128,.35);background:rgba(64,200,128,.06)}
+.mc-pd-head{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--amber);margin-bottom:5px}
+.mc-pd.ok .mc-pd-head{color:var(--green2)}
+.mc-pd-sub{font-size:9px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.mc-pd-meta{font-size:8.5px;color:var(--muted);font-family:'DM Mono',monospace;
+  margin-top:8px;line-height:1.7;white-space:pre-line}
 .mc-progress{display:flex;gap:4px;margin-bottom:16px}
 .mc-pip{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s}
 .mc-pip.done{background:var(--teal2)}
@@ -879,6 +888,25 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc-pip" id="mc-pip-1"></div>
       <div class="mc-pip" id="mc-pip-2"></div>
       <div class="mc-pip" id="mc-pip-3"></div>
+    </div>
+
+    <!-- Step 0: prior-day EOD catch-up (conditional) -->
+    <div class="mc-pd" id="mc-priorday" style="display:none">
+      <div class="mc-pd-head" id="mc-pd-head">—</div>
+      <div class="mc-pd-sub" id="mc-pd-sub">—</div>
+      <div class="mc-input-row" id="mc-pd-row">
+        <input type="number" class="mc-field" id="mc-pd-alsi" placeholder="closing ALSI" oninput="mcValidate()"/>
+        <span class="mc-unit">pts</span>
+        <span class="mc-carried" id="mc-pd-alsi-hint"></span>
+      </div>
+      <div class="mc-pd-meta" id="mc-pd-meta"></div>
+      <div style="display:flex;gap:6px;margin-top:9px;flex-wrap:wrap" id="mc-pd-btns">
+        <button class="btn btn-green btn-sm" id="mc-pd-close-btn" onclick="closePriorDay(false)">
+          &#10003; &nbsp;Close <span id="mc-pd-btn-date"></span>
+        </button>
+        <button class="btn btn-ghost btn-sm" id="mc-pd-est-btn" onclick="closePriorDay(true)"
+          style="font-size:8.5px;opacity:.7">No close available &mdash; use last ALSI</button>
+      </div>
     </div>
 
     <!-- Step 1: ALSI Spot -->
@@ -2837,10 +2865,15 @@ function todayCloseIsCurrent(entry){
   if(!entry.morningEnteredAt) return true;
   return (entry.eodEnteredAt||0) >= entry.morningEnteredAt;
 }
-function upsertMarketLogEntry(patch){
+// dateStr is supplied ONLY by the prior-day EOD catch-up; every existing
+// caller omits it and keeps writing to today's entry as before. Entries are
+// date-keyed (entryTs===date) so a prior-day write lands on the correct
+// existing Firestore doc rather than creating a duplicate.
+function upsertMarketLogEntry(patch, dateStr){
+  var d = dateStr || todayStr();
   var log=getDailyMarketLog();
-  var idx=log.findIndex(function(e){ return e.date===todayStr(); });
-  var entry = idx>=0 ? Object.assign({},log[idx],patch) : Object.assign({date:todayStr(),entryTs:todayStr()},patch);
+  var idx=log.findIndex(function(e){ return e.date===d; });
+  var entry = idx>=0 ? Object.assign({},log[idx],patch) : Object.assign({date:d,entryTs:d},patch);
   if(idx>=0) log[idx]=entry; else log.push(entry);
   saveDailyMarketLog(log);
   return entry;
@@ -2858,6 +2891,171 @@ function syncMorningLogFromInputsIfNeeded(){
     renderMarketLogStrip();
   }
 }
+// ════════════════════════════════════════════════════════════════════
+// PRIOR-DAY EOD CATCH-UP
+// ════════════════════════════════════════════════════════════════════
+// Runs inside the morning checklist ONLY, and that placement is
+// load-bearing: it executes before any trade, subscription or redemption
+// can touch the book today, which is why endOfDay() does NOT need to
+// filter ladder/unit state as-of the close date. If this is ever moved
+// out of the morning path, that assumption breaks and anything booked
+// today would leak backwards into the prior day's NAV and option book.
+var PD_LOOKBACK_DAYS = 10;
+
+// The OLDEST day we demonstrably operated (morning inputs recorded) but
+// never closed. Derived from dailyMarketLog rather than day-of-week
+// arithmetic, which means public holidays and days the dashboard simply
+// wasn't opened never generate a phantom prompt — and the precondition
+// for the feature (a morning record exists for that day) is the very
+// record the SAVI rule has to read. Oldest-first is required, not
+// cosmetic: settleTrackerNAV() is a mark chain and dayPnl is chained off
+// the previous history row, so closes must settle in date order.
+function priorUnclosedMarketDay(){
+  var today=todayStr();
+  var cut=new Date(); cut.setHours(0,0,0,0);
+  cut.setDate(cut.getDate()-PD_LOOKBACK_DAYS);
+  var cutStr=cut.toISOString().slice(0,10);
+  var cands=getDailyMarketLog().filter(function(e){
+    return e.date && e.date<today && e.date>=cutStr && e.morningStatus && e.eodAlsi==null;
+  }).sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
+  return cands.length?cands[0]:null;
+}
+
+// SAVI for a prior-day close: that day's own morning SAVI, never today's.
+// FVAL['i-iv'] is deliberately NOT in the fallback chain — by the time
+// this runs it may already hold today's number, and substituting it would
+// mark the prior day's NAV at today's vol: plausible-looking and
+// effectively undetectable afterwards. Falls back only to an EARLIER
+// logged vol, and reports that it did so.
+function priorDaySaviFor(dateStr){
+  var log=getDailyMarketLog().filter(function(e){ return e.date && e.date<=dateStr; })
+    .sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:0); });
+  for(var i=0;i<log.length;i++){
+    var e=log[i];
+    if(e.date===dateStr && e.morningSavi>0) return {savi:e.morningSavi, src:dateStr+' morning', exact:true};
+    if(e.morningSavi>0) return {savi:e.morningSavi, src:e.date+' morning', exact:false};
+    if(e.eodSavi>0)     return {savi:e.eodSavi,     src:e.date+' close',   exact:false};
+  }
+  return null;
+}
+
+// Escape hatch value: the most recent ALSI on record at or before the
+// target date — for an unclosed day that is its own morning input.
+function priorDayLastAlsiFor(dateStr){
+  var log=getDailyMarketLog().filter(function(e){ return e.date && e.date<=dateStr; })
+    .sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:0); });
+  for(var i=0;i<log.length;i++){
+    var e=log[i];
+    if(e.morningAlsi>0) return {alsi:e.morningAlsi, src:e.date+' morning'};
+    if(e.eodAlsi>0)     return {alsi:e.eodAlsi,     src:e.date+' close'};
+  }
+  return null;
+}
+
+function renderPriorDayStep(){
+  var box=c('mc-priorday'); if(!box) return;
+  var pd=priorUnclosedMarketDay();
+  window._pdTarget=pd;
+  box.style.display='block';
+  if(!pd){
+    box.className='mc-pd ok';
+    setText('mc-pd-head','\u2713  Prior day completed');
+    setText('mc-pd-sub','Last close is up to date \u2014 nothing outstanding.');
+    setText('mc-pd-meta','');
+    c('mc-pd-row').style.display='none';
+    c('mc-pd-btns').style.display='none';
+    return;
+  }
+  box.className='mc-pd';
+  setText('mc-pd-head','\u26a0  Prior day close outstanding \u2014 '+pd.date);
+  setText('mc-pd-sub','Morning inputs were recorded for '+pd.date+" but the day was never closed. Enter that day's CLOSING ALSI. This must be cleared before today's inputs can be confirmed.");
+  c('mc-pd-row').style.display='flex';
+  c('mc-pd-btns').style.display='flex';
+  setText('mc-pd-btn-date',pd.date);
+  var la=priorDayLastAlsiFor(pd.date);
+  setText('mc-pd-alsi-hint', la?('\u2190 last input: '+Math.round(la.alsi).toLocaleString('en-ZA')+' ('+la.src+')'):'');
+  var sav=priorDaySaviFor(pd.date);
+  setText('mc-pd-meta',
+      'SAVI for this close: '+(sav?((sav.savi*100).toFixed(2)+'%  \u00b7  '+sav.src+(sav.exact?'':'   \u26a0 carried forward')):'NONE ON RECORD \u2014 cannot close')
+    +'\nJIBAR: '+(pd.morningJibar>0?((pd.morningJibar*100).toFixed(2)+'%  \u00b7  '+pd.date+' morning'):"today's live value   \u26a0 not logged that day")
+    +'\nTracker level: marks to the same ALSI entered above.');
+  c('mc-pd-alsi').value='';
+}
+
+async function closePriorDay(useEstimate){
+  if(!CURRENT_SESSION){ alert('No active session.'); return; }
+  var pd=window._pdTarget;
+  if(!pd){ alert('Nothing outstanding to close.'); return; }
+  var sav=priorDaySaviFor(pd.date);
+  if(!sav){ alert('No SAVI on record for '+pd.date+' or any earlier day \u2014 cannot close. Refusing to substitute a value.'); return; }
+  var la=priorDayLastAlsiFor(pd.date);
+
+  var alsi;
+  if(useEstimate){
+    if(!la){ alert('No prior ALSI on record \u2014 nothing to substitute.'); return; }
+    alsi=la.alsi;
+    if(!confirm('No close available for '+pd.date+'.\n\nThe day will be closed at '+Math.round(alsi).toLocaleString('en-ZA')
+      +' pts (source: '+la.src+') so the NAV series and charts stay continuous, and the entry will be flagged ESTIMATED in the order log.\n\nProceed?')) return;
+  } else {
+    alsi=parseFloat(c('mc-pd-alsi').value)||0;
+    if(!(alsi>50000)){ alert("Enter "+pd.date+"'s closing ALSI in index points."); c('mc-pd-alsi').focus(); return; }
+  }
+
+  var btnC=c('mc-pd-close-btn'), btnE=c('mc-pd-est-btn');
+  [btnC,btnE].forEach(function(b){ if(b){ b.disabled=true; b.style.opacity='.4'; } });
+  try{
+    await endOfDay({
+      closeDate:  pd.date,
+      alsi:       alsi,
+      savi:       sav.savi,
+      openAlsi:   pd.morningAlsi>0?pd.morningAlsi:alsi,
+      trackerLevel: alsi,                 // tracker marks to the same ALSI it tracks
+      jibar:      pd.morningJibar>0?pd.morningJibar:FVAL['i-jibar'],
+      dy:         pd.morningDy>0?pd.morningDy:FVAL['i-dY'],
+      estimated:  !!useEstimate,
+      estimateSrc: useEstimate?la.src:null,
+      saviSrc:    sav.src
+    });
+    if(useEstimate){
+      var log=getLog();
+      log.unshift({ kind:'EOD_ESTIMATE', ts:ts(), closeDate:pd.date, alsi:alsi, savi:sav.savi,
+        notes:'ESTIMATED CLOSE \u2014 no closing ALSI was available for '+pd.date+'. Closed at '
+          +Math.round(alsi).toLocaleString('en-ZA')+' pts (source: '+la.src+'), SAVI '
+          +(sav.savi*100).toFixed(2)+'% (source: '+sav.src+'). NAV row for that date is not a market close.' });
+      saveLog(log); renderLog();
+    }
+    // Today's morning inputs may already have been confirmed before this
+    // catch-up ran — that is the exact situation the feature exists for.
+    // endOfDay() snaps i-spot/i-iv to whatever close it just booked, so
+    // restore today's morning numbers, or the live dashboard is left
+    // marked at the PRIOR day's close.
+    var tme=getTodayMarketLogEntry();
+    if(tme && tme.morningStatus==='entered' && tme.morningAlsi>0 && tme.morningSavi>0){
+      setFieldVal('i-spot',tme.morningAlsi);
+      setFieldVal('i-iv',tme.morningSavi);
+      Object.keys(FCFG).forEach(function(id){ var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0); });
+      saveInputsLocal();
+    }
+    showToast((useEstimate?'\u26a0 ':'\u2713 ')+pd.date+' closed'
+      +(useEstimate?' at an ESTIMATED level \u2014 flagged in the order log':''),
+      useEstimate?'warning':'success', useEstimate?9000:4000);
+  }catch(e){
+    console.error('Prior-day close error:',e);
+    alert('Prior-day close failed \u2014 see console. Nothing was advanced; safe to retry.');
+  }
+  [btnC,btnE].forEach(function(b){ if(b){ b.disabled=false; b.style.opacity=''; } });
+  renderPriorDayStep();
+  try{ refreshAllDisplays(); }catch(e){ console.error(e); }
+  mcValidate();
+}
+
+// Opens the checklist for a prior-day close even when today's inputs are
+// already done — without this the two early returns in dashboardInit()
+// suppress the modal entirely on exactly the days it is needed.
+function maybePromptPriorDayOnly(){
+  if(priorUnclosedMarketDay()) setTimeout(function(){ openMorningChecklist(); },600);
+}
+
 function getClosedTrades(){ return (_LIVE.closedTrades||[]).slice(); }
 function saveClosedTrades(l){
   _LIVE.closedTrades = l;
@@ -4253,18 +4451,35 @@ c('ps-blended-vs-tracker').className='ps-value '+(blendedVsTracker>=0?'ps-pos':'
 // ════════════════════════════════════════════════════════════════════
 // END OF DAY CLOSE
 // ════════════════════════════════════════════════════════════════════
-async function endOfDay(){
+// opts is supplied ONLY by closePriorDay(); every other caller passes
+// nothing and this behaves exactly as before, closing today off the EOD
+// fields. See closePriorDay() for why as-of state filtering isn't needed.
+async function endOfDay(opts){
   if(!CURRENT_SESSION){ alert('No active session. Please create or load a session first.'); return; }
-  var eodSpot=FVAL['eod-spot']||FVAL['i-spot'];
-  var eodOpen=parseFloat((document.getElementById('eod-open').value||'').replace(/[^\d.]/g,''))||FVAL['eod-open']||eodSpot;
-  var eodIV=FVAL['eod-iv']||FVAL['i-iv'];
-  var eodTrackerLevel=parseFloat(document.getElementById('eod-alsi-tracker').value.replace(/[^\d.]/g,''))||eodSpot;
+  var pd = opts||null;
+  var today = (pd&&pd.closeDate) ? pd.closeDate : todayStr();
+  var eodSpot, eodOpen, eodIV, eodTrackerLevel, r, q;
+  if(pd){
+    // Hard reads with NO FVAL fallback. FVAL['i-spot']/'i-iv' may already
+    // hold today's morning numbers when this runs; silently substituting
+    // them would mark the prior day at today's spot/vol. Refuse instead.
+    if(!(pd.alsi>0)||!(pd.savi>0)){ alert('Prior-day close aborted \u2014 missing ALSI or SAVI for '+today+'.'); return; }
+    eodSpot=pd.alsi; eodIV=pd.savi;
+    eodOpen=pd.openAlsi>0?pd.openAlsi:pd.alsi;
+    eodTrackerLevel=pd.trackerLevel>0?pd.trackerLevel:pd.alsi;
+    r=pd.jibar>0?pd.jibar:FVAL['i-jibar'];
+    q=pd.dy>0?pd.dy:FVAL['i-dY'];
+  } else {
+    eodSpot=FVAL['eod-spot']||FVAL['i-spot'];
+    eodOpen=parseFloat((document.getElementById('eod-open').value||'').replace(/[^\d.]/g,''))||FVAL['eod-open']||eodSpot;
+    eodIV=FVAL['eod-iv']||FVAL['i-iv'];
+    eodTrackerLevel=parseFloat(document.getElementById('eod-alsi-tracker').value.replace(/[^\d.]/g,''))||eodSpot;
+    r=FVAL['i-jibar'];
+    q=FVAL['i-dY'];
+  }
   var held=FVAL['i-held'];
-  var r=FVAL['i-jibar'];
-  var q=FVAL['i-dY'];
   var otm=FVAL['i-otm'];
   var expiryStr=document.getElementById('i-expiry').value;
-  var today=todayStr();
 
   if(!eodSpot||!expiryStr){ alert('Please enter ALSI spot and expiry before closing the day.'); return; }
 
@@ -4287,8 +4502,16 @@ async function endOfDay(){
     saveState(st);
   }
 
-  var zaronia=getZaronia();
-  var todayDate=new Date(); todayDate.setHours(0,0,0,0);
+  // Follows r (which is the prior day's logged JIBAR in catch-up mode)
+  // rather than getZaronia(), which always reads the live i-jibar field.
+  // Identical to getZaronia() for a normal same-day close.
+  var zaronia=(r>0?r:(FVAL['i-jibar']||0.075))+ZARONIA_SPREAD_BPS/10000;
+  // Anchored to the close date, not wall-clock. This drives time-to-expiry
+  // in the per-tranche reprice below (using today's TTE for a prior-day
+  // close would strip a day of theta out of the mark) and the fee/ZARONIA
+  // settlement day-count. Parsed with an explicit time so it is local
+  // midnight, matching setHours(0,0,0,0) semantics used elsewhere.
+  var todayDate=new Date(today+'T00:00:00'); todayDate.setHours(0,0,0,0);
   var fs=getFeeState();
 
   // ── Unified NAV: Cash (after premiums+fees) + Accrual + Per-tranche MTM ──
@@ -4412,6 +4635,11 @@ async function endOfDay(){
     trackerNAV:trackerNAV, blendedNAV:blendedNAV,
     dayPnl:dayPnl, carryToday:carryToday, optionPnl:optionPnl,
     putPriceR:optBookClose>0&&held>0?optBookClose/held:0, zaronia:zaronia,
+    // Provenance: backfilled = closed on a later date; estimated = the
+    // closing ALSI was substituted, so this row is not a market close.
+    backfilled: pd?true:false,
+    estimated: (pd&&pd.estimated)?true:false,
+    closedOn: todayStr(),
     entryTs:today // stable, date-keyed — EOD is naturally one entry/day
   };
   if(settleFailed) showToast('⚠ Cash settlement (fee + interest) could not be saved — offline or Firestore error. Will catch up automatically on the next successful close.','warning',8000);
@@ -4448,8 +4676,12 @@ async function endOfDay(){
   // regardless of how many times endOfDay() runs.
   upsertMarketLogEntry({
     eodAlsi: eodSpot, eodSavi: eodIV, eodOpen: eodOpen,
-    eodEnteredAt: Date.now(), eodEnteredBy: deviceLabel()
-  });
+    eodEnteredAt: Date.now(), eodEnteredBy: deviceLabel(),
+    eodBackfilled: pd?true:false,
+    eodEstimated: (pd&&pd.estimated)?true:false,
+    eodEstimateSrc: (pd&&pd.estimated)?pd.estimateSrc:null,
+    eodSaviSrc: pd?pd.saviSrc:null
+  }, today);
   renderMarketLogStrip();
 
   // Display breakdown
@@ -6238,6 +6470,17 @@ function renderLog(){
   }
   var html='';
   log.forEach(function(e){
+    // Non-trade records (estimated prior-day closes) have none of the
+    // pricing fields the 15-column trade row expects — rendering them
+    // through it would print NaN across the whole line.
+    if(e.kind==='EOD_ESTIMATE'){
+      html+='<tr style="background:rgba(232,160,32,.07)">'
+        +'<td style="white-space:nowrap;color:var(--muted)">'+e.ts+'</td>'
+        +'<td colspan="14" style="text-align:left;font-size:9.5px;color:var(--amber)">'
+        +'<strong>ESTIMATED CLOSE &middot; '+escapeHtml(String(e.closeDate||''))+'</strong> &nbsp;'
+        +escapeHtml(String(e.notes||''))+'</td></tr>';
+      return;
+    }
     var tc=e.tradeType==='BUY'?'var(--teal2)':e.tradeType==='SELL'?'var(--red)':'var(--amber)';
     var rc=e.tradeType==='BUY'?'buy-row':e.tradeType==='SELL'?'sell-row':'hold-row';
     var modelTag=e.pricingModel||'spot_bs';
@@ -7172,6 +7415,7 @@ function openMorningChecklist(){
   c('mc-confirm-btn').disabled=true;
   c('mc-confirm-btn').style.opacity='.4';
   c('mc-confirm-btn').style.cursor='not-allowed';
+  renderPriorDayStep();
   c('morning-modal').classList.remove('hidden');
   mcValidate();
   setTimeout(function(){ c('mc-alsi').focus(); },300);
@@ -7192,7 +7436,10 @@ function mcValidate(){
     c('mc-num-'+(i+1)).className='mc-num'+(ok?' done':'');
   });
 
-  var allDone=steps.every(Boolean);
+  // An outstanding prior-day close blocks confirmation: today's inputs
+  // must not overwrite i-spot/i-iv before that day has been settled.
+  var pdBlocking=!!priorUnclosedMarketDay();
+  var allDone=steps.every(Boolean) && !pdBlocking;
 
   if(allDone){
     // Compute summary values
@@ -7390,6 +7637,7 @@ function dashboardInit(){
             var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
           });
           try{ calc(); }catch(e){}
+          maybePromptPriorDayOnly();
           return;
         }
         if(morningRaw && morningRaw!=='skipped'){
@@ -7403,7 +7651,9 @@ function dashboardInit(){
                 var el=c(id); if(el&&!el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
               });
               try{ calc(); }catch(e){}
-              // Don't show checklist — already done today
+              // Don't show checklist — already done today, UNLESS a prior
+              // day is still unclosed, which must be cleared first.
+              maybePromptPriorDayOnly();
               return;
             }
           }catch(e){}
@@ -7417,7 +7667,7 @@ function dashboardInit(){
         var isWeekend=(dayOfWeek===0||dayOfWeek===6);
         if(isWeekend){
           renderMarketLogStrip();
-        } else if(morningChecklistNeeded()){
+        } else if(morningChecklistNeeded()||priorUnclosedMarketDay()){
           setTimeout(function(){ openMorningChecklist(); },600);
         }
       } else {
