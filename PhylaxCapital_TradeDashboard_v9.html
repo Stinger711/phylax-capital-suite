@@ -1237,6 +1237,7 @@ textarea:focus{border-color:var(--teal2)}
   <span style="font-size:9px;color:var(--muted)">JIBAR:</span>
   <span id="mls-jibar" onclick="editJibarInline()" style="font-family:'DM Mono',monospace;font-size:9.5px;cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px" title="Click to update the JIBAR rate">—</span>
   <button class="btn btn-ghost btn-xs" onclick="ackJibar()" style="font-size:8px;padding:2px 6px" title="Confirm JIBAR/repo rate checked — no change needed">✓ Confirm current</button>
+  <span id="mls-perffee" style="font-family:'DM Mono',monospace;font-size:9.5px;display:none;padding:2px 8px;border-radius:2px;border:1px solid currentColor" title="Performance fee crystallization approaching"></span>
   <button class="btn btn-ghost btn-sm" onclick="openMorningChecklist()" style="margin-left:auto">↻ Re-run Morning</button>
 </div>
 
@@ -2176,7 +2177,7 @@ textarea:focus{border-color:var(--teal2)}
 // Pages deployment is always saved under the v9 filename regardless of
 // build number, so this badge is the only reliable way to confirm from
 // the browser which build is actually live after an update.
-var BUILD_VERSION='v29';
+var BUILD_VERSION='v30';
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -3590,6 +3591,35 @@ function saveFeeState(fs){
 // (see the flagged ZARONIA accrual bug) — acceptable for now since both
 // share the same precision level, but a rate change will retroactively
 // re-rate the whole elapsed period until that's fixed properly.
+// ══ FORWARD PROJECTION — WARNING ONLY ═══════════════════════════
+// Projects the hurdle to a future expiry ASSUMING today's ZARONIA holds.
+// This is used ONLY to warn ahead of a crystallization window. The fee
+// that is actually charged is always computed from calcHurdleUnitPrice(),
+// which accrues on ACTUAL ZARONIA settled day by day at each EOD and is
+// never recomputed from a projection. Same chained-simple convention as
+// the cash core.
+function projectedHurdleAtExpiry(expiryDate){
+  var accrued=calcHurdleUnitPrice();
+  if(!expiryDate) return accrued;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var exp=new Date(expiryDate); exp.setHours(0,0,0,0);
+  var days=Math.max(0,Math.round((exp-today)/86400000));
+  if(!days) return accrued;
+  return accrued*(1+getZaronia()*days/365);
+}
+
+// Calendar escalation toward a crystallization date, deliberately mirroring
+// the roll-due tier pattern. Returns 0 unless a fee would actually be due
+// on current figures — a quarter where nothing is owed stays silent
+// rather than warning every three months for no reason.
+function perfFeeTier(daysToExpiry, feeWouldBeDue){
+  if(!feeWouldBeDue || daysToExpiry<0) return 0;
+  if(daysToExpiry<=5)  return 3;
+  if(daysToExpiry<=14) return 2;
+  if(daysToExpiry<=30) return 1;
+  return 0;
+}
+
 function calcHurdleUnitPrice(){
   var st=getState();
   if(!st.inceptionDate) return UNIT_INCEPTION_PRICE;
@@ -6254,9 +6284,34 @@ function renderFeePanel(){
   setText('fp-unitprice','R '+netUP.toFixed(4));
   if(c('fp-unitprice')) c('fp-unitprice').style.color=netUP>=crystBase?'var(--green2)':'var(--muted)';
   setText('fp-crystbase','R '+crystBase.toFixed(4));
+  // Projected to expiry on today's ZARONIA — warning only. The charged
+  // fee always uses the actually-accrued hurdle.
+  var projHurdle=projectedHurdleAtExpiry(nextExp);
+  var projBase=Math.max(projHurdle,hwm);
+  var projFee=Math.max(0,fs.perfFeePct*(netUP-projBase))*(up?up.unitsInIssue:0);
+  var tier=perfFeeTier(daysToExpiry,projFee>0);
+  var tierCol=tier===3?'var(--red2)':tier===2?'var(--amber)':tier===1?'var(--gold)':'var(--muted)';
+
   setText('fp-nextexpiry',nextExp.toISOString().slice(0,10)+' (T-'+daysToExpiry+'d)');
-  setText('fp-estfee',fRk(estFee)+(estFee>0?' if crystallizing today (non-binding estimate)':' — below hurdle/HWM'));
+  if(c('fp-nextexpiry')) c('fp-nextexpiry').style.color=tierCol;
+  setText('fp-estfee',
+    fRk(estFee)+(estFee>0?' if crystallizing today (non-binding estimate)':' — below hurdle/HWM')
+    +'  ·  projected hurdle at expiry R'+projHurdle.toFixed(4)
+    +' (today\'s ZARONIA held flat) → '+(projFee>0?fRk(projFee)+' at unchanged unit price':'no fee due at unchanged unit price'));
   if(c('fp-estfee')) c('fp-estfee').style.color=estFee>0?'var(--gold)':'var(--muted)';
+
+  // Strip chip — surfaces the approach outside this panel, since this is
+  // the one place the operator will not be looking during the morning run.
+  var chip=c('mls-perffee');
+  if(chip){
+    if(tier>0){
+      chip.style.display='';
+      chip.style.color=tierCol;
+      chip.textContent=(tier===3?'◆ ':'⚠ ')+'PERF FEE T-'+daysToExpiry+'d · est '+fRk(projFee);
+    } else {
+      chip.style.display='none';
+    }
+  }
 
   // Pending crystallization — detected in endOfDay(), needs explicit
   // operator confirmation before anything is actually deducted
