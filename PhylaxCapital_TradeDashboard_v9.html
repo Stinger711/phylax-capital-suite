@@ -4790,7 +4790,16 @@ async function endOfDay(opts){
   // crystallizePerformanceFee().
   var lastPassedExpiry=previousSAFEXExpiry(todayDate);
   var lastPassedExpiryStr=lastPassedExpiry.toISOString().slice(0,10);
-  if(todayDate.getTime()>=lastPassedExpiry.getTime()
+  // The old condition was todayDate >= lastPassedExpiry, which is
+  // TAUTOLOGICAL — previousSAFEXExpiry() returns the most recent expiry
+  // on or before the date, so it is always true and guarded nothing.
+  // The real requirement is that the expiry falls AFTER inception: a
+  // fund launched on 6 Jul 2026 was detecting a crystallization against
+  // the 17 Jun 2026 expiry, a quarter in which it did not exist.
+  var _incD=st.inceptionDate?new Date(st.inceptionDate):null;
+  if(_incD) _incD.setHours(0,0,0,0);
+  var _expiryAfterInception=_incD?(lastPassedExpiry.getTime()>_incD.getTime()):false;
+  if(_expiryAfterInception
      && fs.lastCrystallizationDate!==lastPassedExpiryStr
      && (!fs.pendingCrystallization||fs.pendingCrystallization.expiryDate!==lastPassedExpiryStr)){
     var hurdleUP=calcHurdleUnitPrice();
@@ -6301,6 +6310,31 @@ async function crystallizePerformanceFee(){
   var fs=getFeeState();
   var pc=fs.pendingCrystallization;
   if(!pc||!(pc.feeDue>0)){ alert('No performance fee currently due.'); return; }
+
+  // ── Revalidate before deducting ───────────────────────────────
+  // pc.feeDue is frozen at detection and was previously trusted blind.
+  // A stale or malformed record could therefore deduct a fee that is not
+  // owed — the panel's own live estimate could read "R0, below hurdle"
+  // while the stored record still offered a five-figure fee.
+  var _st=getState();
+  if(_st.inceptionDate && pc.expiryDate && pc.expiryDate<=String(_st.inceptionDate).slice(0,10)){
+    alert('\u2717 Crystallization blocked \u2014 invalid record.\n\nThis pending fee is dated against the '+pc.expiryDate+' SAFEX expiry, which is on or before the fund\'s inception ('+String(_st.inceptionDate).slice(0,10)+'). No performance fee can accrue for a period before the fund existed.\n\nThe stale record has been cleared.');
+    fs.pendingCrystallization=null; saveFeeState(fs);
+    if(typeof renderFeePanel==='function') renderFeePanel();
+    return;
+  }
+  var _base=Math.max(pc.hurdleUnitPriceAtExpiry||0, pc.hwmAtExpiry||UNIT_INCEPTION_PRICE);
+  var _recomputed=Math.max(0,(fs.perfFeePct||0)*((pc.netUnitPriceAtExpiry||0)-_base))*(pc.unitsInIssue||0);
+  if(Math.abs(_recomputed-pc.feeDue)>1){
+    alert('\u2717 Crystallization blocked \u2014 the stored fee does not reconcile to its own inputs.\n\nStored fee:     '+fRk(pc.feeDue)+'\nRecomputed:     '+fRk(_recomputed)+'\n\n(unit price at expiry R'+(pc.netUnitPriceAtExpiry||0).toFixed(4)+', base R'+_base.toFixed(4)+', units '+Math.round(pc.unitsInIssue||0).toLocaleString('en-ZA')+')\n\nThe record was written by an earlier calculation and cannot be trusted. Clear it and let the next EOD close re-detect.');
+    return;
+  }
+  if(!(_recomputed>0)){
+    alert('\u2717 Crystallization blocked \u2014 no fee is actually due.\n\nUnit price at expiry R'+(pc.netUnitPriceAtExpiry||0).toFixed(4)+' is at or below the crystallization base of R'+_base.toFixed(4)+'.');
+    fs.pendingCrystallization=null; saveFeeState(fs);
+    if(typeof renderFeePanel==='function') renderFeePanel();
+    return;
+  }
   var typed=prompt('This will deduct '+fRk(pc.feeDue)+' from the cash account and crystallize the performance fee for the '+pc.expiryDate+' SAFEX expiry.\n\nThis re-bases the High Water Mark to today\'s post-fee unit price and cannot be undone.\n\nType CRYSTALLIZE to confirm:');
   if(typed!=='CRYSTALLIZE'){ if(typed!==null) alert('Not confirmed — you must type CRYSTALLIZE exactly.'); return; }
 
