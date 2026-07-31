@@ -2873,6 +2873,45 @@ function todayCloseIsCurrent(entry){
 // caller omits it and keeps writing to today's entry as before. Entries are
 // date-keyed (entryTs===date) so a prior-day write lands on the correct
 // existing Firestore doc rather than creating a duplicate.
+// The day's OPEN, read from what was actually confirmed this morning
+// rather than derived from the live i-spot field. endOfDay() snaps
+// i-spot to the confirmed CLOSE (see the snap block at the end of
+// endOfDay), so anything deriving "open" from i-spot after a close
+// silently repaints with the closing value — and a same-day re-close
+// then captures that as the open. Returns null when no morning entry
+// exists (e.g. day 1 of a new session), so callers can fall back.
+function todaysRecordedOpen(dateStr){
+  try{
+    var d=dateStr||todayStr();
+    var log=getDailyMarketLog();
+    var e=log.find(function(x){ return x.date===d; });
+    if(e && e.morningAlsi>0) return e.morningAlsi;
+  }catch(err){ console.error('todaysRecordedOpen error:',err); }
+  return null;
+}
+
+// Previous close STRICTLY BEFORE dateStr. history[history.length-1] is
+// wrong whenever today's own row already exists — on a same-day
+// re-close it makes the day's P&L a delta against the row being
+// replaced, not against yesterday. ISO date strings compare correctly
+// as strings, and there is one entry per day.
+function prevNavBefore(history, dateStr, fallback){
+  // Picks the LATEST qualifying date rather than walking back from the
+  // end, so it stays correct if the array is ever out of order — which
+  // the backdated-close (pd) path can do, since it pushes rather than
+  // inserts in date order.
+  var best=null;
+  if(history && history.length){
+    for(var i=0;i<history.length;i++){
+      var h=history[i];
+      if(!h || !h.date || h.nav==null) continue;
+      if(h.date >= dateStr) continue;
+      if(best===null || h.date > best.date) best=h;
+    }
+  }
+  return best?best.nav:fallback;
+}
+
 function upsertMarketLogEntry(patch, dateStr){
   var d = dateStr || todayStr();
   var log=getDailyMarketLog();
@@ -4091,7 +4130,7 @@ function calc(){
   if(navData){
     var history=getNavHistory();
     var st=getState();
-    var prevNAV=history.length>0?history[history.length-1].nav:st.capital;
+    var prevNAV=prevNavBefore(history,todayStr(),st.capital);
     var pnl=navData.total-prevNAV;
     var navPct=(navData.total-st.capital)/st.capital*100;
     c('nb-nav').textContent=fRk(navData.total);
@@ -4310,7 +4349,9 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   }
   // Opening ALSI Spot & Closing IV are locked — always mirror this
   // morning's inputs, since neither is something you re-enter at EOD.
-  FVAL['eod-open']=S; c('eod-open').value=FCFG['eod-open'].fmt(S);
+  var recOpen=todaysRecordedOpen();
+  var shownOpen=(recOpen!=null?recOpen:S);
+  FVAL['eod-open']=shownOpen; c('eod-open').value=FCFG['eod-open'].fmt(shownOpen);
   FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
 
   window._calc={S,K,T:T.toFixed(6),r,iv,q,d1:f4(d1),d2:f4(d2),Nd1:f4(Nd1),Nd2:f4(Nd2),nd1:f4(nd1),
@@ -4489,7 +4530,11 @@ async function endOfDay(opts){
     q=pd.dy>0?pd.dy:FVAL['i-dY'];
   } else {
     eodSpot=FVAL['eod-spot']||FVAL['i-spot'];
-    eodOpen=parseFloat((document.getElementById('eod-open').value||'').replace(/[^\d.]/g,''))||FVAL['eod-open']||eodSpot;
+    // Recorded morning open wins over the on-screen field, which is
+    // derived from i-spot and therefore unreliable after any close.
+    eodOpen=todaysRecordedOpen()
+      ||parseFloat((document.getElementById('eod-open').value||'').replace(/[^\d.]/g,''))
+      ||FVAL['eod-open']||eodSpot;
     eodIV=FVAL['eod-iv']||FVAL['i-iv'];
     eodTrackerLevel=parseFloat(document.getElementById('eod-alsi-tracker').value.replace(/[^\d.]/g,''))||eodSpot;
     r=FVAL['i-jibar'];
@@ -4560,7 +4605,7 @@ async function endOfDay(opts){
   lastSettle.setHours(0,0,0,0);
   var daysSinceSettle=Math.max(0,Math.round((todayDate-lastSettle)/86400000));
   var history=getNavHistory();
-  var prevNAV=history.length>0?history[history.length-1].nav:st.capital;
+  var prevNAV=prevNavBefore(history,today,st.capital);
 
   var cashCoreGrossClose, dailyMgmtSvcFee, cashCoreClose;
   if(alreadySettledToday){
@@ -6397,7 +6442,7 @@ function renderDailyNAV(){
   var navVsCap=(totalNAV-initialCap)/initialCap*100;
 
   var navHistory=getNavHistory();
-  var prevNAV=navHistory.length>0?navHistory[navHistory.length-1].nav:initialCap;
+  var prevNAV=prevNavBefore(navHistory,todayStr(),initialCap);
   var dayPnl=totalNAV-prevNAV;
 
   setText('zs-rate',fmtPctAbs(zaronia*100,3)+'%');
