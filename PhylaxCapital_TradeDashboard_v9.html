@@ -2800,6 +2800,10 @@ function defaultState(){
     totalPortfolio: CURRENT_SESSION ? CURRENT_SESSION.totalPortfolio : 1000000000,
     inceptionDate: CURRENT_SESSION ? CURRENT_SESSION.inceptionDate : null,
     cashCoreInit: 0, residualCash: 0, jibarAtInception: 0.075,
+    // Quarterly par floor: 'advisory' (default — pooled fund; the gate is
+    // computed and displayed but does NOT cap sizing) or 'binding'
+    // (segregated mandate where the floor is a negotiated term).
+    parGateMode: 'advisory',
     // Date cash was last settled (ZARONIA compounded + fees deducted)
     // at an EOD close. Cash grows from THIS point forward, not from
     // inception — see endOfDay() and computeNAVFromState().
@@ -3340,9 +3344,23 @@ function attachLiveListeners(sessionId){
     }, function(e){ console.error('Trades listener error:',e); }));
 
     _LISTENERS.push(sessionDoc(sessionId).onSnapshot(function(doc){
-      if(doc.exists && doc.data().ladderCashBalance!=null){
-        _LIVE.cashBalance = doc.data().ladderCashBalance;
+      if(!doc.exists) return;
+      var d=doc.data();
+      if(d.ladderCashBalance!=null){
+        _LIVE.cashBalance = d.ladderCashBalance;
         if(typeof refreshAllDisplays==='function') refreshAllDisplays();
+      }
+      // Par floor mode rides on the session doc so a change made on one
+      // device reaches the others mid-session. Applied NARROWLY \u2014 this
+      // single field only, never the whole state object, which would
+      // risk clobbering fresher local edits.
+      var remoteMode=d.state&&d.state.parGateMode;
+      if(remoteMode==='advisory'||remoteMode==='binding'){
+        var lst=getState();
+        if((lst.parGateMode||'advisory')!==remoteMode){
+          lst.parGateMode=remoteMode; saveState(lst);
+          if(typeof renderInlineAlloc==='function') renderInlineAlloc();
+        }
       }
     }, function(e){ console.error('Session doc listener error:',e); }));
 
@@ -5012,6 +5030,85 @@ function applyInlinePreset(pcts){
   renderInlineAlloc();
 }
 
+// ═════════════════════════════════════════════════════════════════════
+// QUARTERLY PAR-PROTECTION GATE
+// ═════════════════════════════════════════════════════════════════════
+// The floor promise is QUARTERLY: at each SAFEX expiry the CASH core
+// alone must have accreted back to par. Residual MTM on longer-dated
+// tranches is deliberately NOT counted — it is a market value, not a
+// guaranteed one, and counting it would make the floor conditional on
+// vol not collapsing.
+//
+// The binding date is therefore the NEAREST expiry, and the constraint
+// is on TOTAL new premium across all four quarters: buying a far-dated
+// tranche spends cash today and threatens the near expiry's par date
+// exactly as much as buying the near one does. This is a shared pool,
+// not a per-expiry allowance.
+//
+// Solving  (C-P)(1+z*T) - f*T*(C+B+P) >= par  for P gives
+//     P <= [ C(1+z*T) - f*T*(C+B) - par ] / (1 + z*T + f*T)
+//
+// Fee drag is intentionally conservative: mgmt+svc charged on the full
+// current option book for the whole period, though in reality the book
+// decays toward zero. Errs toward under-spending, which is the correct
+// direction for a capital floor.
+function parPremiumHeadroom(){
+  var st=getState();
+  var ladder=getLadder();
+  var par=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
+  var C=ladder.cashBalance!=null?ladder.cashBalance:par;
+  var out={headroom:0,par:par,cash:C,T:0,days:0,expiry:null,optBook:0,rateNet:0,ok:false};
+  if(!par||C==null) return out;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var exps=getSAFEXExpiries(1);
+  if(!exps||!exps.length) return out;
+  var nearest=exps[0];
+  var T=Math.max(0,(nearest-today)/(365*24*60*60*1000));
+  var z=getZaronia();
+  var fs=getFeeState();
+  var f=(fs.mgmtFeePct||0)+(fs.svcFeePct||0);
+  var S=FVAL['i-spot'],iv=FVAL['i-iv'],r=FVAL['i-jibar'],q=FVAL['i-dY'];
+  var B=0;
+  if(S&&iv&&r){
+    (ladder.tranches||[]).forEach(function(t){
+      var te=new Date(t.expiry);
+      var tT=Math.max(0,(te-today)/(365*24*60*60*1000));
+      B+=bsPutRepriceR(S,t.strikeLevel,r,q,iv,tT)*t.contracts;
+    });
+  }
+  var denom=1+z*T+f*T;
+  var headroom=denom>0?(C*(1+z*T)-f*T*(C+B)-par)/denom:0;
+  out.headroom=Math.max(0,headroom); out.T=T; out.days=Math.round(T*365);
+  out.expiry=nearest; out.optBook=B; out.rateNet=z-f; out.ok=true;
+  out.shortfall=headroom<0?-headroom:0;
+  return out;
+}
+
+// Toggle the par floor between advisory (pooled fund) and binding
+// (segregated mandate). Device-local: saveState() is localStorage-only.
+function toggleParGateMode(){
+  var st=getState();
+  var cur=st.parGateMode||'advisory';
+  var next=(cur==='binding')?'advisory':'binding';
+  if(next==='binding'&&!confirm('Switch the quarterly par floor to BINDING?\n\nThis hard-caps TOTAL new premium across all quarters so the CASH core alone returns to par at the nearest SAFEX expiry \u2014 residual MTM on longer tranches is excluded.\n\nIntended for segregated mandates where the floor is a negotiated term. On the pooled fund it will materially reduce hedge coverage.\n\nThis setting belongs to THIS SESSION and syncs to all devices.\n\nProceed?')) return;
+  st.parGateMode=next; saveState(st);
+  // Persist to the SESSION document so the mode belongs to the mandate,
+  // not the browser. buildSessionData() already bundles state, and
+  // restoreSessionFromFirebase() re-applies it when the session is
+  // opened on any other device.
+  if(typeof fbSaveSession==='function'&&typeof buildSessionData==='function'){
+    try{ fbSaveSession(buildSessionData()); }
+    catch(e){ console.error('Par gate mode sync error:',e); }
+  }
+  if(typeof renderInlineAlloc==='function') renderInlineAlloc();
+  if(typeof calc==='function'){ try{ calc(); }catch(e){} }
+  if(typeof showToast==='function'){
+    showToast(next==='binding'
+      ? '\u25c8 Par floor BINDING \u2014 sizing now capped so cash alone returns to par'
+      : '\u25c8 Par floor ADVISORY \u2014 par shown but no longer capping sizing','success',5000);
+  }
+}
+
 function renderInlineAlloc(){
   var sliderDiv=c('inline-alloc-sliders');
   var execDiv=c('inline-alloc-execute-grid');
@@ -5050,6 +5147,13 @@ function renderInlineAlloc(){
   });
   var netDailyYield=Math.max(0,dailyYield-totalExistingThetaBleed);
 
+  // ── Quarterly par-protection gate ─────────────────────────────
+  // Total new premium that still allows the cash core alone to reach par
+  // at the NEAREST expiry. Sliced by the same effectiveFrac as budget.
+  var parGate=parPremiumHeadroom();
+  var parHeadroom=parGate.headroom;
+  var parBinding=((getState().parGateMode||'advisory')==='binding');
+
   if(Math.abs(totalPct-100)<1){
     pctDiv.textContent='✓ Yield allocation sums to 100%';
     pctDiv.style.background='rgba(64,200,128,.08)'; pctDiv.style.border='1px solid rgba(64,200,128,.2)'; pctDiv.style.color='var(--green2)';
@@ -5077,6 +5181,14 @@ function renderInlineAlloc(){
   var gapPct=pcts.map(function(p,i){return Math.max(0,p-currentPct[i]);});
   var totalGap=gapPct.reduce(function(s,g){return s+g;},0);
 
+  // ── At-target lockout detection ───────────────────────────────
+  // If every quarter sits at or above its target weight, totalGap is 0,
+  // effectiveFrac collapses to 0 for all four, and every quarter
+  // recommends zero — while remaining budget is still fully available
+  // with nowhere for the allocator to route it. This state was silent
+  // and mislabelled as a yield/theta limit. Flag it explicitly instead.
+  var atTargetLockout = totalHeld>0 && totalGap<0.5;
+
   expiries.forEach(function(exp,i){
     var expStr=exp.toISOString().slice(0,10);
     var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
@@ -5098,14 +5210,19 @@ function renderInlineAlloc(){
     var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
     var budgetSlice=remaining*effectiveFrac;
     var maxBudget=putR>0?Math.floor(budgetSlice/putR):0;
-    var recommended=isOverweight?0:Math.min(maxCarry,maxBudget);
-    var bindingConstraint=isOverweight?'overweight':maxCarry<=maxBudget?'carry-neutral':'budget';
+    var parSlice=parHeadroom*effectiveFrac;
+    var maxPar=putR>0?Math.floor(parSlice/putR):0;
+    var recommended=isOverweight?0:(parBinding?Math.min(maxCarry,maxBudget,maxPar):Math.min(maxCarry,maxBudget));
+    var parWouldBind=(maxPar<maxCarry&&maxPar<maxBudget);
+    var bindingConstraint=isOverweight?'overweight'
+      :(parBinding&&maxPar<=maxCarry&&maxPar<=maxBudget)?'par'
+      :maxCarry<=maxBudget?'carry-neutral':'budget';
 
     totalContracts+=recommended; totalCost+=recommended*putR;
     totalDeltaWt+=Math.abs(delta)*recommended;
 
-    var constraintColor=isOverweight?'var(--red2)':bindingConstraint==='carry-neutral'?'var(--amber)':'var(--teal2)';
-    var constraintLabel=isOverweight?'AT/ABOVE TARGET — no new allocation':bindingConstraint==='carry-neutral'?'Yield/theta limit':'Budget limit';
+    var constraintColor=atTargetLockout?'var(--purple)':isOverweight?'var(--red2)':bindingConstraint==='par'?'var(--blue2)':bindingConstraint==='carry-neutral'?'var(--amber)':'var(--teal2)';
+    var constraintLabel=atTargetLockout?'COMPOSITION AT TARGET — budget idle':isOverweight?'AT/ABOVE TARGET — no new allocation':bindingConstraint==='par'?'◈ PAR FLOOR limit':bindingConstraint==='carry-neutral'?'Yield/theta limit':'Budget limit';
 
     // Composition status line
     var compColor=isOverweight?'var(--red2)':gap>5?'var(--teal2)':'var(--muted)';
@@ -5118,6 +5235,7 @@ function renderInlineAlloc(){
       +'<div class="alloc-sl-expiry">'+expStr+' · '+tteDays+'d</div>'
       +'<div style="font-family:\'DM Mono\',monospace;font-size:8px;color:'+compColor+';margin-bottom:4px;font-weight:600">'+compLabel+' · '+heldPerQ[i]+' contracts held</div>'
       +'<div style="font-family:\'DM Mono\',monospace;font-size:8.5px;color:var(--muted);margin-bottom:4px">Yield: R'+Math.round(yieldSlice).toLocaleString('en-ZA')+'/day · Θ R'+Math.round(thetaPerContract)+'/c/day</div>'
+      +'<div style="font-family:\'DM Mono\',monospace;font-size:8.5px;color:'+((bindingConstraint==='par'||(!parBinding&&parWouldBind))?'var(--blue2)':'var(--muted)')+';margin-bottom:4px">'+(parBinding?'Par cap':'Par ref')+': R'+Math.round(parSlice).toLocaleString('en-ZA')+' · '+maxPar+'c'+((!parBinding&&parWouldBind)?' ◈ advisory only':'')+'</div>'
       +'<div class="alloc-sl-pct" style="color:'+colors[i]+'" id="ia-pct-'+i+'">'+pcts[i]+'%</div>'
       +'<input type="range" class="alloc-sl-input" min="0" max="100" step="5" value="'+pcts[i]+'" oninput="onInlineAllocSlider('+i+',this.value)" style="accent-color:'+colors[i]+'">'
       +'<div style="font-family:\'DM Mono\',monospace;font-size:13px;font-weight:700;color:'+(isOverweight?'var(--red2)':colors[i])+';text-align:center;margin:4px 0">'+recommended+' contracts</div>'
@@ -5152,7 +5270,9 @@ function renderInlineAlloc(){
       +'&nbsp;&nbsp;·&nbsp;&nbsp;Target: Q1 '+pcts[0]+'% · Q2 '+pcts[1]+'% · Q3 '+pcts[2]+'% · Q4 '+pcts[3]+'%'
       +' <span style="font-size:8.5px;opacity:.7">(by contract count — cost-weighting would give a different split)</span>';
     netYieldEl.innerHTML='Net yield available: <strong>'+fRk(netDailyYield)+'/day</strong> ('+netYieldPct.toFixed(0)+'% of gross) — gross <strong>'+fRk(dailyYield)+'/day</strong> minus <strong>'+fRk(totalExistingThetaBleed)+'/day</strong> existing theta'
-      +'<br><span style="font-size:9px;opacity:.85">'+compSummary+'</span>';
+      +'<br><span style="font-size:9px;opacity:.85">'+compSummary+'</span>'
+      +(parGate.ok?'<br><span style="display:inline-block;margin-top:6px;padding:5px 10px;background:'+(parBinding?'rgba(96,176,240,.10)':'rgba(90,120,136,.10)')+';border:1px solid '+(parBinding?'rgba(96,176,240,.28)':'rgba(90,120,136,.28)')+';border-radius:2px;font-size:9.5px;color:'+(parBinding?'var(--blue2)':'var(--muted)')+';text-align:left;line-height:1.45">◈ QUARTERLY PAR FLOOR — <strong>'+(parBinding?'BINDING (segregated mandate)':'ADVISORY (pooled fund) — not capping sizing')+'</strong><br>Cash <strong>'+fRk(parGate.cash)+'</strong> vs par <strong>'+fRk(parGate.par)+'</strong>, '+parGate.days+'d to '+parGate.expiry.toISOString().slice(0,10)+' at net '+(parGate.rateNet*100).toFixed(2)+'%. Premium consistent with cash alone returning to par: <strong>'+fRk(parGate.headroom)+'</strong>'+(parGate.shortfall>0?' — <span style="color:var(--red2)">cash is '+fRk(parGate.shortfall)+' short of par at this expiry</span>':'')+'. Residual MTM on longer tranches excluded by design. <button onclick="toggleParGateMode()" style="margin-left:6px;background:transparent;border:1px solid currentColor;color:inherit;border-radius:2px;font-family:inherit;font-size:8.5px;padding:2px 7px;cursor:pointer">SWITCH TO '+(parBinding?'ADVISORY':'BINDING')+'</button></span>':'')
+      +(atTargetLockout?'<br><span style="display:inline-block;margin-top:6px;padding:5px 10px;background:rgba(150,110,220,.12);border:1px solid rgba(150,110,220,.3);border-radius:2px;font-size:9.5px;color:var(--purple);text-align:left;line-height:1.45">◆ COMPOSITION AT TARGET — <strong>'+fRk(remaining)+'</strong> of budget remains available, but every quarter is at or above its target weight so there is no underweight quarter to route it to. Raise a slider target to deploy it, or leave it idle by design.</span>':'');
   }
   if(summaryEl){
     var avgDelta=totalContracts>0?totalDeltaWt/totalContracts:0;
