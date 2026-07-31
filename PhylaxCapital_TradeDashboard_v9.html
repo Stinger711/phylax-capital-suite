@@ -5062,7 +5062,16 @@ function renderNavHistoryTable(){
       +'<td style="color:var(--teal2)">'+h.contracts+'</td>'
       +'<td>'+fRk(h.cashCore)+'</td>'
       +'<td style="color:var(--amber)">'+fRk(h.optBook)+'</td>'
-      +'<td style="color:var(--muted)">'+(h.grossNav!=null?fRk(h.grossNav):'—')+'</td>'
+      // Rows closed before the v13 fee work carry no stored grossNav.
+      // The invariant is gross = net + cumulative fees ever deducted, and
+      // those rows predate any fee deduction, so gross reconstructs
+      // exactly to nav. '≈' marks a derived rather than stored figure so
+      // the two are never confused in an audit. The CSV export and the
+      // monthly report already fall back this way — only this table
+      // showed a dash.
+      +'<td style="color:var(--muted)"'
+        +(h.grossNav!=null?'':' title="Reconstructed as net NAV + cumulative fees — this row predates stored gross NAV"')+'>'
+        +(h.grossNav!=null?fRk(h.grossNav):'≈ '+fRk((h.nav||0)+(h.cumulativeFees||0)))+'</td>'
       +'<td style="color:var(--teal2);font-weight:600">'+fRk(h.nav)+'</td>'
       +'<td style="color:var(--purple);font-weight:600">'+(h.unitPrice?'R '+h.unitPrice.toFixed(4):'—')+'</td>'
       +'<td style="color:'+pnlC+'">'+(pnl>=0?'+':'')+fRk(pnl)+'</td>'
@@ -7748,6 +7757,27 @@ function morningChecklistConfirm(){
   var savi=parseFloat(c('mc-savi').value)||0;
   var dy=parseFloat(c('mc-dy').value)||0;
   if(!alsi||!savi||!dy){ alert('Complete all fields.'); return; }
+
+  // ── Guard: today's close is already recorded ────────────────────
+  // endOfDay() deliberately snaps i-spot/i-iv to the confirmed close so
+  // the live NAV banner marks off the same prices as the NAV history row
+  // it just wrote. That snap assumes the next morning checklist happens
+  // the NEXT day. Run the checklist again on a day that has already been
+  // closed — which happens during same-day corrections — and it silently
+  // re-marks the live book off the OPEN, leaving the banner and the fee
+  // panel disagreeing with the stored close for no visible reason.
+  // Stored NAV history is unaffected either way; only the live mark
+  // moves. todayCloseIsCurrent() is exactly this test.
+  var _todayEntry=getTodayMarketLogEntry();
+  if(todayCloseIsCurrent(_todayEntry)){
+    var _closeAlsi=_todayEntry.eodAlsi;
+    if(!confirm(
+      'Today\'s EOD close is already recorded at '+Math.round(_closeAlsi).toLocaleString('en-ZA')+' pts.\n\n'+
+      'Confirming morning inputs will re-mark the LIVE NAV off '+Math.round(alsi).toLocaleString('en-ZA')+' pts (the open) '+
+      'instead of the close, so the NAV banner and Fee Economics panel will no longer match today\'s stored NAV history row.\n\n'+
+      'The stored close itself is NOT changed.\n\n'+
+      'Continue?')) return;
+  }
 
   // Push values into dashboard inputs (JIBAR untouched — persistent, set via editJibarInline)
   setFieldVal('i-spot', alsi);
