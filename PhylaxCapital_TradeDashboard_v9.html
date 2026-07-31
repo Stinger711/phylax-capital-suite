@@ -2240,13 +2240,13 @@ function bsBlack76(S,K,r,q,iv,T){
   if(T<=0||F<=0||K<=0){
     var intrinsic=Math.max(K-F,0);
     return {F:F,d1:0,d2:0,putPoints:intrinsic,putPriceR:intrinsic*10,
-      delta:(F>0&&K>F)?-1:0,gamma:0,thetaPerDayR:0,vegaR:0};
+      delta:(F>0&&K>F)?-1:0,gamma:0,gammaSpot:0,thetaPerDayR:0,vegaR:0};
   }
   if(iv<=0){
     var disc0=Math.exp(-r*T);
     var fwdIntrinsic=Math.max(K-F,0)*disc0;
     return {F:F,d1:0,d2:0,putPoints:fwdIntrinsic,putPriceR:fwdIntrinsic*10,
-      delta:-disc0*(K>F?1:0),gamma:0,thetaPerDayR:0,vegaR:0};
+      delta:-disc0*(K>F?1:0),gamma:0,gammaSpot:0,thetaPerDayR:0,vegaR:0};
   }
   var sqrtT=Math.sqrt(T);
   var d1=(Math.log(F/K)+(iv*iv/2)*T)/(iv*sqrtT);
@@ -2262,7 +2262,16 @@ function bsBlack76(S,K,r,q,iv,T){
   var thetaAnn=-(F*nd1*iv*disc)/(2*sqrtT)+r*K*disc*Nnd2-r*F*disc*Nnd1;
   var vegaR=F*sqrtT*nd1*disc*0.01*10;
   return {F:F,d1:d1,d2:d2,putPoints:putPoints,putPriceR:Math.max(0,putPoints*10),
-    delta:delta,gamma:gamma,thetaPerDayR:Math.abs(thetaAnn/365)*10,vegaR:vegaR};
+    delta:delta,gamma:gamma,gammaSpot:gamma*Math.exp((r-q)*T),
+    // Math.abs() here forced every option to look like it was bleeding.
+    // thetaAnn is already signed (negative = decay), so negate once to
+    // keep the established "positive = bleed" convention every consumer
+    // relies on — while allowing a genuinely ACCRETING position (deep
+    // ITM Black-76 puts, where r*e^-rT*(K-F) dominates) to report a
+    // negative bleed instead of a phantom cost. maxCarry already guards
+    // thetaPerContract>0, so a negative value correctly stops carry from
+    // binding rather than dividing by it.
+    thetaPerDayR:-(thetaAnn/365)*10,vegaR:vegaR};
 }
 
 // ── Drop-in compatible wrappers — identical call signatures to the old
@@ -3296,7 +3305,19 @@ async function adjustCommittedCash(delta, extraDocWrite){
         ? sdoc.data().ladderCashBalance
         : (CURRENT_SESSION.phylaxCapital||0);
       finalCash = Math.max(0, committedCash + delta);
-      tx.set(sessionDoc(id), Object.assign({ladderCashBalance:finalCash}, extraDocWrite&&extraDocWrite.sessionMerge?extraDocWrite.sessionMerge:{}), {merge:true});
+      // Rebuilt INSIDE the transaction callback. Previously the caller
+      // evaluated buildSessionData() before the transaction, so the
+      // snapshot was already stale on entry — and Firestore re-runs this
+      // callback on contention, which would have rewritten the SAME
+      // stale state on every retry. The passed value now acts only as a
+      // flag meaning "also merge session data".
+      var sMerge={};
+      if(extraDocWrite && extraDocWrite.sessionMerge){
+        sMerge=(typeof buildSessionData==='function')
+          ? (buildSessionData()||extraDocWrite.sessionMerge)
+          : extraDocWrite.sessionMerge;
+      }
+      tx.set(sessionDoc(id), Object.assign({ladderCashBalance:finalCash}, sMerge), {merge:true});
       if(extraDocWrite && extraDocWrite.ref && extraDocWrite.data){
         tx.set(extraDocWrite.ref, extraDocWrite.data);
       }
@@ -3518,6 +3539,8 @@ function defaultFeeState(){
     cumulativeFeesDeducted:0,      // running total: daily mgmt+svc + crystallized perf fees — Gross NAV = Net NAV + this
     lastFeeAccrualDate:null,       // idempotency guard, also doubles as the cash "last settled" marker for display
     hwmUnitPrice:UNIT_INCEPTION_PRICE,  // high-water mark on NET unit price — moves only at crystallization
+    hurdleUnitPrice:UNIT_INCEPTION_PRICE, // ZARONIA hurdle — ACCRUED incrementally at each EOD, never recomputed from inception
+    hurdleLastAccrualDate:null,         // last date the hurdle was advanced; null = not yet seeded
     lastCrystallizationDate:null,  // SAFEX expiry date (YYYY-MM-DD) last crystallized against
     pendingCrystallization:null,   // {expiryDate,detectedDate,netUnitPriceAtExpiry,hurdleUnitPriceAtExpiry,hwmAtExpiry,crystallizationBase,unitsInIssue,feeDue} once due & unconfirmed
     crystallizationHistory:[]      // past confirmed crystallizations — {expiryDate,confirmedDate,feeDue,unitPriceAtExpiry,hwmBefore,hwmAfter}. Quarterly at most, kept inline rather than a new subcollection.
@@ -3543,9 +3566,25 @@ function calcHurdleUnitPrice(){
   if(!st.inceptionDate) return UNIT_INCEPTION_PRICE;
   var zaronia=getZaronia();
   var today=new Date(); today.setHours(0,0,0,0);
-  var inception=new Date(st.inceptionDate);
-  var daysElapsed=Math.max(0,Math.round((today-inception)/86400000));
-  return UNIT_INCEPTION_PRICE*(1+zaronia*daysElapsed/365);
+
+  // The hurdle must accrue on the SAME convention as the cash core it
+  // benchmarks: chained simple accrual per settlement period (the SARB
+  // convention for a compounded ZARONIA index), NOT recomputed from
+  // inception. The old from-inception form had two defects — it was
+  // simple rather than chained across the whole life, and it applied
+  // TODAY's rate to the entire elapsed period, so any JIBAR change
+  // retroactively re-rated all history.
+  var fs=getFeeState();
+  if(!(fs.hurdleUnitPrice>0) || !fs.hurdleLastAccrualDate){
+    // Not yet seeded — fall back to the legacy value so nothing jumps at
+    // changeover. endOfDay() seeds and stores it on the next close.
+    var inception=new Date(st.inceptionDate);
+    var d0=Math.max(0,Math.round((today-inception)/86400000));
+    return UNIT_INCEPTION_PRICE*(1+zaronia*d0/365);
+  }
+  var from=new Date(fs.hurdleLastAccrualDate); from.setHours(0,0,0,0);
+  var days=Math.max(0,Math.round((today-from)/86400000));
+  return fs.hurdleUnitPrice*(1+zaronia*days/365); // live stub since last accrual
 }
 
 function getUnitState(){ try{ var v=localStorage.getItem(lsKey('unitstate')); return v?JSON.parse(v):{unitsInIssue:0,inceptionUnitPrice:UNIT_INCEPTION_PRICE}; }catch(e){ return {unitsInIssue:0,inceptionUnitPrice:UNIT_INCEPTION_PRICE}; } }
@@ -4410,7 +4449,18 @@ function settleTrackerNAV(atALSI){
   var mark=st.trackerMarkALSI||getInceptionALSI();
   var base=st.trackerNAV!=null?st.trackerNAV:((st.totalPortfolio||0)-(st.capital||0));
   var closeLevel=atALSI||mark;
-  var settled=(mark>0)?base*(closeLevel/mark):base;
+  // A zero mark means the session was created without an inception ALSI.
+  // Silently returning base froze the tracker at its starting value
+  // forever while still LOOKING settled — tracker return would read
+  // 0.00% no matter what the ALSI did. Surface it and adopt today's
+  // close as the mark so it self-heals from here.
+  if(!(mark>0)){
+    console.warn('settleTrackerNAV: no inception ALSI mark — adopting close as mark.');
+    if(typeof showToast==='function') showToast('\u26a0 Tracker not settled \u2014 this session has no inception ALSI. Adopting today\'s close as the mark; tracker return before today is not meaningful.','error',9000);
+    st.trackerNAV=base; st.trackerMarkALSI=closeLevel; saveState(st);
+    return base;
+  }
+  var settled=base*(closeLevel/mark);
   st.trackerNAV=settled;
   st.trackerMarkALSI=closeLevel;
   saveState(st);
@@ -4671,6 +4721,20 @@ async function endOfDay(opts){
     if(settleRes.ok){
       fs.cumulativeFeesDeducted=(fs.cumulativeFeesDeducted||0)+dailyMgmtSvcFee;
       fs.lastFeeAccrualDate=today;
+      // Advance the ZARONIA hurdle on the same day-count and the same
+      // rate as the cash settlement it sits beside. Seeded from the
+      // legacy from-inception value AT THE LAST SETTLE DATE, so the
+      // changeover is continuous.
+      var hurdleBase;
+      if(fs.hurdleUnitPrice>0 && fs.hurdleLastAccrualDate){
+        hurdleBase=fs.hurdleUnitPrice;
+      } else {
+        var incD=new Date(st.inceptionDate); incD.setHours(0,0,0,0);
+        var d0=Math.max(0,Math.round((lastSettle-incD)/86400000));
+        hurdleBase=UNIT_INCEPTION_PRICE*(1+zaronia*d0/365);
+      }
+      fs.hurdleUnitPrice=hurdleBase*(1+zaronia*daysSinceSettle/365);
+      fs.hurdleLastAccrualDate=today;
       st.lastCashSettleDate=today;
       saveState(st);
     } else {
@@ -7069,7 +7133,7 @@ function purgeLocalSession(id){
 // deleted — without this, every session delete would orphan its trades,
 // audit log, NAV history and inflow records in the cloud forever.
 async function deleteSubcollections(id){
-  var cols=['trades','audit','navHistory','inflows'];
+  var cols=['trades','audit','navHistory','inflows','closedTrades','marketLog'];
   for(var i=0;i<cols.length;i++){
     var snap=await sessionDoc(id).collection(cols[i]).get();
     var batch=window.db.batch();
