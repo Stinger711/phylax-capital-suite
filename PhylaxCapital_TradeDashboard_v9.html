@@ -4807,17 +4807,35 @@ async function endOfDay(opts){
 // ════════════════════════════════════════════════════════════════════
 // PERFORMANCE METRICS
 // ════════════════════════════════════════════════════════════════════
+// Investor-facing index. Unit price is base-100 at inception AND neutral
+// to subscriptions/redemptions, unlike nav/capital — which moves with
+// flows and stops being a return the moment real money arrives (a
+// subscription lifts nav and capital together and the series goes flat
+// regardless of performance). renderUnitPriceBar() already worked this
+// way; the Performance Analytics panel and chart did not.
+function unitIndexFor(h, capital){
+  if(!h) return null;
+  if(h.unitPrice>0) return h.unitPrice;
+  if(h.nav>0 && h.unitsInIssue>0) return h.nav/h.unitsInIssue;      // pre-unit rows
+  if(h.nav>0 && capital>0) return h.nav/capital*UNIT_INCEPTION_PRICE; // last resort
+  return null;
+}
+
 function calcPerfMetrics(){
   var history=getNavHistory();
   var st=getState();
   if(!st.inceptionDate||history.length===0) return null;
   var capital=st.capital;
   var currentNAV=history[history.length-1].nav;
-  var totalReturn=(currentNAV-capital)/capital*100;
-  var peak=capital,maxDD=0;
+  // Return and drawdown are both unit-price based — what an investor
+  // actually experienced — not nav/capital.
+  var lastIdx=unitIndexFor(history[history.length-1],capital);
+  var totalReturn=lastIdx!=null?(lastIdx-UNIT_INCEPTION_PRICE)/UNIT_INCEPTION_PRICE*100:0;
+  var peak=UNIT_INCEPTION_PRICE,maxDD=0;
   history.forEach(function(h){
-    if(h.nav>peak) peak=h.nav;
-    var dd=(peak-h.nav)/peak*100;
+    var ix=unitIndexFor(h,capital); if(ix==null) return;
+    if(ix>peak) peak=ix;
+    var dd=(peak-ix)/peak*100;
     if(dd>maxDD) maxDD=dd;
   });
   var dailyPnLs=history.map(function(h){return h.dayPnl||0;});
@@ -4892,13 +4910,26 @@ function renderPerfChart(){
   }
   emptyEl.style.display='none'; canvas.style.display='block';
   var labels=history.map(function(h){return h.date;});
-  var navIdx=history.map(function(h){return +((h.nav/capital*100).toFixed(3));});
+  var navIdx=history.map(function(h){
+    var ix=unitIndexFor(h,capital);
+    return ix!=null?+((ix/UNIT_INCEPTION_PRICE*100).toFixed(3)):null;
+  });
   // Same trackerNAV-derived basis as calcPerfMetrics()'s trackerRet —
   // plots the tracker sleeve's actual value path, not a recalculated
   // ALSI ratio that can drift from what's really embedded in blendedNAV.
   var trackerBaseChart=totalPort-capital;
   var trackerIdx=history.map(function(h){return h.trackerNAV!=null&&trackerBaseChart>0?+((h.trackerNAV/trackerBaseChart*100).toFixed(3)):null;});
   var blendedIdx=history.map(function(h){return h.blendedNAV?+((h.blendedNAV/totalPort*100).toFixed(3)):null;});
+
+  // All three series are indexed to INCEPTION, but inception itself has
+  // no navHistory row — so the first plotted point was the first EOD
+  // close, already days later, and the lines started away from 100 while
+  // the headline stats still measured from inception. Prepend the
+  // inception point so chart and stats share a start.
+  if(st.inceptionDate && (!history[0].date || history[0].date > st.inceptionDate)){
+    labels.unshift(st.inceptionDate);
+    navIdx.unshift(100); trackerIdx.unshift(100); blendedIdx.unshift(100);
+  }
 
   Chart.defaults.color='#5a7888';
   Chart.defaults.font.family="'DM Mono', monospace";
