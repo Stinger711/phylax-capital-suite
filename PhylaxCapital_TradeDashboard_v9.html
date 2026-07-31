@@ -4926,8 +4926,13 @@ function renderPerfChart(){
   // close, already days later, and the lines started away from 100 while
   // the headline stats still measured from inception. Prepend the
   // inception point so chart and stats share a start.
-  if(st.inceptionDate && (!history[0].date || history[0].date > st.inceptionDate)){
-    labels.unshift(st.inceptionDate);
+  // NOTE the >= : inception is typically the MORNING of the same date as
+  // the first EOD close (the session is created, then closed that
+  // evening), so a strict > silently skips the prepend on exactly the
+  // most common setup. Labelled 'Inception' rather than the date so the
+  // axis doesn't show the same date twice.
+  if(st.inceptionDate && (!history[0].date || history[0].date >= st.inceptionDate)){
+    labels.unshift('Inception');
     navIdx.unshift(100); trackerIdx.unshift(100); blendedIdx.unshift(100);
   }
 
