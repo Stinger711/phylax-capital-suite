@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Phylax Capital — Trade Dashboard v5</title>
+<title>Phylax Capital — Trade Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
@@ -623,6 +623,10 @@ textarea:focus{border-color:var(--teal2)}
 </style>
 </head>
 <body>
+<!-- Build badge — fixed top-right, always visible. Text and page title are
+     both driven from the BUILD_VERSION constant in the main script, so
+     there is exactly one place to bump per build. -->
+<div id="build-badge" style="position:fixed;top:6px;right:10px;z-index:9999;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.09em;color:var(--muted);background:rgba(10,18,26,.85);border:1px solid rgba(90,120,136,.35);border-radius:3px;padding:3px 9px;pointer-events:none;user-select:none"></div>
 <div class="page">
 
 <!-- ══ SESSION SETUP MODAL ══════════════════════════════════════════ -->
@@ -2165,6 +2169,22 @@ textarea:focus{border-color:var(--teal2)}
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════
+// BUILD VERSION
+// ════════════════════════════════════════════════════════════════════
+// Single source of truth — bump this ONE line per build. The GitHub
+// Pages deployment is always saved under the v9 filename regardless of
+// build number, so this badge is the only reliable way to confirm from
+// the browser which build is actually live after an update.
+var BUILD_VERSION='v29';
+(function(){
+  try{
+    var _b=document.getElementById('build-badge');
+    if(_b) _b.textContent=BUILD_VERSION.toUpperCase();
+    document.title='Phylax Capital \u2014 Trade Dashboard '+BUILD_VERSION;
+  }catch(e){}
+})();
+
 // ════════════════════════════════════════════════════════════════════
 // FIREBASE CONFIG — YOUR PROJECT
 // ════════════════════════════════════════════════════════════════════
