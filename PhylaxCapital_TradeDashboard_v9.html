@@ -803,7 +803,7 @@ textarea:focus{border-color:var(--teal2)}
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="closeInflowModal()" style="flex:1">Cancel</button>
-      <button class="btn btn-purple" onclick="confirmInflow()" style="flex:2;font-size:10px">✓ &nbsp;Record Inflow &amp; Issue Units</button>
+      <button class="btn btn-purple" id="inflow-confirm-btn" onclick="confirmInflow()" style="flex:2;font-size:10px">✓ &nbsp;Record Inflow &amp; Issue Units</button>
     </div>
   </div>
 </div>
@@ -3318,6 +3318,14 @@ async function adjustCommittedCash(delta, extraDocWrite){
           ? (buildSessionData()||extraDocWrite.sessionMerge)
           : extraDocWrite.sessionMerge;
       }
+      // Commit-first flows have NOT written their new state locally yet
+      // (deliberately — see confirmInflow/executeRedemption), so
+      // buildSessionData() above would capture the pre-flow values.
+      // These overrides carry the post-flow state into the SAME
+      // transaction as the cash movement, so units and cash can never
+      // land independently of one another.
+      if(extraDocWrite && extraDocWrite.stateOverride) sMerge.state=extraDocWrite.stateOverride;
+      if(extraDocWrite && extraDocWrite.unitStateOverride) sMerge.unitState=extraDocWrite.unitStateOverride;
       tx.set(sessionDoc(id), Object.assign({ladderCashBalance:finalCash}, sMerge), {merge:true});
       if(extraDocWrite && extraDocWrite.ref && extraDocWrite.data){
         tx.set(extraDocWrite.ref, extraDocWrite.data);
@@ -6871,78 +6879,123 @@ function previewInflow(){
 async function confirmInflow(){
   if(!window._inflowCalc){ alert('Enter an amount or target % first.'); return; }
   var ic=window._inflowCalc, plan=ic.plan;
-  if(Math.abs(plan.cashDelta)<1){ alert('No material cash movement — check the amount / target %.'); return; }
-  var notes=c('inflow-notes').value||(plan.mode==='same'?'Capital flow — same allocation':'Cover reallocation');
-  var investor=c('inflow-investor').value||'Unnamed investor';
-  var date=c('inflow-date').value||todayStr();
-  var st=getState();
+  if(Math.abs(plan.cashDelta)<1){ alert('No material cash movement \u2014 check the amount / target %.'); return; }
 
-  var liveTracker=settleTrackerNAV(FVAL['i-spot']);
-  st.trackerNAV=liveTracker+plan.trackerCostDelta;
-  st.trackerCostBasis=(st.trackerCostBasis!=null?st.trackerCostBasis:liveTracker)+plan.trackerCostDelta;
-  st.targetPct=plan.targetPctAfter;
+  // ══ COMMIT-FIRST ═══════════════════════════════════════
+  // NOTHING is written locally until the transactional cash movement has
+  // committed. Previously units and capital were saved BEFORE the await:
+  // a failed transaction left phantom units in issue with no rollback,
+  // diluting every existing holder (a R10m subscription that failed to
+  // commit dropped the unit price from R100.51 to R93.84 while the
+  // subscriber's units remained). Offline flows are now refused outright
+  // rather than "saved locally" — investor money must not move on a
+  // promise to sync later.
+  if(!fbReady()){
+    alert('\u26a0 Cannot process a flow while offline.\n\nSubscriptions and redemptions move investor money and must commit transactionally. Restore the connection and try again.');
+    return;
+  }
 
-  var newCapital=(st.capital||CURRENT_SESSION.phylaxCapital)+plan.capitalCostDelta;
-  st.capital=Math.max(0,newCapital);
-  st.totalInflows=(st.totalInflows||0)+Math.max(0,plan.cashDelta);
-  st.totalPortfolio=Math.max(0,(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+plan.capitalCostDelta+plan.trackerCostDelta);
-  saveState(st);
-  CURRENT_SESSION.phylaxCapital=st.capital;
-  CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
-  CURRENT_SESSION.phylaxPct=plan.targetPctAfter*100;
+  // Dealing-price staleness: ic.unitPrice was frozen at preview time and
+  // window._inflowCalc persists indefinitely, so it can be arbitrarily old.
+  var upNow=calcUnitPrice();
+  if(upNow && ic.unitPrice>0 && Math.abs(upNow.unitPrice-ic.unitPrice)/ic.unitPrice>0.0005){
+    if(!confirm('Unit price has moved since this was previewed.\n\nPreviewed:  R'+ic.unitPrice.toFixed(4)+
+                '\nCurrent:    R'+upNow.unitPrice.toFixed(4)+
+                '\n\nOK = deal at the PREVIEWED price\nCancel = abort and re-preview')) return;
+  }
 
-  var unitPrice=ic.unitPrice||UNIT_INCEPTION_PRICE;
-  var newUnits=ic.newUnits!=null?ic.newUnits:(plan.cashDelta/unitPrice);
-  var us=getOrInitUnitState();
-  var runningUnits=Math.max(0,us.unitsInIssue+newUnits);
-  us.unitsInIssue=runningUnits;
-  saveUnitState(us);
+  var btn=c('inflow-confirm-btn');
+  function lock(on){ if(!btn) return; btn.disabled=on; btn.style.opacity=on?'.5':''; btn.style.cursor=on?'not-allowed':''; }
+  lock(true);
+  try{
+    var notes=c('inflow-notes').value||(plan.mode==='same'?'Capital flow \u2014 same allocation':'Cover reallocation');
+    var investor=c('inflow-investor').value||'Unnamed investor';
+    var date=c('inflow-date').value||todayStr();
 
-  var inflowEntry={
-    date:date, investor:investor,
-    type: plan.mode==='same' ? (plan.cashDelta>=0?'SUBSCRIPTION':'REDEMPTION') : (plan.cashDelta>=0?'COVER_INCREASE':'COVER_DECREASE'),
-    amount:plan.cashDelta, unitPrice:unitPrice,
-    units:newUnits, runningUnits:runningUnits,
-    navAfter:ic.newNAV, navBefore:ic.currentNAV,
-    targetPctBefore:plan.targetPctBefore, targetPctAfter:plan.targetPctAfter,
-    trackerCostDelta:plan.trackerCostDelta,
-    incrementalFI:ic.incrementalFI, incrementalOptBudget:ic.incrementalOptBudget,
-    contractsSuggested:ic.contracts, tteDays:ic.tteDays, notes:notes,
-    entryTs:Date.now()
-  };
-  var inflowLog=getInflowLog(); inflowLog.push(inflowEntry);
-  _LIVE.inflowLog=inflowLog; try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(inflowLog)); }catch(e){}
-  renderInflowLog();
-  closeInflowModal();
-  updateSimState();
-  calc();
+    // settleTrackerNAV is a mark-to-market, not a flow mutation, and is
+    // idempotent at a given spot (mark==closeLevel \u2192 ratio 1), so it is
+    // safe to run before the commit.
+    var liveTracker=settleTrackerNAV(FVAL['i-spot']);
 
-  var saveOk=false;
-  if(fbReady()){
+    // Build the POST-flow state without persisting it.
+    var st=getState();
+    var nextSt=Object.assign({},st);
+    nextSt.trackerNAV=liveTracker+plan.trackerCostDelta;
+    nextSt.trackerCostBasis=(st.trackerCostBasis!=null?st.trackerCostBasis:liveTracker)+plan.trackerCostDelta;
+    nextSt.targetPct=plan.targetPctAfter;
+    nextSt.capital=Math.max(0,(st.capital||CURRENT_SESSION.phylaxCapital)+plan.capitalCostDelta);
+    nextSt.totalInflows=(st.totalInflows||0)+Math.max(0,plan.cashDelta);
+    nextSt.totalPortfolio=Math.max(0,(st.totalPortfolio||CURRENT_SESSION.totalPortfolio)+plan.capitalCostDelta+plan.trackerCostDelta);
+
+    var unitPrice=ic.unitPrice||UNIT_INCEPTION_PRICE;
+    var newUnits=ic.newUnits!=null?ic.newUnits:(plan.cashDelta/unitPrice);
+    var us=getOrInitUnitState();
+    var runningUnits=Math.max(0,us.unitsInIssue+newUnits);
+    var nextUs=Object.assign({},us,{unitsInIssue:runningUnits});
+
+    var inflowEntry={
+      date:date, investor:investor,
+      type: plan.mode==='same' ? (plan.cashDelta>=0?'SUBSCRIPTION':'REDEMPTION') : (plan.cashDelta>=0?'COVER_INCREASE':'COVER_DECREASE'),
+      amount:plan.cashDelta, unitPrice:unitPrice,
+      units:newUnits, runningUnits:runningUnits,
+      navAfter:ic.newNAV, navBefore:ic.currentNAV,
+      targetPctBefore:plan.targetPctBefore, targetPctAfter:plan.targetPctAfter,
+      trackerCostDelta:plan.trackerCostDelta,
+      incrementalFI:ic.incrementalFI, incrementalOptBudget:ic.incrementalOptBudget,
+      contractsSuggested:ic.contracts, tteDays:ic.tteDays, notes:notes,
+      entryTs:Date.now()
+    };
+
+    // ── The commit ── cash + post-flow state + unit state + inflow doc,
+    // all inside one Firestore transaction.
+    var result=null;
     try{
-      var result=await adjustCommittedCash(plan.cashDelta, {
+      result=await adjustCommittedCash(plan.cashDelta, {
         ref: inflowCol(CURRENT_SESSION.sessionId).doc(String(inflowEntry.entryTs)),
         data: Object.assign({},inflowEntry,{_by:deviceLabel()}),
-        sessionMerge: buildSessionData()
+        sessionMerge: true,
+        stateOverride: nextSt,
+        unitStateOverride: nextUs
       });
-      saveOk=!!result.ok;
-      if(saveOk){
-        _lastSyncedKeys.inflowLog[String(inflowEntry.entryTs)]=true;
-        setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
-      } else if(!result.offline){ setFBStatus('error','Cloud save failed'); }
-    }catch(e){ console.error('Inflow save error:',e); setFBStatus('error','Cloud save failed'); }
-  }
-  if(saveOk){
-    showToast((plan.cashDelta>=0?'✓ Cash in ':'✓ Cash out ')+fRk(Math.abs(plan.cashDelta))+' — target now '+(plan.targetPctAfter*100).toFixed(1)+'%','success',6000);
+    }catch(err){ console.error('Inflow save error:',err); }
+
+    if(!result || !result.ok){
+      setFBStatus('error','Cloud save failed');
+      showToast('\u2717 Flow NOT processed \u2014 the transactional write failed. Nothing was changed. Check the connection and try again.','error',10000);
+      return; // no local state touched
+    }
+
+    // Committed. Only now does local state follow.
+    saveState(nextSt);
+    saveUnitState(nextUs);
+    CURRENT_SESSION.phylaxCapital=nextSt.capital;
+    CURRENT_SESSION.totalPortfolio=nextSt.totalPortfolio;
+    CURRENT_SESSION.phylaxPct=plan.targetPctAfter*100;
+    var inflowLog=getInflowLog(); inflowLog.push(inflowEntry);
+    _LIVE.inflowLog=inflowLog;
+    try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(inflowLog)); }catch(e){}
+    _lastSyncedKeys.inflowLog[String(inflowEntry.entryTs)]=true;
+    setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+
+    // Consume the calculation so a reopened modal cannot re-fire it.
+    // window._inflowCalc was previously never cleared anywhere, so
+    // reopening the modal and pressing confirm executed the whole
+    // subscription a second time.
+    window._inflowCalc=null;
+
+    renderInflowLog();
+    closeInflowModal();
+    updateSimState();
+    calc();
+    showToast((plan.cashDelta>=0?'\u2713 Cash in ':'\u2713 Cash out ')+fRk(Math.abs(plan.cashDelta))+' \u2014 target now '+(plan.targetPctAfter*100).toFixed(1)+'%','success',6000);
     await upsertUnitHolderClient(investor, CURRENT_SESSION.sessionId, CURRENT_SESSION.sessionName,
       {unitsDelta:newUnits, cashDelta:plan.cashDelta});
     refreshUnitHolderClients();
-  } else {
-    showToast('⚠ Saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  } finally {
+    lock(false);
   }
 }
 
-  
 
 // ════════════════════════════════════════════════════════════════════
 // REDEMPTION — burns units at the live unit price, pays cash T+1 from
@@ -7008,63 +7061,79 @@ function onRedeemConfirmInput(){
 async function executeRedemption(){
   if(c('rd-confirm-input').value.trim().toUpperCase()!=='REDEEM'){ alert('Type REDEEM to confirm.'); return; }
   var pr=window._pendingRedemption; if(!pr){ alert('No redemption pending.'); return; }
-  // Defensive re-check: state (cash balance, NAV, ladder) could have
-  // changed between the preview computing pr.redemptionValue and this
-  // confirm click — e.g. another tab closed a tranche, or the market
-  // moved and recalculated NAV. Re-validate against current cash before
-  // committing, rather than trusting the stale preview snapshot.
+
+  // ══ COMMIT-FIRST — see confirmInflow() for the full rationale. Units
+  // are no longer burned locally before the cash leaves; a failed
+  // transaction previously cancelled the holder's units while the money
+  // never moved, which favours the remaining investors at the redeemer's
+  // direct expense.
+  if(!fbReady()){
+    alert('\u26a0 Cannot process a redemption while offline.\n\nRedemptions move investor money and must commit transactionally. Restore the connection and try again.');
+    return;
+  }
+
+  // Defensive re-check: cash could have changed since the preview.
   var ldrCheck=getLadder();
   var lnCheck=window._ladderNAV;
   var currentCash=lnCheck?lnCheck.effectiveCash:(ldrCheck.cashBalance||0);
   if(pr.redemptionValue>currentCash){
-    alert('⚠ Redemption blocked — call-account cash has changed since this was previewed.\n\nRedemption value: R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+'\nCurrent available cash: R'+Math.round(currentCash).toLocaleString('en-ZA')+'\n\nClose the redemption modal and try again with updated figures.');
+    alert('\u26a0 Redemption blocked \u2014 call-account cash has changed since this was previewed.\n\nRedemption value: R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+'\nCurrent available cash: R'+Math.round(currentCash).toLocaleString('en-ZA')+'\n\nClose the redemption modal and try again with updated figures.');
     return;
   }
-  var up=window._unitData||calcUnitPrice();
-  var investor=c('rd-investor').value||'Unnamed investor';
-  var us=getUnitState(); us.unitsInIssue=pr.unitsAfter;
-  var st=getState(); st.capital=Math.max(0,(st.capital||0)-pr.redemptionValue); st.totalPortfolio=Math.max(0,(st.totalPortfolio||0)-pr.redemptionValue);
-  CURRENT_SESSION.phylaxCapital=st.capital;
-  CURRENT_SESSION.totalPortfolio=st.totalPortfolio;
-  var redemptionEntry={date:todayStr(),investor:investor,type:'REDEMPTION',amount:-pr.redemptionValue,unitPrice:up?up.unitPrice:0,units:-pr.units,runningUnits:pr.unitsAfter,navAfter:pr.newNAV,notes:'Redemption '+Math.round(pr.units).toLocaleString('en-ZA')+' units @ R'+(up?up.unitPrice.toFixed(4):'?'),entryTs:Date.now()};
-  var inflowLog=getInflowLog(); inflowLog.push(redemptionEntry);
 
-  // Local-first for instant UI + offline safety. Cash balance is NOT
-  // set locally here — the transaction below is the sole writer of
-  // ladderCashBalance, reading the server's committed value rather than
-  // this browser's possibly-stale local cache.
-  saveState(st); saveUnitState(us);
-  _LIVE.inflowLog=inflowLog; try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(inflowLog)); }catch(e){}
+  var btn=c('rd-confirm-btn');
+  function lock(on){ if(!btn) return; btn.disabled=on; btn.style.opacity=on?'.5':''; btn.style.cursor=on?'not-allowed':''; }
+  lock(true);
+  try{
+    var up=window._unitData||calcUnitPrice();
+    var investor=c('rd-investor').value||'Unnamed investor';
 
-  window._pendingRedemption=null;
-  closeRedemptionModal(); renderInflowLog();
-  try{ renderLadderPanel(); renderDailyNAV(); renderLiquidityStress(); renderBudgetPanel(); renderHedgeView(); calc(); }catch(e){ console.error(e); }
-  // Transactional cash decrement + atomic inflow-doc write — investor-
-  // facing money movement gets the same race-safe guarantee as a trade.
-  var saveOk=false;
-  if(fbReady()){
+    var us=getUnitState();
+    var nextUs=Object.assign({},us,{unitsInIssue:pr.unitsAfter});
+    var st=getState();
+    var nextSt=Object.assign({},st,{
+      capital:Math.max(0,(st.capital||0)-pr.redemptionValue),
+      totalPortfolio:Math.max(0,(st.totalPortfolio||0)-pr.redemptionValue)
+    });
+
+    var redemptionEntry={date:todayStr(),investor:investor,type:'REDEMPTION',amount:-pr.redemptionValue,unitPrice:up?up.unitPrice:0,units:-pr.units,runningUnits:pr.unitsAfter,navAfter:pr.newNAV,notes:'Redemption '+Math.round(pr.units).toLocaleString('en-ZA')+' units @ R'+(up?up.unitPrice.toFixed(4):'?'),entryTs:Date.now()};
+
+    var result=null;
     try{
-      var result=await adjustCommittedCash(-pr.redemptionValue, {
+      result=await adjustCommittedCash(-pr.redemptionValue, {
         ref: inflowCol(CURRENT_SESSION.sessionId).doc(String(redemptionEntry.entryTs)),
         data: Object.assign({},redemptionEntry,{_by:deviceLabel()}),
-        sessionMerge: buildSessionData()
+        sessionMerge: true,
+        stateOverride: nextSt,
+        unitStateOverride: nextUs
       });
-      saveOk=!!result.ok;
-      if(saveOk){
-        _lastSyncedKeys.inflowLog[String(redemptionEntry.entryTs)]=true;
-        setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
-      } else if(!result.offline){
-        setFBStatus('error','Cloud save failed');
-      }
-    }catch(e){ console.error('Redemption save error:',e); setFBStatus('error','Cloud save failed'); }
-  }
-  if(saveOk){
-    showToast('✓ Redemption R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+' processed & saved to Firebase','success',6000);
+    }catch(err){ console.error('Redemption save error:',err); }
+
+    if(!result || !result.ok){
+      setFBStatus('error','Cloud save failed');
+      showToast('\u2717 Redemption NOT processed \u2014 the transactional write failed. No units were cancelled and no cash moved. Check the connection and try again.','error',10000);
+      return; // no local state touched, _pendingRedemption preserved for retry
+    }
+
+    saveState(nextSt);
+    saveUnitState(nextUs);
+    CURRENT_SESSION.phylaxCapital=nextSt.capital;
+    CURRENT_SESSION.totalPortfolio=nextSt.totalPortfolio;
+    var inflowLog=getInflowLog(); inflowLog.push(redemptionEntry);
+    _LIVE.inflowLog=inflowLog;
+    try{ localStorage.setItem(lsKey('inflowlog'),JSON.stringify(inflowLog)); }catch(e){}
+    _lastSyncedKeys.inflowLog[String(redemptionEntry.entryTs)]=true;
+    setFBStatus('ok','Saved '+new Date().toLocaleTimeString('en-ZA'));
+
+    window._pendingRedemption=null;
+    closeRedemptionModal(); renderInflowLog();
+    try{ renderLadderPanel(); renderDailyNAV(); renderLiquidityStress(); renderBudgetPanel(); renderHedgeView(); calc(); }catch(e){ console.error(e); }
+    showToast('\u2713 Redemption R'+Math.round(pr.redemptionValue).toLocaleString('en-ZA')+' processed & saved to Firebase','success',6000);
     await upsertUnitHolderClient(investor, CURRENT_SESSION.sessionId, CURRENT_SESSION.sessionName,
       {unitsDelta:-pr.units, cashDelta:-pr.redemptionValue});
     refreshUnitHolderClients();
-  } else {
-    showToast('⚠ Redemption saved locally — Firebase unavailable. Do not close tab.','error',10000);
+  } finally {
+    lock(false);
   }
 }
 
