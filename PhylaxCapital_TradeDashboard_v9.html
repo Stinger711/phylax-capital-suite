@@ -2062,6 +2062,17 @@ textarea:focus{border-color:var(--teal2)}
     <span id="bs-toggle-label" class="toggle-btn" style="margin-left:auto;margin-right:0">▼ Show</span>
   </div>
   <div id="bs-body" class="hidden">
+    <div style="margin:0 0 8px;padding:7px 9px;border-left:2px solid var(--amber,#e0a020);
+                background:rgba(224,160,32,.06);font-size:9px;line-height:1.45;color:var(--muted)">
+      <strong style="color:var(--amber,#e0a020);font-family:'Rajdhani',sans-serif;letter-spacing:.5px">
+      VALUATION METHODOLOGY</strong><br>
+      Option book valued on a single flat at-the-money volatility (SAVI) applied to every strike
+      and every expiry. No skew or term-structure adjustment is applied. SAFEX ALSI downside puts
+      carry pronounced negative skew, so this <strong>understates fair value</strong> of the book
+      and correspondingly <strong>overstates</strong> the contract count affordable within the
+      convexity budget. NAV, unit price, drawdown, HWM and performance-fee figures all carry this
+      bias. Correction pending strike-level volatility surface data.
+    </div>
     <div class="g2">
       <table class="bs-table">
         <tr><td>ALSI Spot (S)</td><td id="b-S">—</td><td>Current index</td></tr>
@@ -2177,7 +2188,7 @@ textarea:focus{border-color:var(--teal2)}
 // Pages deployment is always saved under the v9 filename regardless of
 // build number, so this badge is the only reliable way to confirm from
 // the browser which build is actually live after an update.
-var BUILD_VERSION='v30';
+var BUILD_VERSION='v31';
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -4244,7 +4255,15 @@ function calc(){
 
 // Use ZARONIA for carry (call account)
   var zaronia=getZaronia();
-  var dailyYield=NAV*zaronia/365;
+  // ── M6 FIX (v31) ──────────────────────────────────────────────────
+  // ZARONIA accrues on the CASH CORE only. The option book earns no
+  // interest. Using total NAV (cash + option book) as the yield basis
+  // overstates the carry available to fund theta by optBook/cashCore —
+  // and the overstatement grows precisely when the book inflates in a
+  // stressed market, i.e. exactly when over-sizing is most dangerous.
+  // navData.cashCore is the ZARONIA-accreted cash balance.
+  var yieldBase=(navData && navData.cashCore!=null) ? navData.cashCore : NAV;
+  var dailyYield=yieldBase*zaronia/365;
   var thetaBleedPC=Math.abs(thetaD)*10;
   // Net gross yield against the existing ladder's actual theta bleed
   // (each tranche priced at its own strike/expiry) before computing how
