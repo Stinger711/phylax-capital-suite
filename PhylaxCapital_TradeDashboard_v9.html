@@ -1201,11 +1201,10 @@ textarea:focus{border-color:var(--teal2)}
     <div class="nb-cl">Day P&amp;L (est.)</div>
     <div class="nb-cv" id="nb-pnl" style="color:var(--muted)">—</div>
   </div>
-  <div class="nb-override">
-    <span id="override-badge" class="override-badge hidden">Override Active</span>
-    <button class="btn btn-xs btn-amber" onclick="toggleNAVOverride()" id="override-btn">✎ Override</button>
-    <button class="btn btn-xs btn-ghost hidden" onclick="clearNAVOverride()" id="override-clear-btn">✕ Auto</button>
-  </div>
+  <!-- v32: NAV override removed. NAV is derived from actual cash and
+       actual positions only. A manually settable NAV in a sizing engine
+       is an operational control weakness, and a stale override would
+       silently corrupt sizing, fee accrual and unit pricing. -->
 </div>
 
 <!-- ══ ZARONIA STRIP ══════════════════════════════════════════════════ -->
@@ -1725,9 +1724,9 @@ textarea:focus{border-color:var(--teal2)}
         <input type="text" id="i-spot" onfocus="fFocus(this)" onblur="fBlur(this)"/>
       </div>
       <div class="fi">
-        <div class="fi-l">Fund NAV (R) <span class="fi-badge auto" id="nav-input-badge">Auto</span></div>
+        <div class="fi-l">Fund NAV (R) <span class="fi-badge auto" id="nav-input-badge">Derived</span></div>
         <input type="text" id="i-nav" class="auto-field" readonly onfocus="fFocus(this)" onblur="fBlur(this)"/>
-        <div class="warn-note hidden" id="nav-override-warn">⚠ Manual override active — click "Auto" in banner to revert</div>
+
       </div>
       <div class="fi">
         <div class="fi-l">JIBAR Rate <span class="fi-badge">✎ Monthly</span></div>
@@ -1839,6 +1838,9 @@ textarea:focus{border-color:var(--teal2)}
       Evaluating Quarter: <span id="ecb-expiry">—</span> <span style="font-weight:400;text-transform:none;letter-spacing:normal;color:var(--muted)">— all figures below (recommendation, price, BS table) are for this expiry only</span>
     </div>
 
+    <div id="stale-price-warn" class="hidden" style="margin:0 0 10px;padding:8px 11px;
+         border-left:3px solid var(--amber,#e0a020);background:rgba(224,160,32,.08);
+         font-size:10px;line-height:1.5;color:var(--amber,#e0a020)"></div>
     <div id="decision-box" class="decision-box hold">
       <div class="dec-action" id="dec-action">CALCULATING…</div>
       <div class="dec-contracts" id="dec-contracts">—</div>
@@ -1917,7 +1919,7 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc">
         <div class="mc-l">Daily ZARONIA Yield</div>
         <div class="mc-v" id="o-yield">—</div>
-        <div class="mc-s">NAV × ZARONIA ÷ 365</div>
+        <div class="mc-s">Cash core × ZARONIA ÷ 365</div>
       </div>
       <div class="mc">
         <div class="mc-l">Carry Ratio</div>
@@ -1958,8 +1960,8 @@ textarea:focus{border-color:var(--teal2)}
       <input type="text" id="eod-alsi-tracker" class="auto-field" readonly placeholder="Mirrors closing spot"/>
     </div>
     <div class="fi" style="margin-bottom:0">
-      <div class="fi-l">Closing IV (SAVI %) <span class="fi-badge auto">Auto</span></div>
-      <input type="text" id="eod-iv" class="auto-field" readonly/>
+      <div class="fi-l">Closing IV (SAVI %) <span class="fi-badge" style="background:rgba(224,160,32,.15);color:var(--amber,#e0a020)">17:00</span></div>
+      <input type="text" id="eod-iv" onfocus="fFocus(this)" onblur="fBlur(this)" placeholder="Enter 17:00 SAVI"/>
     </div>
     <button class="btn btn-eod" onclick="endOfDay()">▶ &nbsp;End of Day Close</button>
   </div>
@@ -2188,7 +2190,7 @@ textarea:focus{border-color:var(--teal2)}
 // Pages deployment is always saved under the v9 filename regardless of
 // build number, so this badge is the only reliable way to confirm from
 // the browser which build is actually live after an update.
-var BUILD_VERSION='v31';
+var BUILD_VERSION='v32';
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -2411,7 +2413,77 @@ var FCFG = {
   'eod-iv':   {fmt:fmtPct, parse:function(s){var v=parseFloat(s.replace(/[^\d.]/g,''));return v>1?v/100:v;}}
 };
 
-var navOverrideActive = false;
+var navOverrideActive = false; // v32: retained false; override UI removed
+
+// ── v32: PRICE PROVENANCE ───────────────────────────────────────────
+// Tracks whether the live market inputs were entered today after the
+// 09:00 JSE open ('live') or inherited from the prior day's 17:00 close
+// ('carried'). Sizing computed on carried prices is stale the moment the
+// index gaps. Reset daily; persisted so a reload doesn't lose the flag.
+var _eodIvTouched=false;
+var _priceProv={date:null,spot:'carried',iv:'carried'};
+function provKey(){ return 'phylax_priceprov_'+(CURRENT_SESSION?CURRENT_SESSION.sessionId:'none'); }
+function loadPriceProv(){
+  try{
+    var raw=localStorage.getItem(provKey());
+    if(raw){ var d=JSON.parse(raw); if(d && d.date===todayStr()){ _priceProv=d; return; } }
+  }catch(e){}
+  _priceProv={date:todayStr(),spot:'carried',iv:'carried'};
+}
+function savePriceProv(){
+  _priceProv.date=todayStr();
+  try{ localStorage.setItem(provKey(),JSON.stringify(_priceProv)); }catch(e){}
+}
+function markPriceLive(which){
+  if(_priceProv.date!==todayStr()) loadPriceProv();
+  if(which==='spot'||which==='both') _priceProv.spot='live';
+  if(which==='iv'||which==='both')   _priceProv.iv='live';
+  savePriceProv();
+  try{ renderStaleWarn(); }catch(e){}
+}
+function marketIsOpen(){
+  var d=new Date(), day=d.getDay();
+  if(day===0||day===6) return false;
+  return (d.getHours()>9 || (d.getHours()===9 && d.getMinutes()>=0));
+}
+function pricesAreStale(){
+  if(_priceProv.date!==todayStr()) loadPriceProv();
+  return marketIsOpen() && (_priceProv.spot==='carried' || _priceProv.iv==='carried');
+}
+function staleFieldsText(){
+  var f=[];
+  if(_priceProv.spot==='carried') f.push('ALSI spot');
+  if(_priceProv.iv==='carried')   f.push('SAVI');
+  return f.join(' and ');
+}
+function renderStaleWarn(){
+  var el=document.getElementById('stale-price-warn');
+  if(!el) return;
+  if(pricesAreStale()){
+    el.classList.remove('hidden');
+    el.innerHTML='\u26a0 <strong>'+staleFieldsText()+
+      '</strong> carried from the prior close \u2014 the market is open and these are stale. '+
+      'Refresh before trading. <button class="btn btn-xs btn-amber" onclick="refreshLivePrices()" '+
+      'style="margin-left:8px">\u21bb Refresh Live Prices</button>';
+  } else { el.classList.add('hidden'); }
+}
+// Updates the LIVE inputs only. Deliberately does NOT touch morningAlsi /
+// morningSavi in the market log: that entry is the day's baseline and the
+// NAV chain is close-to-close. Use Re-run Morning for genuine corrections.
+function refreshLivePrices(){
+  var curS=FVAL['i-spot']||0, curV=(FVAL['i-iv']||0)*100;
+  var sIn=prompt('Current ALSI spot (index points):', Math.round(curS));
+  if(sIn===null) return;
+  var vIn=prompt('Current SAVI (%):', curV.toFixed(2));
+  if(vIn===null) return;
+  var sv=parseFloat(String(sIn).replace(/[^\d.]/g,''));
+  var vv=parseFloat(String(vIn).replace(/[^\d.]/g,''));
+  if(!(sv>0)||!(vv>0)){ alert('Both values are required.'); return; }
+  FVAL['i-spot']=sv; FVAL['i-iv']=vv>1?vv/100:vv;
+  var e1=c('i-spot'); if(e1) e1.value=FCFG['i-spot'].fmt(FVAL['i-spot']);
+  var e2=c('i-iv');   if(e2) e2.value=FCFG['i-iv'].fmt(FVAL['i-iv']);
+  markPriceLive('both'); saveInputsLocal(); calc();
+}
 var bsHidden = true;
 var perfChart = null;
 // Fixed spread — ZARONIA is no longer user-adjustable (was a slider that
@@ -2422,6 +2494,21 @@ var perfChart = null;
 // other change.
 var ZARONIA_SPREAD_BPS = -15;
 
+// ── v32: SINGLE SOURCE OF TRUTH FOR DAILY CARRY YIELD ───────────────
+// ZARONIA accrues on the CASH CORE only. The option book earns no
+// interest. Prior to v32 four separate call sites each computed this
+// off total NAV (cash + book), overstating available carry by
+// optBook/cashCore — worst precisely when the book inflates in stress.
+// Every sizing path now calls this so the panels cannot drift apart.
+// Pass cashBaseOpt when the caller already has it, to avoid recompute.
+function dailyCarryYield(cashBaseOpt){
+  var z=getZaronia(), base=null;
+  if(cashBaseOpt!=null && cashBaseOpt>0) base=cashBaseOpt;
+  if(base==null){ try{ var nd=computeNAVFromState(); if(nd&&nd.cashCore!=null) base=nd.cashCore; }catch(e){} }
+  if(base==null && window._ladderNAV && window._ladderNAV.effectiveCash!=null) base=window._ladderNAV.effectiveCash;
+  if(base==null){ try{ base=(getState()||{}).capital||0; }catch(e){ base=0; } }
+  return {base:base, zaronia:z, daily:base*z/365};
+}
 function getZaronia(){ return (FVAL['i-jibar']||0.075) + ZARONIA_SPREAD_BPS/10000; }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2509,7 +2596,7 @@ function paintInceptionALSI(){
 }
 
 function fFocus(el){
-  if(el.readOnly && !navOverrideActive) return;
+  if(el.readOnly) return;
   var cfg=FCFG[el.id]; if(!cfg) return;
   var v=FVAL[el.id]||0;
   if(['i-jibar','i-dY','i-otm','i-iv','eod-iv'].indexOf(el.id)>=0){
@@ -2522,7 +2609,7 @@ function fFocus(el){
   el.select();
 }
 function fBlur(el){
-  if(el.id==='i-nav' && !navOverrideActive){ return; }
+  if(el.id==='i-nav'){ return; } // v32: NAV is derived, never typed
   var cfg=FCFG[el.id]; if(!cfg) return;
   var raw=cfg.parse(el.value);
   if(!isNaN(raw) && raw>0){ FVAL[el.id]=raw; }
@@ -2530,6 +2617,9 @@ function fBlur(el){
   // Closing Tracker Level always mirrors Closing ALSI Spot — it's a
   // locked field, filled the instant the spot close is entered.
   if(el.id==='eod-spot'){ c('eod-alsi-tracker').value=el.value; }
+  if(el.id==='eod-iv'){ _eodIvTouched=true; }
+  if(el.id==='i-spot'){ markPriceLive('spot'); }
+  if(el.id==='i-iv'){ markPriceLive('iv'); }
   if(['i-spot','i-jibar','i-dY','i-otm','i-iv','i-held','i-nav'].indexOf(el.id)>=0){
     saveInputsLocal(); calc();
     if(['i-spot','i-iv','i-jibar','i-dY'].indexOf(el.id)>=0) syncMorningLogFromInputsIfNeeded();
@@ -2564,7 +2654,7 @@ function saveInputsLocal(){
   if(!CURRENT_SESSION) return;
   var data={spot:FVAL['i-spot'],jibar:FVAL['i-jibar'],dY:FVAL['i-dY'],
     otm:FVAL['i-otm'],iv:FVAL['i-iv'],held:FVAL['i-held'],
-    navOverride:navOverrideActive?FVAL['i-nav']:0,
+    navOverride:0, // v32: override removed
     expiry:document.getElementById('i-expiry').value,
     updatedAt:Date.now(), updatedBy:deviceLabel()};
   _lastAppliedInputsAt = data.updatedAt;
@@ -2600,10 +2690,13 @@ function loadInputsLocal(){
   ['i-spot','i-jibar','i-dY','i-otm','i-iv'].forEach(function(id){
     var el=c(id); if(el && !el.readOnly) el.value=FCFG[id].fmt(FVAL[id]||0);
   });
+  initPriceProvenance();
   if(d.expiry) document.getElementById('i-expiry').value=d.expiry;
-  if(d.navOverride && d.navOverride>0){ FVAL['i-nav']=d.navOverride; activateOverride(true); }
+  // v32: legacy navOverride in persisted inputs is ignored.
 }
 function saveInputs(){ saveInputsLocal(); }
+// v32: seed provenance whenever a session's inputs are loaded.
+function initPriceProvenance(){ loadPriceProv(); try{ renderStaleWarn(); }catch(e){} }
 
 // ════════════════════════════════════════════════════════════════════
 // FIREBASE — SESSION CRUD
@@ -2963,6 +3056,12 @@ function upsertMarketLogEntry(patch, dateStr){
   saveDailyMarketLog(log);
   return entry;
 }
+// v32: completing the morning checklist counts as entering live prices
+// only if the market is already open; before 09:00 the values are still
+// the prior close by design, so provenance stays 'carried'.
+function markMorningPricesProvenance(){
+  if(marketIsOpen()) markPriceLive('both'); else { try{ renderStaleWarn(); }catch(e){} }
+}
 function syncMorningLogFromInputsIfNeeded(){
   if(!CURRENT_SESSION) return;
   var existing=getTodayMarketLogEntry();
@@ -2973,6 +3072,7 @@ function syncMorningLogFromInputsIfNeeded(){
       morningJibar:FVAL['i-jibar'], morningDy:FVAL['i-dY'],
       morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
     });
+    markMorningPricesProvenance(); // v32
     renderMarketLogStrip();
   }
 }
@@ -3966,7 +4066,10 @@ function calcConvexityBudget(){
   var zaronia=getZaronia();
   var ln=window._ladderNAV;
   var st=getState();
-  var NAV=ln?ln.totalNAV:(st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0));
+  // v32: the convexity budget is the PV of forward CARRY, and carry
+  // accrues on cash only — never on the option book.
+  var NAV=dailyCarryYield().base || (ln?ln.effectiveCash:0) ||
+          (st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0));
   if(!NAV||!zaronia) return {annual:0,remaining:0,paid:0,NAV:0,zaronia:zaronia||0,T_annual:0};
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
@@ -4175,33 +4278,12 @@ function computeNAVFromState(spotOverride,ivOverride){
 }
 
 // ════════════════════════════════════════════════════════════════════
-// NAV OVERRIDE
+// NAV — DERIVED ONLY (override removed in v32)
 // ════════════════════════════════════════════════════════════════════
-function toggleNAVOverride(){ if(!navOverrideActive) activateOverride(false); }
-function activateOverride(silent){
-  navOverrideActive=true;
-  var el=c('i-nav'); el.readOnly=false;
-  el.classList.remove('auto-field'); el.classList.add('override-active');
-  c('override-badge').classList.remove('hidden');
-  c('override-btn').classList.add('hidden');
-  c('override-clear-btn').classList.remove('hidden');
-  c('nav-override-warn').classList.remove('hidden');
-  c('nav-input-badge').textContent='Override';
-  c('nav-input-badge').className='fi-badge';
-  if(!silent) el.focus();
-}
-function clearNAVOverride(){
-  navOverrideActive=false;
-  var el=c('i-nav'); el.readOnly=true;
-  el.classList.add('auto-field'); el.classList.remove('override-active');
-  c('override-badge').classList.add('hidden');
-  c('override-btn').classList.remove('hidden');
-  c('override-clear-btn').classList.add('hidden');
-  c('nav-override-warn').classList.add('hidden');
-  c('nav-input-badge').textContent='Auto';
-  c('nav-input-badge').className='fi-badge auto';
-  calc();
-}
+// Fund NAV is computed from the ZARONIA-accreted cash core plus the
+// Black-76 marked option book. It cannot be set by hand. For future
+// administrator reconciliation, record the administrator's NAV as a
+// separate variance field — never overwrite the derived figure.
 
 // ════════════════════════════════════════════════════════════════════
 // MAIN CALC
@@ -4231,8 +4313,7 @@ function calc(){
 
   // NAV
   var NAV, navData=computeNAVFromState();
-  if(navOverrideActive && FVAL['i-nav']>0){ NAV=FVAL['i-nav']; }
-  else if(navData){ NAV=navData.total; FVAL['i-nav']=NAV; c('i-nav').value=fmtRand(NAV); }
+  if(navData){ NAV=navData.total; FVAL['i-nav']=NAV; c('i-nav').value=fmtRand(NAV); }
   else { NAV=FVAL['i-nav']||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:70000000); }
 
   // NAV Banner
@@ -4255,15 +4336,10 @@ function calc(){
 
 // Use ZARONIA for carry (call account)
   var zaronia=getZaronia();
-  // ── M6 FIX (v31) ──────────────────────────────────────────────────
-  // ZARONIA accrues on the CASH CORE only. The option book earns no
-  // interest. Using total NAV (cash + option book) as the yield basis
-  // overstates the carry available to fund theta by optBook/cashCore —
-  // and the overstatement grows precisely when the book inflates in a
-  // stressed market, i.e. exactly when over-sizing is most dangerous.
-  // navData.cashCore is the ZARONIA-accreted cash balance.
-  var yieldBase=(navData && navData.cashCore!=null) ? navData.cashCore : NAV;
-  var dailyYield=yieldBase*zaronia/365;
+  try{ renderStaleWarn(); }catch(e){}
+  // v32: cash-core carry via the shared helper (see dailyCarryYield).
+  var _cy=dailyCarryYield(navData?navData.cashCore:null);
+  var yieldBase=_cy.base, dailyYield=_cy.daily;
   var thetaBleedPC=Math.abs(thetaD)*10;
   // Net gross yield against the existing ladder's actual theta bleed
   // (each tranche priced at its own strike/expiry) before computing how
@@ -4469,7 +4545,15 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   var recOpen=todaysRecordedOpen();
   var shownOpen=(recOpen!=null?recOpen:S);
   FVAL['eod-open']=shownOpen; c('eod-open').value=FCFG['eod-open'].fmt(shownOpen);
-  FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
+  // v32: eod-iv is now an OPERATOR INPUT (the 17:00 SAVI), not a mirror
+  // of the morning value. Pre-v32 this line overwrote it on every calc(),
+  // producing a mixed-time mark: closing spot priced at morning vol.
+  // On a down day spot falls AND vol rises — the old mark captured only
+  // the spot leg, systematically understating the book exactly on the
+  // days the fund exists for. Seed only when the operator hasn't typed.
+  if(!_eodIvTouched && !(FVAL['eod-iv']>0)){
+    FVAL['eod-iv']=iv; c('eod-iv').value=FCFG['eod-iv'].fmt(iv);
+  }
 
   window._calc={S,K,T:T.toFixed(6),r,iv,q,d1:f4(d1),d2:f4(d2),Nd1:f4(Nd1),Nd2:f4(Nd2),nd1:f4(nd1),
     putPrice:f4(putPrice),putPriceR:Math.round(putPriceR),delta:f4(delta),thetaD:f4(thetaD),
@@ -4890,6 +4974,7 @@ async function endOfDay(opts){
   // regardless of how many times endOfDay() runs.
   upsertMarketLogEntry({
     eodAlsi: eodSpot, eodSavi: eodIV, eodOpen: eodOpen,
+    eodSaviEntered: _eodIvTouched, // v32: provenance — true = real 17:00 SAVI
     eodEnteredAt: Date.now(), eodEnteredBy: deviceLabel(),
     eodBackfilled: pd?true:false,
     eodEstimated: (pd&&pd.estimated)?true:false,
@@ -5365,8 +5450,8 @@ function renderInlineAlloc(){
   var colors=['var(--teal2)','var(--green2)','var(--amber)','var(--purple)'];
   var labels=['Q1 Near','Q2','Q3','Q4 Far'];
   var NAV=window._ladderNAV?window._ladderNAV.totalNAV:(getState().capital||0);
-  var zaronia=getZaronia();
-  var dailyYield=NAV*zaronia/365;
+  // v32: carry accrues on cash only — shared helper, not total NAV.
+  var _cyA=dailyCarryYield(), zaronia=_cyA.zaronia, dailyYield=_cyA.daily;
   var bd=calcConvexityBudget();
   var remaining=bd.remaining||0;
 
@@ -5531,6 +5616,7 @@ function renderInlineAlloc(){
 // Execute a single tranche from the allocator grid — routes through the
 // same buy-confirm modal as the manual single-expiry flow.
 function execAllocTranche(expStr, putR, K, contracts){
+  if(!stalePriceGate()) return;
   if(contracts<=0){ alert('No contracts allocated to this expiry.'); return; }
   window._selectedExpiry=expStr;
   window._selectedPutR=putR;
@@ -5686,7 +5772,17 @@ async function executeTodayBuy(){
 }
 
 // ── HEADER BUTTON: scroll to exec panel ───────────────────────────
+// v32: stale-price gate. Not a hard block — you may look at carried
+// prices; you may not trade on them by accident.
+function stalePriceGate(){
+  if(!pricesAreStale()) return true;
+  return confirm('\u26a0 STALE PRICES\n\n'+staleFieldsText()+
+    ' carried from the prior close, and the market is open.\n\n'+
+    'Sizing and premium shown were computed on those levels.\n\n'+
+    'Execute anyway?');
+}
 function addTranche(){
+  if(!stalePriceGate()) return;
   var ep=c('exec-panel');
   if(ep && ep.style.display!=='none'){
     ep.scrollIntoView({behavior:'smooth',block:'center'});
@@ -7507,7 +7603,7 @@ async function createSession(){
   FVAL['i-iv']=0;
   FVAL['i-held']=0;
   FVAL['i-nav']=phylaxCapital;
-  navOverrideActive=false;
+  // v32: no override to clear
   window._selectedExpiry=null;
   window._selectedPutR=null;
   window._selectedK=null;
@@ -7517,7 +7613,7 @@ async function createSession(){
   FVAL['i-iv']=0;
   FVAL['i-held']=0;
   FVAL['i-nav']=phylaxCapital;
-  navOverrideActive=false;
+  // v32: no override to clear
   window._selectedExpiry=null;
   window._selectedPutR=null;
   window._selectedK=null;
@@ -7922,9 +8018,9 @@ function mcValidate(){
     var today=new Date(); today.setHours(0,0,0,0);
     var T=Math.max(0,(new Date(expiryStr)-today)/(365*24*60*60*1000));
     var putR=T>0?bsPutRepriceR(alsi,K,r,q,iv,T):0;
-    var zaronia=Math.max(0,r+ZARONIA_SPREAD_BPS/10000);
-    var nav=FVAL['i-nav']||(window._ladderNAV?window._ladderNAV.totalNAV:0)||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
-    var dailyCarry=nav*zaronia/365;
+    // v32: cash-core carry via shared helper.
+    var _cyR=dailyCarryYield(), zaronia=_cyR.zaronia, nav=_cyR.base;
+    var dailyCarry=_cyR.daily;
     var ladder=getLadder();
     var held=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
 
@@ -8010,6 +8106,7 @@ function morningChecklistConfirm(){
       morningAlsi:alsi, morningSavi:savi/100, morningJibar:FVAL['i-jibar']||0, morningDy:dy/100,
       morningStatus:'entered', morningEnteredAt:Date.now(), morningEnteredBy:deviceLabel()
     });
+    markMorningPricesProvenance(); // v32
     renderMarketLogStrip();
   }catch(mlErr){
     console.error('Market log write error:',mlErr);
