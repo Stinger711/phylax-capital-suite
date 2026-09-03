@@ -4117,6 +4117,127 @@ function previousSAFEXExpiry(fromDate){
 // calc(), renderBudgetPanel(), and renderExpiryGrid() all call this so
 // the three panels can never silently disagree.
 // ════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════
+// v33: DETERMINISTIC HISTORICAL LOADER
+//
+// Rebuilds a modelled track by walking real market data day by day through
+// the SAME calc() / endOfDay() path the operator uses. Nothing is
+// special-cased: fees, VAT, ZARONIA, the hurdle and the option book all
+// settle through the normal machinery.
+//
+// This produces a BACKTEST, not an operating history. The session it writes
+// must be labelled accordingly, and the rule below must stay mechanical —
+// the moment a human judgement call enters the loop, the run stops being
+// reproducible and the track stops being defensible.
+//
+// Usage (console):
+//   await runHistoricalLoad({series:PHYLAX_SERIES, dryRun:true})   // rehearse
+//   await runHistoricalLoad({series:PHYLAX_SERIES})                 // commit
+//
+// series rows: {d:'YYYY-MM-DD', c:close, o:openParam, v:eodSAVI, mv:morningSAVI}
+// ══════════════════════════════════════════════════════════════════════
+async function runHistoricalLoad(opts){
+  opts=opts||{};
+  var S=opts.series||window.PHYLAX_SERIES;
+  var dryRun=!!opts.dryRun;
+  var jibar=opts.jibar!=null?opts.jibar:0.07;
+  var dy=opts.dy!=null?opts.dy:0.034;
+  var otm=opts.otm!=null?opts.otm:0.10;
+  var cadence=opts.cadence!=null?opts.cadence:5;      // buy every Nth session
+  var log=[]; var L=function(m){ log.push(m); if(opts.verbose!==false) console.log(m); };
+
+  // ── Preconditions ────────────────────────────────────────────────
+  if(!S||!S.length) throw new Error('No series supplied.');
+  if(!CURRENT_SESSION) throw new Error('No active session. Create the 19 June session first.');
+  if(getNavHistory().length) throw new Error('Session already has '+getNavHistory().length+' NAV rows. Load into an EMPTY session.');
+  if((getLadder().tranches||[]).length) throw new Error('Session already holds tranches. Load into an EMPTY session.');
+  var st0=getState();
+  if(!(st0.capital>0)) throw new Error('Session capital not initialised — check the session was created over http, not file://');
+
+  L('── HISTORICAL LOAD '+(dryRun?'(DRY RUN — nothing written)':'(COMMITTING)')+' ──');
+  L('   session   '+CURRENT_SESSION.sessionId+'  role='+sessionRoleOf(CURRENT_SESSION));
+  L('   capital   R'+Math.round(st0.capital).toLocaleString('en-ZA'));
+  L('   sessions  '+S.length+'   '+S[0].d+' -> '+S[S.length-1].d);
+  L('   params    JIBAR '+(jibar*100).toFixed(2)+'%  q '+(dy*100).toFixed(2)+'%  OTM '+(otm*100).toFixed(0)+'%  cadence every '+cadence+' sessions');
+
+  // ── Quarterly pacing state ───────────────────────────────────────
+  // Each quarter may consume at most 1/4 of the rolling annual carry
+  // allowance. The window resets at each SAFEX quarterly expiry, so the
+  // ladder is built across four vol regimes rather than one print.
+  var qSpent=0, qKey=null, bought=0, spent=0, skipped=0, expiryCursor=0;
+
+  for(var i=0;i<S.length;i++){
+    var row=S[i], d=row.d;
+
+    // ── Morning: prior close becomes today's spot, prior SAVI the vol ──
+    FVAL['i-spot']=row.o; FVAL['i-iv']=row.mv;
+    FVAL['i-jibar']=jibar; FVAL['i-dY']=dy; FVAL['i-otm']=otm;
+    try{ calc(); }catch(e){ throw new Error('calc() failed on '+d+': '+e.message); }
+
+    // ── Reset the quarterly window at each expiry boundary ──────────
+    var qNow=ymdLocal(nextSAFEXExpiry(new Date(d+'T00:00:00')));
+    if(qNow!==qKey){ qKey=qNow; qSpent=0; L('   · quarter window -> '+qKey); }
+
+    // ── Deterministic buy rule ──────────────────────────────────────
+    if(i>0 && i%cadence===0){
+      var bd=calcConvexityBudget();
+      var qAllow=Math.max(0,bd.annual/4-qSpent);
+      var avail=Math.min(bd.remaining||0, qAllow);
+      var exps=getSAFEXExpiries(4);
+      var exp=exps[expiryCursor%4];
+      var expStr=ymdLocal(exp);
+      var today0=new Date(d+'T00:00:00'); today0.setHours(0,0,0,0);
+      var T=Math.max(0,(exp-today0)/(365*24*60*60*1000));
+      var K=Math.round(row.o*(1-otm));
+      var putR=T>0?bsPutRepriceR(row.o,K,jibar,dy,row.mv,T):0;
+      var qty=putR>0?Math.floor(avail/putR):0;
+      if(qty>0){
+        var cost=qty*putR;
+        var tr={id:'T'+d.replace(/-/g,'')+'_'+(expiryCursor%4),buyDate:d,expiry:expStr,
+                strikeLevel:K,spotAtBuy:row.o,tteAtBuyYears:T,contracts:qty,
+                premiumPerContract:putR,premiumTotal:cost,status:'active',
+                payoffReceived:0,otmFrac:otm,addedTs:Date.now(),loadedBy:'runHistoricalLoad'};
+        if(!dryRun) await commitNewTrade(tr,cost);
+        qSpent+=cost; spent+=cost; bought++;
+        L('   BUY  '+d+'  '+String(qty).padStart(4)+' x '+expStr+'  K='+K+'  R'+Math.round(putR).toLocaleString('en-ZA')+'/ct  = R'+Math.round(cost).toLocaleString('en-ZA'));
+        expiryCursor++;
+      } else { skipped++; }
+    }
+
+    // ── Close the day through the normal path ───────────────────────
+    if(!dryRun){
+      FVAL['i-held']=(getLadder().tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
+      var iexp=document.getElementById('i-expiry'); if(iexp) iexp.value=ymdLocal(getSAFEXExpiries(1)[0]);
+      try{
+        await endOfDay({closeDate:d,alsi:row.c,savi:row.v,openAlsi:row.o,
+                        trackerLevel:row.c,jibar:jibar,dy:dy,
+                        saviSrc:d+' close (historical load)'});
+      }catch(e){ throw new Error('endOfDay failed on '+d+': '+e.message); }
+
+      // ── Halt on anything that does not reconcile ──────────────────
+      var h=getNavHistory(), last=h[h.length-1];
+      if(!last||last.date!==d) throw new Error('HALT: no NAV row written for '+d);
+      if(!isFinite(last.nav)||last.nav<=0) throw new Error('HALT: non-finite NAV on '+d+': '+last.nav);
+      if(getState().lastCashSettleDate!==d) throw new Error('HALT: settle date is '+getState().lastCashSettleDate+', expected '+d);
+      await new Promise(function(r){setTimeout(r,120);});   // let Firestore drain
+    }
+  }
+
+  var hist=getNavHistory();
+  L('── COMPLETE ──');
+  L('   NAV rows   '+hist.length);
+  L('   buys       '+bought+'   skipped (no allowance) '+skipped);
+  L('   premium    R'+Math.round(spent).toLocaleString('en-ZA'));
+  if(hist.length){
+    var f=hist[0], l=hist[hist.length-1];
+    L('   unit price R'+(f.unitPrice||0).toFixed(4)+' -> R'+(l.unitPrice||0).toFixed(4));
+    L('   Phylax NAV R'+Math.round(f.nav).toLocaleString('en-ZA')+' -> R'+Math.round(l.nav).toLocaleString('en-ZA'));
+  }
+  if(dryRun) L('   DRY RUN — nothing was written. Re-run without dryRun to commit.');
+  return {rows:hist.length,bought:bought,spent:spent,log:log};
+}
+
 // v33: total ex-VAT running fee rate, and the VAT-inclusive rate actually
 // charged to cash. Every accrual and every budget calc must use feeRateIncl().
 function feeRateEx(fs){ fs=fs||getFeeState(); return (fs.mgmtFeePct||0)+(fs.svcFeePct||0); }
@@ -5057,7 +5178,13 @@ async function endOfDay(opts){
       }
       fs.hurdleUnitPrice=hurdleBase*(1+zaronia*daysSinceSettle/365);
       fs.hurdleLastAccrualDate=today;
-      st.lastCashSettleDate=today;
+      // v33: MONOTONIC GUARD. lastCashSettleDate must only ever advance.
+      // Closing an EARLIER date than the last settle (a mis-ordered catch-up,
+      // a stray console call) skips the `alreadySettledToday` equality test,
+      // charges nothing because daysSinceSettle clamps to 0 — and then
+      // REGRESSES the marker. The next close would re-charge every day in
+      // between, on top of fees already deducted. Refuse to move backwards.
+      if(!st.lastCashSettleDate || today>st.lastCashSettleDate) st.lastCashSettleDate=today;
       saveState(st);
     } else {
       settleFailed=true;
