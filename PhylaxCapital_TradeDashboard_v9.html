@@ -2223,14 +2223,15 @@ textarea:focus{border-color:var(--teal2)}
 // Pages deployment is always saved under the v9 filename regardless of
 // build number, so this badge is the only reliable way to confirm from
 // the browser which build is actually live after an update.
-var BUILD_VERSION='v33';
-// v33: builds change many times a day. A bare version string can't tell
-// two same-day builds apart, which silently sends you back to a stale file.
-var BUILD_ID='v33.7-20260903-1930';   // bump on EVERY delivered build
+// BUILD_VERSION is the single source of truth and is displayed in the header
+// and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
+// stale file is otherwise invisible, and has already cost real debugging time.
+var BUILD_VERSION='v34';
+var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
   'scenarioRoles','archivedRole','uninitGuard','monotonicSettleDate',
-  'entryCostFor','runHistoricalLoad'];
+  'entryCostFor','runHistoricalLoad','simulatedDryRun'];
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -4191,6 +4192,12 @@ async function runHistoricalLoad(opts){
   L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
   var bought=0, spent=0, entryCost=0, lastPreset=null;
+  // v33: DRY RUN MUST SIMULATE ITSELF.
+  // Skipping commitNewTrade() means the ladder never grows, so every quarter
+  // reads 100% underweight on every day and the rule buys its maximum 53 days
+  // running. A shadow ladder and shadow cash reproduce the feedback loop —
+  // book fills, composition reaches target, gaps close, theta eats the carry.
+  var simTranches=[], simCash=st0.capital, simFees=0;
 
   for(var i=0;i<S.length;i++){
     var row=S[i], d=row.d;
@@ -4205,11 +4212,20 @@ async function runHistoricalLoad(opts){
     if(presetLbl!==lastPreset){ L('   · '+d+'  regime -> '+presetLbl+'  ['+pcts.join('/')+']'); lastPreset=presetLbl; }
 
     // ── Reproduce the allocator, day by day ──────────────────────────
-    var bd=calcConvexityBudget();
-    var remaining=bd.remaining||0;
     var Sp=row.o, iv=row.mv, r=jibar, q=dy;
     var expiries=getSAFEXExpiries(4);
-    var lad=getLadder();
+    var lad=dryRun?{tranches:simTranches,cashBalance:simCash}:getLadder();
+    var remaining;
+    if(dryRun){
+      // par-headroom on shadow cash, same formula as calcConvexityBudget()
+      var _f=feeRateIncl(getFeeState()), _z=getZaronia(), _par=st0.capital;
+      var _B=simTranches.reduce(function(a,t){
+        var tT=Math.max(0,(new Date(t.expiry)-today)/(365*24*60*60*1000));
+        return a+bsPutRepriceR(Sp,t.strikeLevel,r,q,iv,tT)*t.contracts; },0);
+      remaining=Math.max(0,(simCash*(1+_z)-_f*(simCash+_B)-_par)/(1+_z+_f));
+    } else {
+      remaining=calcConvexityBudget().remaining||0;
+    }
     var dailyYield=(lad.cashBalance||0)*getZaronia()/365;
     var bleed=0;
     (lad.tranches||[]).forEach(function(t){
@@ -4217,8 +4233,15 @@ async function runHistoricalLoad(opts){
       bleed+=bsThetaPerDay(Sp,t.strikeLevel,r,q,iv,tT)*t.contracts;
     });
     var netDailyYield=Math.max(0,dailyYield-bleed);
-    var heldMap=heldPerQuarterMap();
-    var heldPerQ=expiries.map(function(e){ return heldMap[ymdLocal(e)]||0; });
+    var heldPerQ;
+    if(dryRun){
+      heldPerQ=expiries.map(function(e){
+        var k=ymdLocal(e);
+        return simTranches.reduce(function(a,t){ return a+(t.expiry===k?t.contracts:0); },0); });
+    } else {
+      var heldMap=heldPerQuarterMap();
+      heldPerQ=expiries.map(function(e){ return heldMap[ymdLocal(e)]||0; });
+    }
     var totalHeld=(lad.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
     var currentPct=heldPerQ.map(function(h){ return totalHeld>0?(h/totalHeld*100):0; });
     var gapPct=pcts.map(function(pp,k){ return Math.max(0,pp-currentPct[k]); });
@@ -4244,7 +4267,7 @@ async function runHistoricalLoad(opts){
               premiumTotal:cost,status:'active',payoffReceived:0,otmFrac:otm,
               addedTs:Date.now(),midPerContract:putR,entryHaircut:hc,
               entryCostR:qty*putR*hc,loadedBy:'runHistoricalLoad'};
-      if(!dryRun) await commitNewTrade(tr,cost);
+      if(!dryRun){ await commitNewTrade(tr,cost); } else { simTranches.push(tr); simCash-=cost; }
       remaining-=cost; spent+=cost; entryCost+=tr.entryCostR; bought++;
       L('   BUY '+d+'  Q'+(k+1)+'  '+String(qty).padStart(4)+' x '+expStr+'  K='+K
         +'  mid R'+Math.round(putR).toLocaleString('en-ZA')+' +'+(hc*100).toFixed(1)+'%'
@@ -4252,6 +4275,10 @@ async function runHistoricalLoad(opts){
         +'  [gap '+gapPct[k].toFixed(0)+'pp, '+(maxCarry<maxBudget?'carry':'budget')+'-bound]');
     }
 
+    if(dryRun){
+      var _dz=getZaronia()/365, _df=feeRateIncl(getFeeState())/365;
+      simCash+=simCash*_dz; simFees+=simCash*_df; simCash-=simCash*_df;
+    }
     if(!dryRun){
       FVAL['i-held']=(getLadder().tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
       var iexp=document.getElementById('i-expiry'); if(iexp) iexp.value=ymdLocal(getSAFEXExpiries(1)[0]);
@@ -4271,9 +4298,17 @@ async function runHistoricalLoad(opts){
   L('── COMPLETE ──');
   L('   trades '+bought+'   premium R'+Math.round(spent).toLocaleString('en-ZA')
     +'   of which entry cost R'+Math.round(entryCost).toLocaleString('en-ZA'));
-  var fl=getLadder();
-  L('   contracts '+(fl.tranches||[]).reduce(function(s,t){return s+t.contracts;},0)
-    +'   tranches '+(fl.tranches||[]).length);
+  var fl=dryRun?{tranches:simTranches}:getLadder();
+  var _ct=(fl.tranches||[]).reduce(function(a,t){return a+t.contracts;},0);
+  L('   contracts '+_ct+'   tranches '+(fl.tranches||[]).length);
+  if(dryRun){
+    L('   sim cash  R'+Math.round(simCash).toLocaleString('en-ZA')+'  (par R'+Math.round(st0.capital).toLocaleString('en-ZA')+')');
+    L('   sim fees  R'+Math.round(simFees).toLocaleString('en-ZA'));
+    var byQ={};
+    simTranches.forEach(function(t){ byQ[t.expiry]=(byQ[t.expiry]||0)+t.contracts; });
+    Object.keys(byQ).sort().forEach(function(k){
+      L('     '+k+'  '+String(byQ[k]).padStart(5)+' contracts  '+(_ct?(byQ[k]/_ct*100).toFixed(1):0)+'%'); });
+  }
   if(hist.length){
     var f=hist[0], l=hist[hist.length-1];
     L('   NAV rows '+hist.length+'   unit R'+(f.unitPrice||0).toFixed(4)+' -> R'+(l.unitPrice||0).toFixed(4));
