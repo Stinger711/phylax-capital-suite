@@ -2224,6 +2224,13 @@ textarea:focus{border-color:var(--teal2)}
 // build number, so this badge is the only reliable way to confirm from
 // the browser which build is actually live after an update.
 var BUILD_VERSION='v33';
+// v33: builds change many times a day. A bare version string can't tell
+// two same-day builds apart, which silently sends you back to a stale file.
+var BUILD_ID='v33.7-20260903-1930';   // bump on EVERY delivered build
+var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
+  'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
+  'scenarioRoles','archivedRole','uninitGuard','monotonicSettleDate',
+  'entryCostFor','runHistoricalLoad'];
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -4142,7 +4149,21 @@ function previousSAFEXExpiry(fromDate){
 //   await runHistoricalLoad({series:PHYLAX_SERIES, dryRun:true})
 //   await runHistoricalLoad({series:PHYLAX_SERIES})
 // ══════════════════════════════════════════════════════════════════════
-function entryHaircutFor(n){ return n<50?0.025:n<200?0.04:0.06; }
+// ── Execution cost model ─────────────────────────────────────────────
+// ASSUMPTION (register 6.1/6.2): the size-banded haircut is a modelling
+// stand-in, not a measured cost. It was originally an EXIT-only bid
+// haircut; entry now mirrors it as an offer premium, because buying at
+// mid is unrealistic and made over-trading look free. Real cost is
+// offer-over-mid PLUS brokerage PLUS SAFEX booking fees — none known.
+// Replace with actual fills when available. One helper so entry and exit
+// can never drift apart.
+function execHaircutFor(n){ return n<50?0.025:n<200?0.04:0.06; }
+function entryHaircutFor(n){ return execHaircutFor(n); }
+function entryCostFor(putR,qty){
+  var hc=execHaircutFor(qty);
+  var perContract=putR*(1+hc);
+  return {mid:putR,haircut:hc,perContract:perContract,total:perContract*qty,cost:putR*qty*hc};
+}
 
 async function runHistoricalLoad(opts){
   opts=opts||{};
@@ -6118,7 +6139,7 @@ function closeTranche(id){
   var T=Math.max(0,(expiry-today)/(365*24*60*60*1000));
   var mtmPerContract=bsPutRepriceR(S,t.strikeLevel,r,q,iv,T);
   var pnl=(mtmPerContract-t.premiumPerContract)*t.contracts;
-  var haircut=t.contracts<50?0.025:t.contracts<200?0.04:0.06;
+  var haircut=execHaircutFor(t.contracts);
 
   _closingTrancheId=id;
   setText('ct-id',t.id);
@@ -7253,7 +7274,7 @@ function renderLiquidityStress(){
   var today=new Date(); today.setHours(0,0,0,0);
   var NAV=ln.totalNAV,cap=ln.initialCap;
   var totalContracts=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
-  var haircut=totalContracts<50?0.025:totalContracts<200?0.04:0.06;
+  var haircut=execHaircutFor(totalContracts);
   var cashPct=ln.effectiveCash/NAV;
   var bn90ok=cashPct>=0.10;
   setText('ls-cash-r',fRk(ln.effectiveCash));
