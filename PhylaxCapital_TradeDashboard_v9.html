@@ -673,6 +673,23 @@ textarea:focus{border-color:var(--teal2)}
       <input type="text" id="setup-name" placeholder="e.g. Client A — R1bn Portfolio (7% Phylax)" value="Demo — R1bn Portfolio, 7% Phylax"/>
     </div>
     <div class="mfi">
+      <label>Session Role</label>
+      <select id="setup-role">
+        <option value="canonical">Canonical — the true record</option>
+        <option value="scenario">Test scenario — derived from the canonical run</option>
+      </select>
+      <div class="hint">Exactly one session should be canonical. Scenarios are labelled everywhere they appear, including on exports.</div>
+    </div>
+    <div class="mfi">
+      <label>Derived From (scenario only)</label>
+      <input type="text" id="setup-derived-from" placeholder="e.g. PHYLAX_MR8UKZRB_NSSL"/>
+      <div class="hint">Session ID of the canonical run this scenario varies.</div>
+    </div>
+    <div class="mfi">
+      <label>What This Scenario Varies</label>
+      <input type="text" id="setup-scenario-note" placeholder="e.g. Mgmt fee 2.0% instead of 1.5%"/>
+    </div>
+    <div class="mfi">
       <label>Inception Date</label>
       <input type="date" id="setup-inception" value="2026-07-01"/>
       <div class="hint">Use 1 July 2026 for a clean quarter start aligned to SAFEX Q3 expiry.</div>
@@ -732,7 +749,7 @@ textarea:focus{border-color:var(--teal2)}
     <div class="mfi">
       <label>Inception ALSI Level (J200 Index Points)</label>
       <input type="text" id="setup-alsi-inception" placeholder="e.g. 88000"/>
-      <div class="hint" style="color:var(--teal2)">Locked at inception. This is the baseline the JSE tracker sleeve measures its return from \u2014 enter the actual ALSI close on your inception date.</div>
+      <div class="hint" style="color:var(--teal2)">Locked at inception. This is the baseline the JSE tracker sleeve measures its return from — enter the actual ALSI close on your inception date.</div>
     </div>
 
     <div class="modal-section">Storage</div>
@@ -866,6 +883,7 @@ textarea:focus{border-color:var(--teal2)}
   <div class="sess-label">Active Session</div>
   <div>
     <div class="sess-name" id="sess-name-display">—</div>
+    <div id="sess-role-badge" style="display:none;margin-top:3px;font-family:'DM Mono',monospace;font-size:8.5px;letter-spacing:.08em;padding:2px 7px;border-radius:2px"></div>
     <div class="sess-meta" id="sess-meta-display">—</div>
   </div>
   <div style="display:flex;align-items:center;gap:8px;margin-left:8px">
@@ -1174,7 +1192,7 @@ textarea:focus{border-color:var(--teal2)}
     <div class="mfi" style="margin:0">
       <input type="text" id="pb-alsi-entry" class="auto-field" readonly placeholder="Set at session creation" style="font-size:11px;padding:5px 8px" title="Locked at inception. To change it, create a new session."/>
     </div>
-    <div style="font-size:8.5px;color:var(--muted);margin-top:3px">Baseline \u2014 tracker measures return from here</div>
+    <div style="font-size:8.5px;color:var(--muted);margin-top:3px">Baseline — tracker measures return from here</div>
   </div>
 </div>
 
@@ -1293,6 +1311,10 @@ textarea:focus{border-color:var(--teal2)}
       <label>Performance Fee (% above hurdle)</label>
       <input type="text" id="fee-perf-input" value="20.0"/>
     </div>
+    <div class="fee-rate-field">
+      <label>VAT (% on all fees)</label>
+      <input type="text" id="fee-vat-input" value="15"/>
+    </div>
     <button class="btn btn-amber btn-sm" onclick="saveFeeRates()" style="height:32px">✓ Save Rates</button>
   </div>
 
@@ -1376,24 +1398,34 @@ textarea:focus{border-color:var(--teal2)}
 <!-- ══ REMAINING BUDGET PANEL ════════════════════════════════════════ -->
 <div class="budget-panel" id="budget-panel">
   <div class="bp-cell">
-    <div class="bp-label">Annual Convexity Budget</div>
+    <div class="bp-label">Annual Carry Allowance</div>
     <div class="bp-val" id="bp-total" style="color:var(--purple)">—</div>
-    <div class="bp-sub" id="bp-total-sub">NAV − NAV/(1+ZARONIA×T)</div>
+    <div class="bp-sub" id="bp-total-sub">on par, rolling 365d at ZARONIA</div>
   </div>
   <div class="bp-cell">
-    <div class="bp-label">Premiums Paid</div>
+    <div class="bp-label">+ Interest Accrued</div>
+    <div class="bp-val" id="bp-accrued" style="color:var(--teal2)">—</div>
+    <div class="bp-sub">since inception, net of flows</div>
+  </div>
+  <div class="bp-cell">
+    <div class="bp-label">− Fees Deducted</div>
+    <div class="bp-val" id="bp-fees" style="color:var(--red2)">—</div>
+    <div class="bp-sub" id="bp-fees-sub">mgmt + svc, incl VAT</div>
+  </div>
+  <div class="bp-cell">
+    <div class="bp-label">− Premiums Paid</div>
     <div class="bp-val" id="bp-paid" style="color:var(--red2)">—</div>
     <div class="bp-sub">Cumulative across tranches</div>
   </div>
   <div class="bp-cell">
-    <div class="bp-label">Remaining Budget</div>
-    <div class="bp-val" id="bp-remaining" style="color:var(--teal2)">—</div>
-    <div class="bp-sub" id="bp-remaining-pct">— of annual budget</div>
+    <div class="bp-label">− Forward Fee Reserve</div>
+    <div class="bp-val" id="bp-feeres" style="color:var(--red2)">—</div>
+    <div class="bp-sub">fees to horizon, incl VAT</div>
   </div>
   <div class="bp-cell">
-    <div class="bp-label">Q1 Affordable</div>
-    <div class="bp-val" id="bp-affordable" style="color:var(--green2)">—</div>
-    <div class="bp-sub" id="bp-affordable-sub">at near-dated premium</div>
+    <div class="bp-label">= Remaining Budget</div>
+    <div class="bp-val" id="bp-remaining" style="color:var(--teal2)">—</div>
+    <div class="bp-sub" id="bp-remaining-pct">— of annual budget</div>
   </div>
   <div class="bp-cell">
     <div class="bp-label">Blended Entry</div>
@@ -2190,7 +2222,7 @@ textarea:focus{border-color:var(--teal2)}
 // Pages deployment is always saved under the v9 filename regardless of
 // build number, so this badge is the only reliable way to confirm from
 // the browser which build is actually live after an update.
-var BUILD_VERSION='v32';
+var BUILD_VERSION='v33';
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -2372,7 +2404,14 @@ function fP(n,d){ return (n*100).toFixed(d==null?4:d)+'%'; }
 function fPct(n,dp){ return (n>=0?'+':'')+n.toFixed(dp==null?2:dp)+'%'; }
 function dt(){ return new Date().toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
 function ts(){ return new Date().toISOString().replace('T',' ').slice(0,19); }
-function todayStr(){ return new Date().toISOString().slice(0,10); }
+// v33: local-calendar date formatting. toISOString() reports UTC, so a
+// Date constructed at LOCAL midnight (as all expiry dates are) reads back
+// one day early in any timezone east of Greenwich — SAST included. Every
+// date derived from a constructed Date must go through ymdLocal().
+function ymdLocal(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function todayStr(){ return ymdLocal(new Date()); }
 function fmtInt(n){ return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
 function fmtRand(n){ return 'R '+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
 function fmtPct(n,dp){ return (n*100).toFixed(dp==null?2:dp)+'%'; }
@@ -3099,7 +3138,7 @@ function priorUnclosedMarketDay(){
   var today=todayStr();
   var cut=new Date(); cut.setHours(0,0,0,0);
   cut.setDate(cut.getDate()-PD_LOOKBACK_DAYS);
-  var cutStr=cut.toISOString().slice(0,10);
+  var cutStr=ymdLocal(cut);
   var cands=getDailyMarketLog().filter(function(e){
     return e.date && e.date<today && e.date>=cutStr && e.morningStatus && e.eodAlsi==null;
   }).sort(function(a,b){ return a.date<b.date?-1:(a.date>b.date?1:0); });
@@ -3677,6 +3716,9 @@ var UNIT_INCEPTION_PRICE=100.00;
 function defaultFeeState(){
   return {
     mgmtFeePct:0.015, svcFeePct:0.004, perfFeePct:0.20,
+    vatPct:0.15,                   // v33: SA VAT on asset-management fees. Rates above are quoted EX-VAT
+                                   // (matching the mandate/fact sheet); VAT is applied at accrual and at
+                                   // crystallization. Editable so non-VAT-registered structures can be modelled.
     cumulativeFeesDeducted:0,      // running total: daily mgmt+svc + crystallized perf fees — Gross NAV = Net NAV + this
     lastFeeAccrualDate:null,       // idempotency guard, also doubles as the cash "last settled" marker for display
     hwmUnitPrice:UNIT_INCEPTION_PRICE,  // high-water mark on NET unit price — moves only at crystallization
@@ -3684,6 +3726,7 @@ function defaultFeeState(){
     hurdleLastAccrualDate:null,         // last date the hurdle was advanced; null = not yet seeded
     lastCrystallizationDate:null,  // SAFEX expiry date (YYYY-MM-DD) last crystallized against
     pendingCrystallization:null,   // {expiryDate,detectedDate,netUnitPriceAtExpiry,hurdleUnitPriceAtExpiry,hwmAtExpiry,crystallizationBase,unitsInIssue,feeDue} once due & unconfirmed
+    feeRateHistory:[],             // v33: {date,setAt,mgmt,svc,perf,prev*} — every rate change, date-stamped. Seeded at session creation.
     crystallizationHistory:[]      // past confirmed crystallizations — {expiryDate,confirmedDate,feeDue,unitPriceAtExpiry,hwmBefore,hwmAfter}. Quarterly at most, kept inline rather than a new subcollection.
   };
 }
@@ -4015,17 +4058,28 @@ function restoreSessionFromFirebase(data){
 // ════════════════════════════════════════════════════════════════════
 // SAFEX EXPIRY HELPERS
 // ════════════════════════════════════════════════════════════════════
-function nextSAFEXExpiry(fromDate){
-  var d=fromDate||new Date();
-  var m=d.getMonth(),y=d.getFullYear();
-  var quarters=[2,5,8,11];
-  var nextQ=quarters.find(function(q){return q>m;});
-  if(nextQ===undefined){nextQ=2;y++;}
-  var first=new Date(y,nextQ,1),day=first.getDay();
+function safexExpiryFor(qy,qm){
+  var first=new Date(qy,qm,1),day=first.getDay();
   var thu=day<=4?4-day:11-day;
-  return new Date(y,nextQ,1+thu+14);
+  return new Date(qy,qm,1+thu+14);
 }
-function safexExpiryStr(fromDate){ return nextSAFEXExpiry(fromDate).toISOString().slice(0,10); }
+// v33 (Option A): return the earliest quarterly expiry that has NOT yet
+// passed. The old test was `q > m` — the next quarter-end MONTH — which
+// skipped a still-live expiry for the first ~2.5 weeks of every quarter-end
+// month (on 1 Sep it returned December, ignoring a 17 Sep expiry with 16
+// days of life left). Expiry day itself still counts as live.
+function nextSAFEXExpiry(fromDate){
+  var d=fromDate?new Date(fromDate):new Date(); d.setHours(0,0,0,0);
+  var y=d.getFullYear(), quarters=[2,5,8,11];
+  for(var k=0;k<2;k++){
+    for(var i=0;i<quarters.length;i++){
+      var e=safexExpiryFor(y+k,quarters[i]);
+      if(e>=d) return e;
+    }
+  }
+  return safexExpiryFor(y+2,quarters[0]);
+}
+function safexExpiryStr(fromDate){ return ymdLocal(nextSAFEXExpiry(fromDate)); }
 
 // Most recent SAFEX quarterly expiry ON OR BEFORE fromDate — the mirror
 // image of nextSAFEXExpiry(). Used to detect which quarterly expiry a
@@ -4062,6 +4116,42 @@ function previousSAFEXExpiry(fromDate){
 // calc(), renderBudgetPanel(), and renderExpiryGrid() all call this so
 // the three panels can never silently disagree.
 // ════════════════════════════════════════════════════════════════════
+// v33: total ex-VAT running fee rate, and the VAT-inclusive rate actually
+// charged to cash. Every accrual and every budget calc must use feeRateIncl().
+function feeRateEx(fs){ fs=fs||getFeeState(); return (fs.mgmtFeePct||0)+(fs.svcFeePct||0); }
+function feeRateIncl(fs){ fs=fs||getFeeState(); return feeRateEx(fs)*(1+(fs.vatPct||0)); }
+// v33: performance fee is VAT-able on the same basis as mgmt/svc. Every
+// site that computes a perf fee — charged, estimated, projected or
+// recomputed — must use this, or the panel will quote a number smaller
+// than what is actually deducted at crystallization.
+function perfRateIncl(fs){ fs=fs||getFeeState(); return (fs.perfFeePct||0)*(1+(fs.vatPct||0)); }
+
+// ══════════════════════════════════════════════════════════════════════
+// v33: SCENARIO LINEAGE
+// Fee-sensitivity and structure tests run as separate sessions derived
+// from one canonical record. The single biggest risk with that design is
+// a scenario being read — or exported — as if it were the real track, so
+// the label follows the session everywhere it surfaces.
+// ══════════════════════════════════════════════════════════════════════
+function isScenarioSession(){
+  return !!(CURRENT_SESSION && CURRENT_SESSION.sessionRole==='scenario');
+}
+function scenarioLabel(cfg){
+  cfg=cfg||CURRENT_SESSION; if(!cfg) return '';
+  if(cfg.sessionRole!=='scenario') return 'CANONICAL';
+  return 'TEST SCENARIO'+(cfg.derivedFrom?' \u00b7 from '+cfg.derivedFrom:'')
+        +(cfg.scenarioNote?' \u00b7 '+cfg.scenarioNote:'');
+}
+function paintScenarioBadge(){
+  var el=c('sess-role-badge'); if(!el||!CURRENT_SESSION) return;
+  var scen=isScenarioSession();
+  el.style.display='inline-block';
+  el.textContent=scenarioLabel(CURRENT_SESSION);
+  el.style.background=scen?'rgba(224,160,64,.16)':'rgba(64,176,160,.12)';
+  el.style.border='1px solid '+(scen?'rgba(224,160,64,.45)':'rgba(64,176,160,.32)');
+  el.style.color=scen?'var(--amber)':'var(--teal2)';
+}
+
 function calcConvexityBudget(){
   var zaronia=getZaronia();
   var ln=window._ladderNAV;
@@ -4070,30 +4160,57 @@ function calcConvexityBudget(){
   // accrues on cash only — never on the option book.
   var NAV=dailyCarryYield().base || (ln?ln.effectiveCash:0) ||
           (st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0));
-  if(!NAV||!zaronia) return {annual:0,remaining:0,paid:0,NAV:0,zaronia:zaronia||0,T_annual:0};
-  var today=new Date(); today.setHours(0,0,0,0);
-  var expiries=getSAFEXExpiries(4);
-  var T_annual=Math.max(0.0001,(expiries[3]-today)/(365*24*60*60*1000));
-  var annualBudget=NAV-NAV/(1+zaronia*T_annual);
+  var par=st.capital||(CURRENT_SESSION?CURRENT_SESSION.phylaxCapital:0);
+  var fs=getFeeState();
+  var f=feeRateIncl(fs);
+  if(!NAV||!zaronia) return {annual:0,remaining:0,paid:0,NAV:0,zaronia:zaronia||0,T_annual:0,par:par||0,optBook:0,shortfall:0};
+  // ══════════════════════════════════════════════════════════════════
+  // v33: ROLLING ANNUAL HORIZON + PAR-HEADROOM FORMULATION
+  //
+  // T is pinned at 1.0 year and rolls continuously. It is NOT taken from
+  // the 4th SAFEX expiry any more: that made the horizon a sawtooth
+  // (0.79y..1.04y) which stepped the budget ~23% on the 1st of every
+  // quarter-end month — a calendar artefact, not a market event.
+  //
+  // The old formula was  (NAV - NAV/(1+zT)) - paid,  which DOUBLE-COUNTS
+  // premium: NAV is cashCore, already net of every rand ever spent, and
+  // `paid` then subtracted it a second time. It also ignored fee drag
+  // entirely. The two errors happened to be similar in size and largely
+  // cancelled, which is why the number looked plausible.
+  //
+  // Correct test: will cash grow back to par over the horizon, after
+  // fees on both cash and the option book? Headroom is that surplus
+  // discounted to today. No `paid` term — current cash already reflects
+  // it. Buy options and headroom falls by the premium; sell them and it
+  // returns. Otherwise it moves only with rates, fees and flows.
+  // ══════════════════════════════════════════════════════════════════
+  var T_annual=1.0;
   var ladder=getLadder();
   var paid=(ladder.tranches||[]).reduce(function(s,t){return s+(t.premiumTotal||0);},0);
-  var remaining=Math.max(0,annualBudget-paid);
-  return {annual:annualBudget,remaining:remaining,paid:paid,NAV:NAV,zaronia:zaronia,T_annual:T_annual};
+  var B=(ln&&ln.optBook!=null)?ln.optBook:0;
+  var annualBudget=NAV-NAV/(1+zaronia*T_annual);          // gross carry allowance, PV
+  var denom=1+zaronia*T_annual+f*T_annual;
+  var headroom=denom>0?(NAV*(1+zaronia*T_annual)-f*T_annual*(NAV+B)-par)/denom:0;
+  return {annual:annualBudget,remaining:Math.max(0,headroom),paid:paid,NAV:NAV,
+          zaronia:zaronia,T_annual:T_annual,par:par,optBook:B,
+          shortfall:headroom<0?-headroom:0};
 }
 
 function getSAFEXExpiries(n){
+  // v33 (Option A): start from the first expiry not yet passed, matching
+  // nextSAFEXExpiry(). Budget sizing no longer reads this list, so a near
+  // expiry appearing here changes what is TRADEABLE, not what is affordable.
   var results=[], d=new Date(); d.setHours(0,0,0,0);
-  var m=d.getMonth(), y=d.getFullYear();
-  var quarters=[2,5,8,11];
-  // Find starting quarter
-  var qi=quarters.findIndex(function(q){return q>m;});
-  if(qi===-1){qi=0;y++;}
-  for(var i=0;i<n;i++){
-    var qm=quarters[(qi+i)%4];
-    var qy=y+Math.floor((qi+i)/4);
-    var first=new Date(qy,qm,1),day=first.getDay();
-    var thu=day<=4?4-day:11-day;
-    results.push(new Date(qy,qm,1+thu+14));
+  var y=d.getFullYear(), quarters=[2,5,8,11], start=null;
+  for(var k=0;k<2&&start===null;k++){
+    for(var i=0;i<quarters.length;i++){
+      if(safexExpiryFor(y+k,quarters[i])>=d){ start={y:y+k,i:i}; break; }
+    }
+  }
+  if(start===null) start={y:y+2,i:0};
+  for(var j=0;j<n;j++){
+    var idx=start.i+j;
+    results.push(safexExpiryFor(start.y+Math.floor(idx/4),quarters[idx%4]));
   }
   return results;
 }
@@ -4107,7 +4224,7 @@ function heldPerQuarterMap(){
   var expiries=getSAFEXExpiries(4);
   var ladder=getLadder();
   var map={};
-  expiries.forEach(function(exp){ map[exp.toISOString().slice(0,10)]=0; });
+  expiries.forEach(function(exp){ map[ymdLocal(exp)]=0; });
   (ladder.tranches||[]).forEach(function(t){
     var texp=new Date(t.expiry).getTime();
     var best=0, bestDiff=Infinity;
@@ -4115,7 +4232,7 @@ function heldPerQuarterMap(){
       var diff=Math.abs(exp.getTime()-texp);
       if(diff<bestDiff){ bestDiff=diff; best=i; }
     });
-    var key=expiries[best].toISOString().slice(0,10);
+    var key=ymdLocal(expiries[best]);
     map[key]=(map[key]||0)+t.contracts;
   });
   return map;
@@ -4129,7 +4246,7 @@ function contractsHeldForExpiry(expiryStr){
     var diff=Math.abs(exp.getTime()-target);
     if(diff<bestDiff){ bestDiff=diff; best=i; }
   });
-  return map[expiries[best].toISOString().slice(0,10)]||0;
+  return map[ymdLocal(expiries[best])]||0;
 }
 // Whole-book aggregates — every held tranche priced at its OWN strike/
 // expiry via bsBlack76. Single source of truth for MTM, theta bleed, and
@@ -4169,11 +4286,11 @@ function renderExpiryGrid(){
   var bd=calcConvexityBudget();
   var remaining=bd.remaining;
 
-  var selectedExpiry=window._selectedExpiry||expiries[0].toISOString().slice(0,10);
+  var selectedExpiry=window._selectedExpiry||ymdLocal(expiries[0]);
   var labels=['Q1 (Near)','Q2','Q3','Q4 (Far)'];
   var html='';
   expiries.forEach(function(exp,i){
-    var expStr=exp.toISOString().slice(0,10);
+    var expStr=ymdLocal(exp);
     var T=Math.max(0,(exp-today)/(365*24*60*60*1000));
     var tteDays=Math.round(T*365);
     var K=Math.round(S*(1-otm));
@@ -4195,7 +4312,7 @@ function renderExpiryGrid(){
   // Set default selection if not yet set
   if(!window._selectedExpiry){
     var T0=Math.max(0,(expiries[0]-today)/(365*24*60*60*1000));
-    window._selectedExpiry=expiries[0].toISOString().slice(0,10);
+    window._selectedExpiry=ymdLocal(expiries[0]);
     window._selectedPutR=bsPutRepriceR(S,Math.round(S*(1-otm)),r,q,iv,T0);
     window._selectedK=Math.round(S*(1-otm));
   }
@@ -4690,6 +4807,25 @@ function updatePortfolio(){
   var benefit=blendedNAV-counterfactualNAV;
   var phylaxRet=(phylaxNAV-phylaxCapital)/phylaxCapital*100;
 
+  // ══ v33: UNINITIALISED-SESSION GUARD ═══════════════════════════════
+  // A session whose saveState()/saveLadder() never completed keeps its
+  // capital on the config doc while the ladder and state subcollections
+  // are empty. The panel then divides an empty book by real capital and
+  // reports a confident −100.00%, which reads as a total loss rather than
+  // as missing data. Refuse to state a return we cannot compute.
+  var _ladder0=getLadder();
+  var _uninit=(phylaxCapital>0)&&((_ladder0.cashBalance==null)||(_ladder0.cashBalance===0))
+              &&(!(_ladder0.tranches||[]).length)&&(!getNavHistory().length);
+  if(_uninit){
+    ['pb-total','pb-phylax','pb-tracker','pb-counterfactual','pb-benefit'].forEach(function(id){
+      if(c(id)){ c(id).textContent='\u2014'; c(id).style.color='var(--muted)'; }
+    });
+    ['pb-total-ret','pb-phylax-ret','pb-tracker-ret','pb-benefit-sub'].forEach(function(id){
+      if(c(id)){ c(id).textContent='session not initialised'; c(id).style.color='var(--amber)'; }
+    });
+    return;
+  }
+
   c('pb-total').textContent=fRk(blendedNAV);
   c('pb-total-ret').textContent=(blendedRet>=0?'+':'')+blendedRet.toFixed(2)+'% since inception';
   c('pb-total').style.color=blendedRet>=0?'var(--green2)':'var(--red2)';
@@ -4828,7 +4964,7 @@ async function endOfDay(opts){
     // cash only — can't sell options to fund it. Based on prevNAV (the
     // last officially closed NET NAV) to avoid same-day circularity;
     // daysSinceSettle covers any gap (weekend, missed close) in one go.
-    dailyMgmtSvcFee=(fs.mgmtFeePct+fs.svcFeePct)/365*daysSinceSettle*prevNAV;
+    dailyMgmtSvcFee=feeRateIncl(fs)/365*daysSinceSettle*prevNAV;   // v33: VAT-inclusive
     cashCoreClose=cashCoreGrossClose-dailyMgmtSvcFee;
   }
   var residualClose=0; // eliminated — ladder cashBalance is source of truth
@@ -4942,7 +5078,7 @@ async function endOfDay(opts){
   // call (same principle as Crash Harvest) — see renderFeePanel() and
   // crystallizePerformanceFee().
   var lastPassedExpiry=previousSAFEXExpiry(todayDate);
-  var lastPassedExpiryStr=lastPassedExpiry.toISOString().slice(0,10);
+  var lastPassedExpiryStr=ymdLocal(lastPassedExpiry);
   // The old condition was todayDate >= lastPassedExpiry, which is
   // TAUTOLOGICAL — previousSAFEXExpiry() returns the most recent expiry
   // on or before the date, so it is always true and guarded nothing.
@@ -4957,7 +5093,7 @@ async function endOfDay(opts){
      && (!fs.pendingCrystallization||fs.pendingCrystallization.expiryDate!==lastPassedExpiryStr)){
     var hurdleUP=calcHurdleUnitPrice();
     var crystBase=Math.max(hurdleUP,fs.hwmUnitPrice||UNIT_INCEPTION_PRICE);
-    var feeDue=Math.max(0,fs.perfFeePct*(closingUnitPrice-crystBase))*us.unitsInIssue;
+    var feeDue=Math.max(0,perfRateIncl(fs)*(closingUnitPrice-crystBase))*us.unitsInIssue; // v33: VAT-inclusive
     fs.pendingCrystallization={
       expiryDate:lastPassedExpiryStr, detectedDate:today,
       netUnitPriceAtExpiry:closingUnitPrice, hurdleUnitPriceAtExpiry:hurdleUP,
@@ -5392,7 +5528,7 @@ function parPremiumHeadroom(){
   var T=Math.max(0,(nearest-today)/(365*24*60*60*1000));
   var z=getZaronia();
   var fs=getFeeState();
-  var f=(fs.mgmtFeePct||0)+(fs.svcFeePct||0);
+  var f=feeRateIncl(fs);
   var S=FVAL['i-spot'],iv=FVAL['i-iv'],r=FVAL['i-jibar'],q=FVAL['i-dY'];
   var B=0;
   if(S&&iv&&r){
@@ -5495,7 +5631,7 @@ function renderInlineAlloc(){
   // Each held tranche belongs to the quarter whose SAFEX expiry is
   // closest to (and >= ) its own expiry date.
   var heldMap=heldPerQuarterMap();
-  var heldPerQ=expiries.map(function(exp){ return heldMap[exp.toISOString().slice(0,10)]||0; });
+  var heldPerQ=expiries.map(function(exp){ return heldMap[ymdLocal(exp)]||0; });
   var totalHeld=(existingLadder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
   var currentPct=heldPerQ.map(function(h){return totalHeld>0?(h/totalHeld*100):0;});
 
@@ -5516,7 +5652,7 @@ function renderInlineAlloc(){
   var atTargetLockout = totalHeld>0 && totalGap<0.5;
 
   expiries.forEach(function(exp,i){
-    var expStr=exp.toISOString().slice(0,10);
+    var expStr=ymdLocal(exp);
     var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
     var tteDays=Math.round(T*365);
     var K=Math.round(S*(1-otm));
@@ -5597,7 +5733,7 @@ function renderInlineAlloc(){
       +' <span style="font-size:8.5px;opacity:.7">(by contract count — cost-weighting would give a different split)</span>';
     netYieldEl.innerHTML='Net yield available: <strong>'+fRk(netDailyYield)+'/day</strong> ('+netYieldPct.toFixed(0)+'% of gross) — gross <strong>'+fRk(dailyYield)+'/day</strong> minus <strong>'+fRk(totalExistingThetaBleed)+'/day</strong> existing theta'
       +'<br><span style="font-size:9px;opacity:.85">'+compSummary+'</span>'
-      +(parGate.ok?'<br><span style="display:inline-block;margin-top:6px;padding:5px 10px;background:'+(parBinding?'rgba(96,176,240,.10)':'rgba(90,120,136,.10)')+';border:1px solid '+(parBinding?'rgba(96,176,240,.28)':'rgba(90,120,136,.28)')+';border-radius:2px;font-size:9.5px;color:'+(parBinding?'var(--blue2)':'var(--muted)')+';text-align:left;line-height:1.45">◈ QUARTERLY PAR FLOOR — <strong>'+(parBinding?'BINDING (segregated mandate)':'ADVISORY (pooled fund) — not capping sizing')+'</strong><br>Cash <strong>'+fRk(parGate.cash)+'</strong> vs par <strong>'+fRk(parGate.par)+'</strong>, '+parGate.days+'d to '+parGate.expiry.toISOString().slice(0,10)+' at net '+(parGate.rateNet*100).toFixed(2)+'%. Premium consistent with cash alone returning to par: <strong>'+fRk(parGate.headroom)+'</strong>'+(parGate.shortfall>0?' — <span style="color:var(--red2)">cash is '+fRk(parGate.shortfall)+' short of par at this expiry</span>':'')+'. Residual MTM on longer tranches excluded by design. <button onclick="toggleParGateMode()" style="margin-left:6px;background:transparent;border:1px solid currentColor;color:inherit;border-radius:2px;font-family:inherit;font-size:8.5px;padding:2px 7px;cursor:pointer">SWITCH TO '+(parBinding?'ADVISORY':'BINDING')+'</button></span>':'')
+      +(parGate.ok?'<br><span style="display:inline-block;margin-top:6px;padding:5px 10px;background:'+(parBinding?'rgba(96,176,240,.10)':'rgba(90,120,136,.10)')+';border:1px solid '+(parBinding?'rgba(96,176,240,.28)':'rgba(90,120,136,.28)')+';border-radius:2px;font-size:9.5px;color:'+(parBinding?'var(--blue2)':'var(--muted)')+';text-align:left;line-height:1.45">◈ QUARTERLY PAR FLOOR — <strong>'+(parBinding?'BINDING (segregated mandate)':'ADVISORY (pooled fund) — not capping sizing')+'</strong><br>Cash <strong>'+fRk(parGate.cash)+'</strong> vs par <strong>'+fRk(parGate.par)+'</strong>, '+parGate.days+'d to '+ymdLocal(parGate.expiry)+' at net '+(parGate.rateNet*100).toFixed(2)+'%. Premium consistent with cash alone returning to par: <strong>'+fRk(parGate.headroom)+'</strong>'+(parGate.shortfall>0?' — <span style="color:var(--red2)">cash is '+fRk(parGate.shortfall)+' short of par at this expiry</span>':'')+'. Residual MTM on longer tranches excluded by design. <button onclick="toggleParGateMode()" style="margin-left:6px;background:transparent;border:1px solid currentColor;color:inherit;border-radius:2px;font-family:inherit;font-size:8.5px;padding:2px 7px;cursor:pointer">SWITCH TO '+(parBinding?'ADVISORY':'BINDING')+'</button></span>':'')
       +(atTargetLockout?'<br><span style="display:inline-block;margin-top:6px;padding:5px 10px;background:rgba(150,110,220,.12);border:1px solid rgba(150,110,220,.3);border-radius:2px;font-size:9.5px;color:var(--purple);text-align:left;line-height:1.45">◆ COMPOSITION AT TARGET — <strong>'+fRk(remaining)+'</strong> of budget remains available, but every quarter is at or above its target weight so there is no underweight quarter to route it to. Raise a slider target to deploy it, or leave it idle by design.</span>':'');
   }
   if(summaryEl){
@@ -5713,7 +5849,7 @@ async function executeTodayBuy(){
   var capital=st.capital||CURRENT_SESSION.phylaxCapital;
   var id='T'+(String(Date.now()).slice(-6));
   var tranche={
-    id:id, buyDate:new Date().toISOString().slice(0,10),
+    id:id, buyDate:todayStr(),
     expiry:pb.expStr, strikeLevel:pb.K,
     spotAtBuy:FVAL['i-spot'],
     tteAtBuyYears:pb.T, contracts:pb.qty,
@@ -6374,6 +6510,7 @@ function renderFeePanel(){
   if(c('fee-mgmt-input')&&document.activeElement!==c('fee-mgmt-input')) c('fee-mgmt-input').value=(fs.mgmtFeePct*100).toFixed(2);
   if(c('fee-svc-input')&&document.activeElement!==c('fee-svc-input')) c('fee-svc-input').value=(fs.svcFeePct*100).toFixed(2);
   if(c('fee-perf-input')&&document.activeElement!==c('fee-perf-input')) c('fee-perf-input').value=(fs.perfFeePct*100).toFixed(1);
+  if(c('fee-vat-input')&&document.activeElement!==c('fee-vat-input')) c('fee-vat-input').value=((fs.vatPct||0)*100).toFixed(0);
 
   var netNAV=ln.totalNAV, grossNAV=ln.grossNAV;
   var dragBps=grossNAV>0?((grossNAV-netNAV)/grossNAV*10000):0;
@@ -6392,7 +6529,7 @@ function renderFeePanel(){
   var nextExp=nextSAFEXExpiry(new Date());
   var today=new Date(); today.setHours(0,0,0,0);
   var daysToExpiry=Math.round((nextExp-today)/86400000);
-  var estFee=Math.max(0,fs.perfFeePct*(netUP-crystBase))*(up?up.unitsInIssue:0);
+  var estFee=Math.max(0,perfRateIncl(fs)*(netUP-crystBase))*(up?up.unitsInIssue:0);
 
   setText('fp-hurdle','R '+hurdleUP.toFixed(4));
   setText('fp-hwm','R '+hwm.toFixed(4));
@@ -6403,11 +6540,11 @@ function renderFeePanel(){
   // fee always uses the actually-accrued hurdle.
   var projHurdle=projectedHurdleAtExpiry(nextExp);
   var projBase=Math.max(projHurdle,hwm);
-  var projFee=Math.max(0,fs.perfFeePct*(netUP-projBase))*(up?up.unitsInIssue:0);
+  var projFee=Math.max(0,perfRateIncl(fs)*(netUP-projBase))*(up?up.unitsInIssue:0);
   var tier=perfFeeTier(daysToExpiry,projFee>0);
   var tierCol=tier===3?'var(--red2)':tier===2?'var(--amber)':tier===1?'var(--gold)':'var(--muted)';
 
-  setText('fp-nextexpiry',nextExp.toISOString().slice(0,10)+' (T-'+daysToExpiry+'d)');
+  setText('fp-nextexpiry',ymdLocal(nextExp)+' (T-'+daysToExpiry+'d)');
   if(c('fp-nextexpiry')) c('fp-nextexpiry').style.color=tierCol;
   setText('fp-estfee',
     fRk(estFee)+(estFee>0?' if crystallizing today (non-binding estimate)':' — below hurdle/HWM')
@@ -6482,11 +6619,33 @@ function saveFeeRates(){
   var mgmt=parseFloat((c('fee-mgmt-input').value||'').replace(/[^\d.]/g,''));
   var svc=parseFloat((c('fee-svc-input').value||'').replace(/[^\d.]/g,''));
   var perf=parseFloat((c('fee-perf-input').value||'').replace(/[^\d.]/g,''));
+  var vat=c('fee-vat-input')?parseFloat((c('fee-vat-input').value||'').replace(/[^\d.]/g,'')):NaN;
+  var prev={mgmt:fs.mgmtFeePct,svc:fs.svcFeePct,perf:fs.perfFeePct,vat:fs.vatPct};
   if(isFinite(mgmt)&&mgmt>=0) fs.mgmtFeePct=mgmt/100;
   if(isFinite(svc)&&svc>=0) fs.svcFeePct=svc/100;
   if(isFinite(perf)&&perf>=0) fs.perfFeePct=perf/100;
+  if(isFinite(vat)&&vat>=0) fs.vatPct=vat/100;
+  // v33: date-stamp every rate change. Mgmt+svc accrue daily so a change
+  // bites from the next EOD settle, but perfFeePct is applied to the WHOLE
+  // period at crystallization — so a mid-quarter change restates the
+  // quarter retroactively. That is intentional for scenario work, but it
+  // must never be silent.
+  var changed=(prev.mgmt!==fs.mgmtFeePct)||(prev.svc!==fs.svcFeePct)||(prev.perf!==fs.perfFeePct)||(prev.vat!==fs.vatPct);
+  if(changed){
+    if(!Array.isArray(fs.feeRateHistory)) fs.feeRateHistory=[];
+    fs.feeRateHistory.push({date:todayStr(),setAt:new Date().toISOString(),
+      mgmt:fs.mgmtFeePct,svc:fs.svcFeePct,perf:fs.perfFeePct,vat:fs.vatPct,
+      prevMgmt:prev.mgmt,prevSvc:prev.svc,prevPerf:prev.perf,prevVat:prev.vat,
+      by:(typeof deviceLabel==='function'?deviceLabel():null)});
+  }
   saveFeeState(fs);
-  showToast('✓ Fee rates updated — Mgmt '+(fs.mgmtFeePct*100).toFixed(2)+'% · Svc '+(fs.svcFeePct*100).toFixed(2)+'% · Perf '+(fs.perfFeePct*100).toFixed(1)+'%','success',4000);
+  if(changed&&(prev.perf!==fs.perfFeePct||prev.vat!==fs.vatPct)&&fs.pendingCrystallization){
+    var pc=fs.pendingCrystallization;
+    var was=Math.max(0,prev.perf*(1+(prev.vat||0))*((pc.netUnitPriceAtExpiry||0)-(pc.crystallizationBase||0)))*(pc.unitsInIssue||0);
+    var now=Math.max(0,perfRateIncl(fs)*((pc.netUnitPriceAtExpiry||0)-(pc.crystallizationBase||0)))*(pc.unitsInIssue||0);
+    showToast('\u26a0 Pending crystallization for '+pc.expiryDate+' recomputed: R'+Math.round(was).toLocaleString('en-ZA')+' \u2192 R'+Math.round(now).toLocaleString('en-ZA'),'warn',9000);
+  }
+  showToast('✓ Fee rates updated — Mgmt '+(fs.mgmtFeePct*100).toFixed(2)+'% · Svc '+(fs.svcFeePct*100).toFixed(2)+'% · Perf '+(fs.perfFeePct*100).toFixed(1)+'% · VAT '+((fs.vatPct||0)*100).toFixed(0)+'% (fixed load '+(feeRateIncl(fs)*100).toFixed(3)+'% incl)','success',5000);
   calc();
 }
 
@@ -6514,7 +6673,7 @@ async function crystallizePerformanceFee(){
     return;
   }
   var _base=Math.max(pc.hurdleUnitPriceAtExpiry||0, pc.hwmAtExpiry||UNIT_INCEPTION_PRICE);
-  var _recomputed=Math.max(0,(fs.perfFeePct||0)*((pc.netUnitPriceAtExpiry||0)-_base))*(pc.unitsInIssue||0);
+  var _recomputed=Math.max(0,perfRateIncl(fs)*((pc.netUnitPriceAtExpiry||0)-_base))*(pc.unitsInIssue||0);
   if(Math.abs(_recomputed-pc.feeDue)>1){
     alert('\u2717 Crystallization blocked \u2014 the stored fee does not reconcile to its own inputs.\n\nStored fee:     '+fRk(pc.feeDue)+'\nRecomputed:     '+fRk(_recomputed)+'\n\n(unit price at expiry R'+(pc.netUnitPriceAtExpiry||0).toFixed(4)+', base R'+_base.toFixed(4)+', units '+Math.round(pc.unitsInIssue||0).toLocaleString('en-ZA')+')\n\nThe record was written by an earlier calculation and cannot be trusted. Clear it and let the next EOD close re-detect.');
     return;
@@ -6570,30 +6729,55 @@ function renderBudgetPanel(){
   var remaining=bd.remaining;
   var remainingPct=annualBudget>0?(remaining/annualBudget*100):0;
 
-  // Affordable contracts today (Q1/near-dated)
-  var otmFrac=FVAL['i-otm']||0.10;
-  var K=Math.round(S*(1-otmFrac));
-  var putR=T>0?bsPutRepriceR(S,K,r,q,iv,T):0;
-  var affordable=putR>0?Math.floor(remaining/putR):0;
-
   // Weighted average entry premium across all tranches
   var ladder=getLadder();
   var totalContracts=(ladder.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
   var blended=totalContracts>0?paid/totalContracts:0;
 
-  setText('bp-total',fRk(annualBudget));
-  if(c('bp-total-sub')) setText('bp-total-sub','NAV−NAV/(1+ZARONIA×'+(bd.T_annual*365).toFixed(0)+'d/365)');
+  // ── v33: budget reconciliation, anchored on PAR so the rows add up ──
+  // Identity:  C = par + accrued − paid − feesDeducted
+  // so         C − par/(1+zT)  =  A + accrued − paid − feesDeducted − feeReserve
+  // where A = par − par/(1+zT). Anchoring on par (not on current cash) is
+  // what lets "− premiums paid" appear as an explicit line WITHOUT the
+  // double-count: current cash already reflects the spend, par does not.
+  var _fs=getFeeState();
+  var _par=bd.par||0;
+  var _A=_par-_par/(1+bd.zaronia*bd.T_annual);
+  var _feesDeducted=_fs.cumulativeFeesDeducted||0;
+  var _accrued=(bd.NAV-_par)+paid+_feesDeducted;      // balancing figure from the identity
+  var _feeRes=_A>0?(_A+_accrued-paid-_feesDeducted-remaining):0;
+  setText('bp-total',fRk(_A));
+  if(c('bp-total-sub')) setText('bp-total-sub','on par R'+fRk(_par).replace('R ','')+', rolling 365d');
+  setText('bp-accrued',_accrued!==0?'+'+fRk(_accrued):'—');
+  c('bp-accrued').style.color=_accrued>=0?'var(--teal2)':'var(--red2)';
+  setText('bp-fees',_feesDeducted>0?'−'+fRk(_feesDeducted):'—');
+  c('bp-fees').style.color=_feesDeducted>0?'var(--red2)':'var(--muted)';
+  if(c('bp-fees-sub')) setText('bp-fees-sub','mgmt+svc @ '+(feeRateEx(_fs)*100).toFixed(2)+'% +VAT '+((_fs.vatPct||0)*100).toFixed(0)+'% = '+(feeRateIncl(_fs)*100).toFixed(3)+'%');
+  setText('bp-feeres',_feeRes>0?'−'+fRk(_feeRes):'—');
+  c('bp-feeres').style.color=_feeRes>0?'var(--red2)':'var(--muted)';
   setText('bp-paid',paid>0?'−'+fRk(paid):'—');
   c('bp-paid').style.color=paid>0?'var(--red2)':'var(--muted)';
-  setText('bp-remaining',fRk(remaining));
-  c('bp-remaining').style.color=remainingPct>50?'var(--teal2)':remainingPct>20?'var(--amber)':'var(--red2)';
-  setText('bp-remaining-pct',remainingPct.toFixed(1)+'% of annual budget');
-  setText('bp-affordable',affordable>0?affordable+' contracts':'Budget exhausted');
-  c('bp-affordable').style.color=affordable>0?'var(--green2)':'var(--red2)';
-  setText('bp-affordable-sub',putR>0?'at '+fRk(putR)+'/contract Q1':'no price available');
+  // v33: a clamped zero hides an overspend. When cash sits below the PV
+  // floor the real number is negative — show it, don't round it away.
+  var _short=bd.shortfall||0;
+  if(_short>0){
+    setText('bp-remaining','\u2212'+fRk(_short));
+    c('bp-remaining').style.color='var(--red2)';
+    setText('bp-remaining-pct','SHORTFALL \u2014 cash below PV floor');
+    if(c('bp-remaining-pct')) c('bp-remaining-pct').style.color='var(--red2)';
+  } else {
+    setText('bp-remaining',fRk(remaining));
+    c('bp-remaining').style.color=remainingPct>50?'var(--teal2)':remainingPct>20?'var(--amber)':'var(--red2)';
+    setText('bp-remaining-pct',remainingPct.toFixed(1)+'% of annual budget');
+    if(c('bp-remaining-pct')) c('bp-remaining-pct').style.color='';
+  }
   setText('bp-blended',blended>0?fRk(blended):'—');
 
-  window._budgetData={quarterlyBudget:annualBudget,paid,remaining,affordable,putR,blended,totalContracts};
+  // v33: `affordable`/`putR` removed. They were priced off the NEAR expiry
+  // only, so the panel quoted a contract count achievable solely at the
+  // cheapest tenor. Both consumers (renderExecPanel, buy-confirm) already
+  // compute affordability against the expiry actually being traded.
+  window._budgetData={quarterlyBudget:annualBudget,paid,remaining,blended,totalContracts};
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -6778,7 +6962,7 @@ function renderDailyNAV(){
 
   var totalNAV=effectiveCash+optBook; // NET NAV
   var grossNAV=totalNAV+(fs.cumulativeFeesDeducted||0); // reconstructed: net + everything ever deducted
-  var estDailyFee=(fs.mgmtFeePct+fs.svcFeePct)/365*totalNAV;
+  var estDailyFee=feeRateIncl(fs)/365*totalNAV;
   var floor=effectiveCash+totalIntrinsic;
   var initialCap=capital;
   var navVsCap=(totalNAV-initialCap)/initialCap*100;
@@ -6874,7 +7058,7 @@ function renderThetaSnapshot(){
   var thetaVsPnl=totalCumTheta>0?(bookPnl/totalCumTheta):null;
   setText('tsp-cumtheta','−'+fRk(totalCumTheta));
   c('tsp-cumtheta').style.color='var(--amber)';
-  setText('tsp-since',earliestBuy?earliestBuy.toISOString().slice(0,10):'—');
+  setText('tsp-since',earliestBuy?ymdLocal(earliestBuy):'—');
   if(thetaVsPnl!==null){
     var tvpEl=c('tsp-theta-vs-pnl');
     setText('tsp-theta-vs-pnl',(bookPnl>=0?'+':'')+fRk(bookPnl)+' vs −'+fRk(totalCumTheta)+' spent');
@@ -7408,7 +7592,8 @@ function openSessionList(){
         +'<div style="flex:1;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="loadSessionById(\''+s.sessionId+'\')">'
         +(isActive?'<span style="font-family:\'Rajdhani\',sans-serif;font-size:8px;font-weight:700;color:var(--teal2);text-transform:uppercase;letter-spacing:.1em;background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.2);padding:2px 6px;border-radius:2px;flex-shrink:0">Active</span>':'')
         +'<div style="flex:1">'
-        +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+escapeHtml(s.config?s.config.sessionName:s.sessionId)+'</div>'
+        +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+escapeHtml(s.config?s.config.sessionName:s.sessionId)
+        +(s.config&&s.config.sessionRole==='scenario'?' <span style="font-family:\'DM Mono\',monospace;font-size:8px;letter-spacing:.06em;padding:1px 5px;border-radius:2px;background:rgba(224,160,64,.16);border:1px solid rgba(224,160,64,.45);color:var(--amber);vertical-align:middle">SCENARIO</span>':'')+'</div>'
         +'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--muted)">'
         +(s.config?fRk(s.config.phylaxCapital)+' sleeve · '+fRk(s.config.totalPortfolio)+' portfolio · inception '+s.config.inceptionDate:'—')
         +'</div>'
@@ -7583,10 +7768,17 @@ async function createSession(){
   var alsiInception=parseFloat((c('setup-alsi-inception').value||'').replace(/[^\d.]/g,''))||0;
   var sessionId=c('setup-session-id').value||('PHYLAX_'+Date.now().toString(36).toUpperCase());
 
+  // v33: scenario lineage. Fee-sensitivity and structure tests are run as
+  // SEPARATE sessions off one canonical record, so a scenario must be
+  // self-identifying wherever it surfaces — header, session list, exports.
+  var sessionRole=(c('setup-role')&&c('setup-role').value==='scenario')?'scenario':'canonical';
+  var derivedFrom=sessionRole==='scenario'&&c('setup-derived-from')?(c('setup-derived-from').value.trim()||null):null;
+  var scenarioNote=sessionRole==='scenario'&&c('setup-scenario-note')?(c('setup-scenario-note').value.trim()||null):null;
   CURRENT_SESSION={
     sessionId, sessionName, inceptionDate, investorName,
     totalPortfolio, phylaxCapital, phylaxPct,
     jibar, otm, dY, alsiInception,
+    sessionRole, derivedFrom, scenarioNote,
     createdAt:new Date().toISOString()
   };
   saveSessionConfigLocal();
@@ -7625,6 +7817,15 @@ async function createSession(){
   c('i-expiry').value=nextExp;
 
   // Initialise state
+  // v33: date-stamp the opening fee rates at INCEPTION, not at creation.
+  // A scenario re-run from 1 June must record rates effective 1 June.
+  var _fs0=defaultFeeState();
+  _fs0.feeRateHistory=[{date:inceptionDate,setAt:new Date().toISOString(),
+    mgmt:_fs0.mgmtFeePct,svc:_fs0.svcFeePct,perf:_fs0.perfFeePct,vat:_fs0.vatPct,
+    prevMgmt:null,prevSvc:null,prevPerf:null,prevVat:null,
+    reason:'session inception',by:(typeof deviceLabel==='function'?deviceLabel():null)}];
+  saveFeeState(_fs0);
+
   var st=defaultState();
   st.inceptionDate=inceptionDate;
   st.capital=phylaxCapital;
@@ -7666,6 +7867,7 @@ async function openExistingSession(){
 function activateDashboard(){
   c('session-bar').style.display='flex';
   c('sess-name-display').textContent=CURRENT_SESSION.sessionName;
+  paintScenarioBadge();
   c('sess-meta-display').textContent=
     fRk(CURRENT_SESSION.phylaxCapital)+' Phylax · '+
     fRk(CURRENT_SESSION.totalPortfolio)+' total · inception '+CURRENT_SESSION.inceptionDate+
@@ -7749,7 +7951,17 @@ function exportNAVCSV(){
       Math.round(h.trackerNAV||0),Math.round(h.blendedNAV||0),
       Math.round(h.dayPnl||0),Math.round(h.carryToday||0),Math.round(h.optionPnl||0),vsC].join(',');
   });
-  downloadCSV([headers.join(',')].concat(rows).join('\n'),'PhylaxCapital_NAVHistory_'+todayStr()+'.csv');
+  // v33: a bare CSV is the easiest artifact to mistake for the real track
+  // once it is out of the app, so provenance travels with the data and the
+  // filename itself carries the tag.
+  var _pre=['# Session,'+(CURRENT_SESSION.sessionName||'').replace(/,/g,';'),
+            '# SessionId,'+(CURRENT_SESSION.sessionId||''),
+            '# Role,'+scenarioLabel(CURRENT_SESSION).replace(/,/g,';'),
+            '# Inception,'+(CURRENT_SESSION.inceptionDate||''),
+            '# Exported,'+ts()];
+  var _tag=isScenarioSession()?'SCENARIO_':'';
+  downloadCSV(_pre.concat([headers.join(',')]).concat(rows).join('\n'),
+    'PhylaxCapital_'+_tag+'NAVHistory_'+todayStr()+'.csv');
 }
 
 function exportLadderCSV(){
@@ -7814,7 +8026,15 @@ function exportMonthlyReport(){
     +'</style></head><body>'
     +'<h1>Phylax Capital — Macro Protector Fund</h1>'
     +'<p style="font-size:11px;color:#666">Monthly Performance Report · Generated '+new Date().toLocaleDateString('en-ZA',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</p>'
-    +'<p style="font-size:11px;color:#666">Session: '+escapeHtml(CURRENT_SESSION.sessionName)+' · Inception: '+CURRENT_SESSION.inceptionDate+'</p>'
+    +(isScenarioSession()
+        ?'<div style="margin:10px 0;padding:10px 14px;border:2px solid #b8860b;background:#fdf6e3;color:#7a5c00;font-weight:700;font-size:12px;letter-spacing:.04em">'
+         +'\u26a0 TEST SCENARIO \u2014 NOT THE CANONICAL RECORD<br>'
+         +'<span style="font-weight:400;font-size:11px">'
+         +(CURRENT_SESSION.derivedFrom?'Derived from '+escapeHtml(CURRENT_SESSION.derivedFrom)+'. ':'')
+         +(CURRENT_SESSION.scenarioNote?'Varies: '+escapeHtml(CURRENT_SESSION.scenarioNote)+'. ':'')
+         +'Figures below are modelled under altered assumptions and must not be presented as the fund\'s record.</span></div>'
+        :'')
+    +'<p style="font-size:11px;color:#666">Session: '+escapeHtml(CURRENT_SESSION.sessionName)+' · '+escapeHtml(scenarioLabel(CURRENT_SESSION))+' · Inception: '+CURRENT_SESSION.inceptionDate+'</p>'
     +'<h2>Portfolio Overview</h2>'
     +'<div class="kpi">'
     +'<div class="kc"><div class="kl">Phylax NAV</div><div class="kv">'+fRk(lastH.nav)+'</div></div>'
@@ -7838,9 +8058,11 @@ function exportMonthlyReport(){
     +'</table>'
     +'<h2>Fee Economics</h2>'
     +'<table><tr><th>Item</th><th>Value</th></tr>'
-    +'<tr><td>Management Fee (p.a. on AUM)</td><td>'+(feeSt.mgmtFeePct*100).toFixed(2)+'%</td></tr>'
-    +'<tr><td>Service Fee (p.a. on AUM)</td><td>'+(feeSt.svcFeePct*100).toFixed(2)+'%</td></tr>'
-    +'<tr><td>Performance Fee</td><td>'+(feeSt.perfFeePct*100).toFixed(1)+'% above hurdle/HWM</td></tr>'
+    +'<tr><td>Management Fee (p.a. on AUM)</td><td>'+(feeSt.mgmtFeePct*100).toFixed(2)+'% ex-VAT &middot; '+(feeSt.mgmtFeePct*(1+(feeSt.vatPct||0))*100).toFixed(3)+'% incl</td></tr>'
+    +'<tr><td>Service Fee (p.a. on AUM)</td><td>'+(feeSt.svcFeePct*100).toFixed(2)+'% ex-VAT &middot; '+(feeSt.svcFeePct*(1+(feeSt.vatPct||0))*100).toFixed(3)+'% incl</td></tr>'
+    +'<tr><td>Performance Fee</td><td>'+(feeSt.perfFeePct*100).toFixed(1)+'% ex-VAT &middot; '+(perfRateIncl(feeSt)*100).toFixed(2)+'% incl, above hurdle/HWM</td></tr>'
+    +'<tr><td>VAT</td><td>'+((feeSt.vatPct||0)*100).toFixed(0)+'% on all fees</td></tr>'
+    +'<tr><td>Fixed Fee Load (Mgmt+Svc, incl VAT)</td><td>'+(feeRateIncl(feeSt)*100).toFixed(3)+'% p.a.</td></tr>'
     +'<tr><td>Cumulative Fees Deducted (Mgmt+Svc+Perf)</td><td>'+fRk(feeSt.cumulativeFeesDeducted||0)+'</td></tr>'
     +'<tr><td>High Water Mark (Net Unit Price)</td><td>R '+(feeSt.hwmUnitPrice||UNIT_INCEPTION_PRICE).toFixed(4)+'</td></tr>'
     +'<tr><td>Last Crystallization</td><td>'+(feeSt.lastCrystallizationDate||'None yet')+'</td></tr>'
@@ -8050,6 +8272,31 @@ function morningChecklistConfirm(){
   var savi=parseFloat(c('mc-savi').value)||0;
   var dy=parseFloat(c('mc-dy').value)||0;
   if(!alsi||!savi||!dy){ alert('Complete all fields.'); return; }
+
+  // ══ v33: INDEX SANITY BAND ═══════════════════════════════════════
+  // This field is J200 (FTSE/JSE Top 40) — the SAFEX ALSI contract, the
+  // SAVI and the tracker are ALL on J200. Feeding it J203 (All Share) is
+  // silent and catastrophic: J203 runs ~6.9% above J200, so strikes set
+  // "10% OTM" off J203 land near the money on the contract that actually
+  // settles. It cannot be caught by an absolute band (both indices drift),
+  // so compare against the last logged level instead. A one-session move
+  // beyond 5% is either an index mix-up, a fat finger, or a genuine crash
+  // — all three deserve a stop.
+  var _lastSpot=priorDayLastAlsiFor(todayStr());
+  var _prev=_lastSpot&&_lastSpot.alsi>0?_lastSpot.alsi:0;
+  if(_prev>0){
+    var _dev=(alsi-_prev)/_prev;
+    if(Math.abs(_dev)>0.05){
+      var _msg='\u26a0 J200 SANITY CHECK\n\n'
+        +'Entered:      '+fmtInt(alsi)+' pts\n'
+        +'Last logged:  '+fmtInt(_prev)+' pts'+(_lastSpot.src?'  ('+_lastSpot.src+')':'')+'\n'
+        +'Move:         '+(_dev>0?'+':'')+(_dev*100).toFixed(2)+'%\n\n'
+        +'This field must be the FTSE/JSE TOP 40 (J200) \u2014 not the\n'
+        +'All Share (J203), which trades roughly 6.9% higher.\n\n'
+        +'Continue only if this is a real market move.';
+      if(!confirm(_msg)) return;
+    }
+  }
 
   // ── Guard: today's close is already recorded ────────────────────
   // endOfDay() deliberately snaps i-spot/i-iv to the confirmed close so
