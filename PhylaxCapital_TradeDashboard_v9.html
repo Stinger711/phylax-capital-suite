@@ -4121,22 +4121,29 @@ function previousSAFEXExpiry(fromDate){
 // ══════════════════════════════════════════════════════════════════════
 // v33: DETERMINISTIC HISTORICAL LOADER
 //
-// Rebuilds a modelled track by walking real market data day by day through
-// the SAME calc() / endOfDay() path the operator uses. Nothing is
-// special-cased: fees, VAT, ZARONIA, the hurdle and the option book all
-// settle through the normal machinery.
+// Rebuilds a modelled track by walking real market data through the SAME
+// calc() / endOfDay() path the operator uses. Nothing is special-cased.
 //
-// This produces a BACKTEST, not an operating history. The session it writes
-// must be labelled accordingly, and the rule below must stay mechanical —
-// the moment a human judgement call enters the loop, the run stops being
-// reproducible and the track stops being defensible.
+// The buy rule is NOT invented here — it reproduces renderInlineAlloc()'s
+// own arithmetic: SAVI-conditioned target weights, per-quarter gap-to-
+// target, and min(maxCarry, maxBudget) where maxCarry is sized against
+// daily ZARONIA yield NET of theta already bleeding from the held book.
+// Pacing therefore emerges from carry-neutrality, not a calendar cap.
 //
-// Usage (console):
-//   await runHistoricalLoad({series:PHYLAX_SERIES, dryRun:true})   // rehearse
-//   await runHistoricalLoad({series:PHYLAX_SERIES})                 // commit
+// Entry cost: the dashboard models a bid haircut on EXIT only. Buying at
+// mid is unrealistic, so a symmetric size-banded offer premium is applied
+// and CAPITALISED into cost basis — the position then marks at mid, so the
+// spread shows as an immediate unrealised loss, as it does in reality.
+// This is a stated assumption, not a measured cost. Replace entryHaircut
+// with real fills when available.
 //
-// series rows: {d:'YYYY-MM-DD', c:close, o:openParam, v:eodSAVI, mv:morningSAVI}
+// Produces a BACKTEST, not an operating history. Label the session so.
+//
+//   await runHistoricalLoad({series:PHYLAX_SERIES, dryRun:true})
+//   await runHistoricalLoad({series:PHYLAX_SERIES})
 // ══════════════════════════════════════════════════════════════════════
+function entryHaircutFor(n){ return n<50?0.025:n<200?0.04:0.06; }
+
 async function runHistoricalLoad(opts){
   opts=opts||{};
   var S=opts.series||window.PHYLAX_SERIES;
@@ -4144,98 +4151,114 @@ async function runHistoricalLoad(opts){
   var jibar=opts.jibar!=null?opts.jibar:0.07;
   var dy=opts.dy!=null?opts.dy:0.034;
   var otm=opts.otm!=null?opts.otm:0.10;
-  var cadence=opts.cadence!=null?opts.cadence:5;      // buy every Nth session
+  var gapMin=opts.gapMin!=null?opts.gapMin:5;      // only buy a quarter >5pp underweight
+  var useEntryCost=opts.entryCost!==false;
   var log=[]; var L=function(m){ log.push(m); if(opts.verbose!==false) console.log(m); };
 
-  // ── Preconditions ────────────────────────────────────────────────
   if(!S||!S.length) throw new Error('No series supplied.');
-  if(!CURRENT_SESSION) throw new Error('No active session. Create the 19 June session first.');
-  if(getNavHistory().length) throw new Error('Session already has '+getNavHistory().length+' NAV rows. Load into an EMPTY session.');
-  if((getLadder().tranches||[]).length) throw new Error('Session already holds tranches. Load into an EMPTY session.');
+  if(!CURRENT_SESSION) throw new Error('No active session.');
+  if(getNavHistory().length) throw new Error('Session has '+getNavHistory().length+' NAV rows. Load into an EMPTY session.');
+  if((getLadder().tranches||[]).length) throw new Error('Session already holds tranches.');
   var st0=getState();
-  if(!(st0.capital>0)) throw new Error('Session capital not initialised — check the session was created over http, not file://');
+  if(!(st0.capital>0)) throw new Error('Capital not initialised — was the session created over http?');
+  window._allocUserOverride=false;   // let the SAVI preset govern throughout
 
   L('── HISTORICAL LOAD '+(dryRun?'(DRY RUN — nothing written)':'(COMMITTING)')+' ──');
-  L('   session   '+CURRENT_SESSION.sessionId+'  role='+sessionRoleOf(CURRENT_SESSION));
-  L('   capital   R'+Math.round(st0.capital).toLocaleString('en-ZA'));
-  L('   sessions  '+S.length+'   '+S[0].d+' -> '+S[S.length-1].d);
-  L('   params    JIBAR '+(jibar*100).toFixed(2)+'%  q '+(dy*100).toFixed(2)+'%  OTM '+(otm*100).toFixed(0)+'%  cadence every '+cadence+' sessions');
+  L('   session  '+CURRENT_SESSION.sessionId+'  role='+sessionRoleOf(CURRENT_SESSION));
+  L('   capital  R'+Math.round(st0.capital).toLocaleString('en-ZA')+'   sessions '+S.length+'  '+S[0].d+' -> '+S[S.length-1].d);
+  L('   rule     SAVI-conditioned weights · buy quarters >'+gapMin+'pp underweight · min(maxCarry,maxBudget) · par '+((st0.parGateMode||'advisory')));
+  L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
-  // ── Quarterly pacing state ───────────────────────────────────────
-  // Each quarter may consume at most 1/4 of the rolling annual carry
-  // allowance. The window resets at each SAFEX quarterly expiry, so the
-  // ladder is built across four vol regimes rather than one print.
-  var qSpent=0, qKey=null, bought=0, spent=0, skipped=0, expiryCursor=0;
+  var bought=0, spent=0, entryCost=0, lastPreset=null;
 
   for(var i=0;i<S.length;i++){
     var row=S[i], d=row.d;
+    var today=new Date(d+'T00:00:00'); today.setHours(0,0,0,0);
 
-    // ── Morning: prior close becomes today's spot, prior SAVI the vol ──
     FVAL['i-spot']=row.o; FVAL['i-iv']=row.mv;
     FVAL['i-jibar']=jibar; FVAL['i-dY']=dy; FVAL['i-otm']=otm;
     try{ calc(); }catch(e){ throw new Error('calc() failed on '+d+': '+e.message); }
 
-    // ── Reset the quarterly window at each expiry boundary ──────────
-    var qNow=ymdLocal(nextSAFEXExpiry(new Date(d+'T00:00:00')));
-    if(qNow!==qKey){ qKey=qNow; qSpent=0; L('   · quarter window -> '+qKey); }
+    var pcts=window._allocYieldPcts||[40,35,15,10];
+    var presetLbl=saviConditionedPreset(row.mv).label.split('—')[0].trim();
+    if(presetLbl!==lastPreset){ L('   · '+d+'  regime -> '+presetLbl+'  ['+pcts.join('/')+']'); lastPreset=presetLbl; }
 
-    // ── Deterministic buy rule ──────────────────────────────────────
-    if(i>0 && i%cadence===0){
-      var bd=calcConvexityBudget();
-      var qAllow=Math.max(0,bd.annual/4-qSpent);
-      var avail=Math.min(bd.remaining||0, qAllow);
-      var exps=getSAFEXExpiries(4);
-      var exp=exps[expiryCursor%4];
-      var expStr=ymdLocal(exp);
-      var today0=new Date(d+'T00:00:00'); today0.setHours(0,0,0,0);
-      var T=Math.max(0,(exp-today0)/(365*24*60*60*1000));
-      var K=Math.round(row.o*(1-otm));
-      var putR=T>0?bsPutRepriceR(row.o,K,jibar,dy,row.mv,T):0;
-      var qty=putR>0?Math.floor(avail/putR):0;
-      if(qty>0){
-        var cost=qty*putR;
-        var tr={id:'T'+d.replace(/-/g,'')+'_'+(expiryCursor%4),buyDate:d,expiry:expStr,
-                strikeLevel:K,spotAtBuy:row.o,tteAtBuyYears:T,contracts:qty,
-                premiumPerContract:putR,premiumTotal:cost,status:'active',
-                payoffReceived:0,otmFrac:otm,addedTs:Date.now(),loadedBy:'runHistoricalLoad'};
-        if(!dryRun) await commitNewTrade(tr,cost);
-        qSpent+=cost; spent+=cost; bought++;
-        L('   BUY  '+d+'  '+String(qty).padStart(4)+' x '+expStr+'  K='+K+'  R'+Math.round(putR).toLocaleString('en-ZA')+'/ct  = R'+Math.round(cost).toLocaleString('en-ZA'));
-        expiryCursor++;
-      } else { skipped++; }
+    // ── Reproduce the allocator, day by day ──────────────────────────
+    var bd=calcConvexityBudget();
+    var remaining=bd.remaining||0;
+    var Sp=row.o, iv=row.mv, r=jibar, q=dy;
+    var expiries=getSAFEXExpiries(4);
+    var lad=getLadder();
+    var dailyYield=(lad.cashBalance||0)*getZaronia()/365;
+    var bleed=0;
+    (lad.tranches||[]).forEach(function(t){
+      var tT=Math.max(0,(new Date(t.expiry)-today)/(365*24*60*60*1000));
+      bleed+=bsThetaPerDay(Sp,t.strikeLevel,r,q,iv,tT)*t.contracts;
+    });
+    var netDailyYield=Math.max(0,dailyYield-bleed);
+    var heldMap=heldPerQuarterMap();
+    var heldPerQ=expiries.map(function(e){ return heldMap[ymdLocal(e)]||0; });
+    var totalHeld=(lad.tranches||[]).reduce(function(s,t){return s+t.contracts;},0);
+    var currentPct=heldPerQ.map(function(h){ return totalHeld>0?(h/totalHeld*100):0; });
+    var gapPct=pcts.map(function(pp,k){ return Math.max(0,pp-currentPct[k]); });
+    var totalGap=gapPct.reduce(function(s,g){return s+g;},0);
+
+    for(var k=0;k<4;k++){
+      if(gapPct[k]<=gapMin) continue;                 // not underweight enough to justify the spread
+      var exp=expiries[k], expStr=ymdLocal(exp);
+      var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
+      var K=Math.round(Sp*(1-otm));
+      var g=bsBlack76(Sp,K,r,q,iv,T);
+      var putR=g.putPriceR, theta=g.thetaPerDayR;
+      var frac=totalGap>0?(gapPct[k]/totalGap):0;
+      var maxCarry=theta>0?Math.floor(netDailyYield*frac/theta):999;
+      var maxBudget=putR>0?Math.floor(remaining*frac/putR):0;
+      var qty=Math.max(0,Math.min(maxCarry,maxBudget));
+      if(qty<=0) continue;
+      var hc=useEntryCost?entryHaircutFor(qty):0;
+      var perCt=putR*(1+hc), cost=qty*perCt;
+      if(cost>remaining) { qty=Math.floor(remaining/perCt); if(qty<=0) continue; cost=qty*perCt; }
+      var tr={id:'T'+d.replace(/-/g,'')+'Q'+(k+1),buyDate:d,expiry:expStr,strikeLevel:K,
+              spotAtBuy:Sp,tteAtBuyYears:T,contracts:qty,premiumPerContract:perCt,
+              premiumTotal:cost,status:'active',payoffReceived:0,otmFrac:otm,
+              addedTs:Date.now(),midPerContract:putR,entryHaircut:hc,
+              entryCostR:qty*putR*hc,loadedBy:'runHistoricalLoad'};
+      if(!dryRun) await commitNewTrade(tr,cost);
+      remaining-=cost; spent+=cost; entryCost+=tr.entryCostR; bought++;
+      L('   BUY '+d+'  Q'+(k+1)+'  '+String(qty).padStart(4)+' x '+expStr+'  K='+K
+        +'  mid R'+Math.round(putR).toLocaleString('en-ZA')+' +'+(hc*100).toFixed(1)+'%'
+        +'  = R'+Math.round(cost).toLocaleString('en-ZA')
+        +'  [gap '+gapPct[k].toFixed(0)+'pp, '+(maxCarry<maxBudget?'carry':'budget')+'-bound]');
     }
 
-    // ── Close the day through the normal path ───────────────────────
     if(!dryRun){
       FVAL['i-held']=(getLadder().tranches||[]).reduce(function(s,t){return s+(t.contracts||0);},0);
       var iexp=document.getElementById('i-expiry'); if(iexp) iexp.value=ymdLocal(getSAFEXExpiries(1)[0]);
       try{
-        await endOfDay({closeDate:d,alsi:row.c,savi:row.v,openAlsi:row.o,
-                        trackerLevel:row.c,jibar:jibar,dy:dy,
-                        saviSrc:d+' close (historical load)'});
+        await endOfDay({closeDate:d,alsi:row.c,savi:row.v,openAlsi:row.o,trackerLevel:row.c,
+                        jibar:jibar,dy:dy,saviSrc:d+' close (historical load)'});
       }catch(e){ throw new Error('endOfDay failed on '+d+': '+e.message); }
-
-      // ── Halt on anything that does not reconcile ──────────────────
       var h=getNavHistory(), last=h[h.length-1];
-      if(!last||last.date!==d) throw new Error('HALT: no NAV row written for '+d);
-      if(!isFinite(last.nav)||last.nav<=0) throw new Error('HALT: non-finite NAV on '+d+': '+last.nav);
-      if(getState().lastCashSettleDate!==d) throw new Error('HALT: settle date is '+getState().lastCashSettleDate+', expected '+d);
-      await new Promise(function(r){setTimeout(r,120);});   // let Firestore drain
+      if(!last||last.date!==d) throw new Error('HALT: no NAV row for '+d);
+      if(!isFinite(last.nav)||last.nav<=0) throw new Error('HALT: bad NAV on '+d+': '+last.nav);
+      if(getState().lastCashSettleDate!==d) throw new Error('HALT: settle date '+getState().lastCashSettleDate+' != '+d);
+      await new Promise(function(rs){setTimeout(rs,120);});
     }
   }
 
   var hist=getNavHistory();
   L('── COMPLETE ──');
-  L('   NAV rows   '+hist.length);
-  L('   buys       '+bought+'   skipped (no allowance) '+skipped);
-  L('   premium    R'+Math.round(spent).toLocaleString('en-ZA'));
+  L('   trades '+bought+'   premium R'+Math.round(spent).toLocaleString('en-ZA')
+    +'   of which entry cost R'+Math.round(entryCost).toLocaleString('en-ZA'));
+  var fl=getLadder();
+  L('   contracts '+(fl.tranches||[]).reduce(function(s,t){return s+t.contracts;},0)
+    +'   tranches '+(fl.tranches||[]).length);
   if(hist.length){
     var f=hist[0], l=hist[hist.length-1];
-    L('   unit price R'+(f.unitPrice||0).toFixed(4)+' -> R'+(l.unitPrice||0).toFixed(4));
-    L('   Phylax NAV R'+Math.round(f.nav).toLocaleString('en-ZA')+' -> R'+Math.round(l.nav).toLocaleString('en-ZA'));
+    L('   NAV rows '+hist.length+'   unit R'+(f.unitPrice||0).toFixed(4)+' -> R'+(l.unitPrice||0).toFixed(4));
   }
-  if(dryRun) L('   DRY RUN — nothing was written. Re-run without dryRun to commit.');
-  return {rows:hist.length,bought:bought,spent:spent,log:log};
+  if(dryRun) L('   DRY RUN — nothing written.');
+  return {rows:hist.length,trades:bought,spent:spent,entryCost:entryCost,log:log};
 }
 
 // v33: total ex-VAT running fee rate, and the VAT-inclusive rate actually
@@ -5585,8 +5608,8 @@ function onExecQtyInput(){
     meta.textContent='contracts (0 = skip today)';
     return;
   }
-  var totalCost=qty*putR;
-  meta.textContent='contracts · Cost: '+fRk(totalCost);
+  var totalCost=entryCostFor(putR,qty).total;
+  meta.textContent='contracts · Cost: '+fRk(totalCost)+' (incl '+(execHaircutFor(qty)*100).toFixed(1)+'% entry spread)';
   if(qty>rec){
     var over=qty-rec;
     warnEl.className='exec-warn over';
@@ -5938,7 +5961,8 @@ function openBuyConfirmModal(){
   var putR=window._selectedPutR||bsPutRepriceR(S,K,r,q,iv,T);
   if(putR<=0){ alert('Put price is zero — check market inputs.'); return; }
 
-  var totalCost=qty*putR;
+  var _ec=entryCostFor(putR,qty);            // v33: lift the offer on entry
+  var totalCost=_ec.total;
   var rec=parseInt(execQty.dataset.recommended||0);
   var ladderHeld=window._calcLadderHeld||0;
   var bd=window._budgetData||{};
@@ -5961,7 +5985,7 @@ function openBuyConfirmModal(){
   c('bc-vs-rec').style.color=vsRecColor;
   setText('bc-held-after',(ladderHeld+qty)+' contracts');
 
-  window._pendingBuy={qty,K,putR,expStr,T,totalCost};
+  window._pendingBuy={qty,K,putR:_ec.perContract,putRMid:putR,entryHaircut:_ec.haircut,expStr,T,totalCost};
   c('bc-confirm-input').value='';
   var btn=c('bc-confirm-btn');
   btn.disabled=true; btn.style.opacity='.4'; btn.style.cursor='not-allowed';
@@ -6005,6 +6029,7 @@ async function executeTodayBuy(){
     spotAtBuy:FVAL['i-spot'],
     tteAtBuyYears:pb.T, contracts:pb.qty,
     premiumPerContract:pb.putR, premiumTotal:pb.totalCost,
+    premiumMidPerContract:pb.putRMid, entryHaircut:pb.entryHaircut,
     status:'active', payoffReceived:0,
     otmFrac:FVAL['i-otm'], addedTs:Date.now()
   };
