@@ -677,6 +677,7 @@ textarea:focus{border-color:var(--teal2)}
       <select id="setup-role">
         <option value="canonical">Canonical — the true record</option>
         <option value="scenario">Test scenario — derived from the canonical run</option>
+        <option value="archived">Archived — superseded, do not use</option>
       </select>
       <div class="hint">Exactly one session should be canonical. Scenarios are labelled everywhere they appear, including on exports.</div>
     </div>
@@ -4133,23 +4134,46 @@ function perfRateIncl(fs){ fs=fs||getFeeState(); return (fs.perfFeePct||0)*(1+(f
 // a scenario being read — or exported — as if it were the real track, so
 // the label follows the session everywhere it surfaces.
 // ══════════════════════════════════════════════════════════════════════
-function isScenarioSession(){
-  return !!(CURRENT_SESSION && CURRENT_SESSION.sessionRole==='scenario');
+// Roles: canonical (the true record), scenario (a deliberate variant),
+// archived (a superseded run kept for reference — e.g. one built on inputs
+// later found to be wrong). A missing role reads as canonical so sessions
+// created before v33 keep working.
+function sessionRoleOf(cfg){
+  cfg=cfg||CURRENT_SESSION; if(!cfg) return 'canonical';
+  return ['scenario','archived'].indexOf(cfg.sessionRole)>=0?cfg.sessionRole:'canonical';
 }
+function isScenarioSession(){ return sessionRoleOf()!=='canonical'; }
 function scenarioLabel(cfg){
   cfg=cfg||CURRENT_SESSION; if(!cfg) return '';
-  if(cfg.sessionRole!=='scenario') return 'CANONICAL';
-  return 'TEST SCENARIO'+(cfg.derivedFrom?' \u00b7 from '+cfg.derivedFrom:'')
-        +(cfg.scenarioNote?' \u00b7 '+cfg.scenarioNote:'');
+  var role=sessionRoleOf(cfg);
+  if(role==='canonical') return 'CANONICAL';
+  var head=role==='archived'?'ARCHIVED \u2014 DO NOT USE':'TEST SCENARIO';
+  return head+(cfg.derivedFrom?' \u00b7 from '+cfg.derivedFrom:'')
+             +(cfg.scenarioNote?' \u00b7 '+cfg.scenarioNote:'');
+}
+// v33: role is set at creation, but a session can be superseded later —
+// as the J203-index run was. Callable from the console; persists to Firebase.
+async function setSessionRole(role,note,parent){
+  if(!CURRENT_SESSION){ alert('No active session.'); return; }
+  if(['canonical','scenario','archived'].indexOf(role)<0){ alert('role must be canonical | scenario | archived'); return; }
+  CURRENT_SESSION.sessionRole=role;
+  if(note!==undefined) CURRENT_SESSION.scenarioNote=note||null;
+  if(parent!==undefined) CURRENT_SESSION.derivedFrom=parent||null;
+  saveSessionConfigLocal();
+  try{ await fbSaveSession(buildSessionData()); setFBStatus('ok','Session role saved'); }
+  catch(e){ setFBStatus('warn','Role saved locally, Firebase write failed'); }
+  paintScenarioBadge();
+  showToast('\u2713 Session role \u2192 '+scenarioLabel(CURRENT_SESSION),'success',5000);
 }
 function paintScenarioBadge(){
   var el=c('sess-role-badge'); if(!el||!CURRENT_SESSION) return;
-  var scen=isScenarioSession();
+  var role=sessionRoleOf(CURRENT_SESSION);
   el.style.display='inline-block';
   el.textContent=scenarioLabel(CURRENT_SESSION);
-  el.style.background=scen?'rgba(224,160,64,.16)':'rgba(64,176,160,.12)';
-  el.style.border='1px solid '+(scen?'rgba(224,160,64,.45)':'rgba(64,176,160,.32)');
-  el.style.color=scen?'var(--amber)':'var(--teal2)';
+  var tone=role==='archived'?['rgba(224,80,80,.16)','rgba(224,80,80,.5)','var(--red2)']
+          :role==='scenario'?['rgba(224,160,64,.16)','rgba(224,160,64,.45)','var(--amber)']
+          :['rgba(64,176,160,.12)','rgba(64,176,160,.32)','var(--teal2)'];
+  el.style.background=tone[0]; el.style.border='1px solid '+tone[1]; el.style.color=tone[2];
 }
 
 function calcConvexityBudget(){
@@ -7593,7 +7617,8 @@ function openSessionList(){
         +(isActive?'<span style="font-family:\'Rajdhani\',sans-serif;font-size:8px;font-weight:700;color:var(--teal2);text-transform:uppercase;letter-spacing:.1em;background:rgba(0,196,212,.1);border:1px solid rgba(0,196,212,.2);padding:2px 6px;border-radius:2px;flex-shrink:0">Active</span>':'')
         +'<div style="flex:1">'
         +'<div style="font-family:\'Rajdhani\',sans-serif;font-size:13px;font-weight:700;color:var(--white)">'+escapeHtml(s.config?s.config.sessionName:s.sessionId)
-        +(s.config&&s.config.sessionRole==='scenario'?' <span style="font-family:\'DM Mono\',monospace;font-size:8px;letter-spacing:.06em;padding:1px 5px;border-radius:2px;background:rgba(224,160,64,.16);border:1px solid rgba(224,160,64,.45);color:var(--amber);vertical-align:middle">SCENARIO</span>':'')+'</div>'
+        +(s.config&&s.config.sessionRole==='scenario'?' <span style="font-family:\'DM Mono\',monospace;font-size:8px;letter-spacing:.06em;padding:1px 5px;border-radius:2px;background:rgba(224,160,64,.16);border:1px solid rgba(224,160,64,.45);color:var(--amber);vertical-align:middle">SCENARIO</span>':'')
+        +(s.config&&s.config.sessionRole==='archived'?' <span style="font-family:\'DM Mono\',monospace;font-size:8px;letter-spacing:.06em;padding:1px 5px;border-radius:2px;background:rgba(224,80,80,.16);border:1px solid rgba(224,80,80,.5);color:var(--red2);vertical-align:middle">ARCHIVED</span>':'')+'</div>'
         +'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--muted)">'
         +(s.config?fRk(s.config.phylaxCapital)+' sleeve · '+fRk(s.config.totalPortfolio)+' portfolio · inception '+s.config.inceptionDate:'—')
         +'</div>'
@@ -7771,9 +7796,9 @@ async function createSession(){
   // v33: scenario lineage. Fee-sensitivity and structure tests are run as
   // SEPARATE sessions off one canonical record, so a scenario must be
   // self-identifying wherever it surfaces — header, session list, exports.
-  var sessionRole=(c('setup-role')&&c('setup-role').value==='scenario')?'scenario':'canonical';
-  var derivedFrom=sessionRole==='scenario'&&c('setup-derived-from')?(c('setup-derived-from').value.trim()||null):null;
-  var scenarioNote=sessionRole==='scenario'&&c('setup-scenario-note')?(c('setup-scenario-note').value.trim()||null):null;
+  var sessionRole=(c('setup-role')&&['scenario','archived'].indexOf(c('setup-role').value)>=0)?c('setup-role').value:'canonical';
+  var derivedFrom=sessionRole!=='canonical'&&c('setup-derived-from')?(c('setup-derived-from').value.trim()||null):null;
+  var scenarioNote=sessionRole!=='canonical'&&c('setup-scenario-note')?(c('setup-scenario-note').value.trim()||null):null;
   CURRENT_SESSION={
     sessionId, sessionName, inceptionDate, investorName,
     totalPortfolio, phylaxCapital, phylaxPct,
