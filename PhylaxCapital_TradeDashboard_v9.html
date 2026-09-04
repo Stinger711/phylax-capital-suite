@@ -2226,12 +2226,12 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v34';
+var BUILD_VERSION='v36';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
   'scenarioRoles','archivedRole','uninitGuard','monotonicSettleDate',
-  'entryCostFor','runHistoricalLoad','simulatedDryRun'];
+  'entryCostFor','runHistoricalLoad','simulatedDryRun','tailCoverageEngine','runningPeak'];
 (function(){
   try{
     var _b=document.getElementById('build-badge');
@@ -4173,8 +4173,12 @@ async function runHistoricalLoad(opts){
   var jibar=opts.jibar!=null?opts.jibar:0.07;
   var dy=opts.dy!=null?opts.dy:0.034;
   var otm=opts.otm!=null?opts.otm:0.10;
-  var gapMin=opts.gapMin!=null?opts.gapMin:5;      // only buy a quarter >5pp underweight
+  var gapMin=opts.gapMin!=null?opts.gapMin:5;      // distribution: quarters >5pp underweight
   var useEntryCost=opts.entryCost!==false;
+  var covTarget=opts.coverageTarget!=null?opts.coverageTarget:0.10;  // 10% of the loss at -30%
+  var covShock=opts.coverageShock!=null?opts.coverageShock:0.30;
+  var reservePct=opts.reservePct!=null?opts.reservePct:0.20;         // held back for dislocation
+  var minTrade=opts.minTrade!=null?opts.minTrade:250000;             // no trade smaller than this
   var log=[]; var L=function(m){ log.push(m); if(opts.verbose!==false) console.log(m); };
 
   if(!S||!S.length) throw new Error('No series supplied.');
@@ -4188,7 +4192,8 @@ async function runHistoricalLoad(opts){
   L('── HISTORICAL LOAD '+(dryRun?'(DRY RUN — nothing written)':'(COMMITTING)')+' ──');
   L('   session  '+CURRENT_SESSION.sessionId+'  role='+sessionRoleOf(CURRENT_SESSION));
   L('   capital  R'+Math.round(st0.capital).toLocaleString('en-ZA')+'   sessions '+S.length+'  '+S[0].d+' -> '+S[S.length-1].d);
-  L('   rule     SAVI-conditioned weights · buy quarters >'+gapMin+'pp underweight · min(maxCarry,maxBudget) · par '+((st0.parGateMode||'advisory')));
+  L('   target   '+(covTarget*100).toFixed(0)+'% coverage of the loss at -'+(covShock*100).toFixed(0)+'% from running peak (central vol), capped by carry');
+  L('   rule     coverage sets SIZE · SAVI-conditioned weights set WHERE · reserve '+(reservePct*100).toFixed(0)+'% · min trade R'+minTrade.toLocaleString('en-ZA'));
   L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
   var bought=0, spent=0, entryCost=0, lastPreset=null;
@@ -4198,6 +4203,7 @@ async function runHistoricalLoad(opts){
   // running. A shadow ladder and shadow cash reproduce the feedback loop —
   // book fills, composition reaches target, gaps close, theta eats the carry.
   var simTranches=[], simCash=st0.capital, simFees=0;
+  var simPeak=getRunningPeak()||S[0].o;
 
   for(var i=0;i<S.length;i++){
     var row=S[i], d=row.d;
@@ -4247,18 +4253,40 @@ async function runHistoricalLoad(opts){
     var gapPct=pcts.map(function(pp,k){ return Math.max(0,pp-currentPct[k]); });
     var totalGap=gapPct.reduce(function(s,g){return s+g;},0);
 
+    // ══ v35: COVERAGE SETS SIZE ═════════════════════════════════════
+    // The previous rule stopped once composition hit target, regardless of
+    // how much protection was held — 5 trades then 51 idle days. Coverage
+    // now decides WHETHER and HOW MUCH to buy; the SAVI weights decide only
+    // WHERE it goes. A reserve is held back so there is capacity to buy
+    // protection in a dislocation, when it is most valuable and most costly.
+    var _peak=dryRun?simPeak:getRunningPeak();
+    var _cov=coverageAtShock(covShock,'central',{ladder:lad,peak:_peak,asOf:d,
+              r:jibar,q:dy,iv:iv});
+    var covNow=_cov.coverageOfLoss;
+    var covGapR=Math.max(0,(covTarget-covNow)*_cov.portfolioLoss);   // rand of payoff still needed
+    var reserve=remaining*reservePct;
+    var deployable=Math.max(0,remaining-reserve);
+    if(covGapR<=0) { /* at target — nothing to do */ }
+
     for(var k=0;k<4;k++){
-      if(gapPct[k]<=gapMin) continue;                 // not underweight enough to justify the spread
+      if(covGapR<=0) break;
+      if(deployable<minTrade) break;
+      if(gapPct[k]<=gapMin) continue;                 // distribution: skip quarters at weight
       var exp=expiries[k], expStr=ymdLocal(exp);
       var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
       var K=Math.round(Sp*(1-otm));
       var g=bsBlack76(Sp,K,r,q,iv,T);
       var putR=g.putPriceR, theta=g.thetaPerDayR;
       var frac=totalGap>0?(gapPct[k]/totalGap):0;
-      var maxCarry=theta>0?Math.floor(netDailyYield*frac/theta):999;
-      var maxBudget=putR>0?Math.floor(remaining*frac/putR):0;
-      var qty=Math.max(0,Math.min(maxCarry,maxBudget));
+      var maxCarry=theta>0?Math.floor(netDailyYield*frac/theta):999999;
+      var maxBudget=putR>0?Math.floor(deployable*frac/putR):0;
+      // how many contracts of THIS strike/expiry close the coverage gap?
+      var Tc=Math.max(0,(exp-today)/(365*24*60*60*1000));
+      var payPerCt=bsPutRepriceR(_cov.shockedSpot,K,r,q,_cov.crashIv,Tc)*10;
+      var maxCover=payPerCt>0?Math.ceil(covGapR*frac/payPerCt):0;
+      var qty=Math.max(0,Math.min(maxCarry,maxBudget,maxCover));
       if(qty<=0) continue;
+      if(qty*putR<minTrade) continue;                 // too small to justify the spread
       var hc=useEntryCost?entryHaircutFor(qty):0;
       var perCt=putR*(1+hc), cost=qty*perCt;
       if(cost>remaining) { qty=Math.floor(remaining/perCt); if(qty<=0) continue; cost=qty*perCt; }
@@ -4268,14 +4296,17 @@ async function runHistoricalLoad(opts){
               addedTs:Date.now(),midPerContract:putR,entryHaircut:hc,
               entryCostR:qty*putR*hc,loadedBy:'runHistoricalLoad'};
       if(!dryRun){ await commitNewTrade(tr,cost); } else { simTranches.push(tr); simCash-=cost; }
-      remaining-=cost; spent+=cost; entryCost+=tr.entryCostR; bought++;
+      remaining-=cost; deployable-=cost; covGapR-=qty*payPerCt;
+      spent+=cost; entryCost+=tr.entryCostR; bought++;
       L('   BUY '+d+'  Q'+(k+1)+'  '+String(qty).padStart(4)+' x '+expStr+'  K='+K
         +'  mid R'+Math.round(putR).toLocaleString('en-ZA')+' +'+(hc*100).toFixed(1)+'%'
         +'  = R'+Math.round(cost).toLocaleString('en-ZA')
-        +'  [gap '+gapPct[k].toFixed(0)+'pp, '+(maxCarry<maxBudget?'carry':'budget')+'-bound]');
+        +'  [cov '+(covNow*100).toFixed(1)+'%->'+(covTarget*100).toFixed(0)+'%, '
+        +(qty===maxCarry?'carry':qty===maxBudget?'budget':'coverage')+'-bound]');
     }
 
     if(dryRun){
+      if(row.c>simPeak) simPeak=row.c;               // peak ratchets in the sim too
       var _dz=getZaronia()/365, _df=feeRateIncl(getFeeState())/365;
       simCash+=simCash*_dz; simFees+=simCash*_df; simCash-=simCash*_df;
     }
@@ -4302,6 +4333,15 @@ async function runHistoricalLoad(opts){
   var _ct=(fl.tranches||[]).reduce(function(a,t){return a+t.contracts;},0);
   L('   contracts '+_ct+'   tranches '+(fl.tranches||[]).length);
   if(dryRun){
+    var _fc=coverageAtShock(covShock,'central',{ladder:{tranches:simTranches},peak:simPeak,
+             r:jibar,q:dy,iv:S[S.length-1].v});
+    L('   COVERAGE at -'+(covShock*100).toFixed(0)+'% from peak '+Math.round(simPeak).toLocaleString('en-ZA')+':');
+    L('     payoff    R'+Math.round(_fc.payoff).toLocaleString('en-ZA')
+      +'   vs loss R'+Math.round(_fc.portfolioLoss).toLocaleString('en-ZA'));
+    L('     coverage  '+(_fc.coverageOfLoss*100).toFixed(2)+'% of loss  (target '+(covTarget*100).toFixed(0)+'%)'
+      +'   = '+(_fc.coverageOfPortfolio*100).toFixed(2)+'% of portfolio');
+    L('     reserve   R'+Math.round(simCash*0+((simCash*(1+getZaronia())-feeRateIncl(getFeeState())*simCash-st0.capital)/(1+getZaronia()+feeRateIncl(getFeeState())))*reservePct).toLocaleString('en-ZA')
+      +'  ('+(reservePct*100).toFixed(0)+'% of headroom, held back)');
     L('   sim cash  R'+Math.round(simCash).toLocaleString('en-ZA')+'  (par R'+Math.round(st0.capital).toLocaleString('en-ZA')+')');
     L('   sim fees  R'+Math.round(simFees).toLocaleString('en-ZA'));
     var byQ={};
@@ -5264,6 +5304,8 @@ async function endOfDay(opts){
       // REGRESSES the marker. The next close would re-charge every day in
       // between, on top of fees already deducted. Refuse to move backwards.
       if(!st.lastCashSettleDate || today>st.lastCashSettleDate) st.lastCashSettleDate=today;
+      // v35: running peak ratchets on every close — never decays.
+      if(eodSpot>0 && eodSpot>(st.runningPeakTop40||0)){ st.runningPeakTop40=eodSpot; st.runningPeakDate=today; }
       saveState(st);
     } else {
       settleFailed=true;
@@ -7070,6 +7112,187 @@ function calcCrashVol(baseIv, absMoveSize){
 // ════════════════════════════════════════════════════════════════════
 // PORTFOLIO HEDGE VIEW
 // ════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════
+// v34: TAIL COVERAGE ENGINE
+//
+// Gives the fund an objective function it previously lacked. Every existing
+// constraint (carry, budget, par) is about COST. None expressed how much
+// PROTECTION is held. The allocator therefore optimised the ladder's shape
+// and stopped once composition hit target, regardless of coverage.
+//
+// OBJECTIVE: at a 30% fall in the Top 40 from the RUNNING PEAK, the option
+// book must be modelled to pay a stated fraction of the portfolio's loss.
+//
+// Why the running peak and not the level at purchase:
+//   A rally between purchase and crash erodes protection from BOTH ends —
+//   the portfolio is larger (so a -30% fall costs more rands) AND existing
+//   strikes are left behind (so each contract pays less). Measured from the
+//   purchase level those effects are invisible. Worked example: a tranche
+//   struck at 100,000 (K=90,000), market rallies 20% to 120,000, then falls
+//   30% to 84,000. Peak-referenced, the put is 7.1% ITM and pays R157,680.
+//   Purchase-referenced, the same "-30%" implies spot 70,000, 28.6% ITM,
+//   R234,403 — 1.5x more, and it would size the book at 256 contracts
+//   instead of the 457 actually required. Under-hedged by 44% while the
+//   panel reports full coverage.
+//
+// The peak RATCHETS and never decays. That is deliberate: it keeps the
+// protection ratio constant as the market rises. The consequence is that
+// the cost of coverage grows with the market while the carry funding it
+// grows only with cash and rates — see ASSUMPTIONS below.
+//
+// PAYOFF BASIS: modelled value including vol expansion, NOT intrinsic only.
+// In a genuine dislocation SAVI spikes and that spike is a large part of
+// what is actually harvested; excluding it understates the hedge by roughly
+// half. The cost is that the figure depends on a CALIBRATED MODEL rather
+// than arithmetic — so every number this produces must be published with
+// its assumption set attached.
+// ══════════════════════════════════════════════════════════════════════
+
+// Vol multiplier band. CENTRAL is the fitted 2020 calibration
+// (VOL_SPIKE_A/B, R²=0.91, 15 clean decline-phase points).
+// LOW and HIGH are NOT independently fitted — the methodology note describes
+// the 2008 and 2015-16 cross-checks only as "broadly consistent though more
+// muted", without publishing coefficients. They are therefore CONSTRUCTED as
+// stated fractions of the central curve's excess over 1.0, and must be
+// labelled as constructed rather than fitted wherever they appear.
+var VOL_BAND={low:0.70, central:1.00, high:1.45};
+
+function crashVolMultiplier(x,scenario){
+  var f=VOL_BAND[scenario||'central']; if(f==null) f=1;
+  var excess=(VOL_SPIKE_A*x+VOL_SPIKE_B*x*x)*f;
+  return 1+excess;
+}
+function crashVolFor(baseIv,x,scenario){
+  return Math.min(baseIv*crashVolMultiplier(x,scenario),1.50);
+}
+
+// ── Running peak ─────────────────────────────────────────────────────
+// Ratchets on every EOD close. Seeded from inception if never set.
+function getRunningPeak(){
+  var st=getState();
+  var p=st.runningPeakTop40||0;
+  if(p>0) return p;
+  return st.trackerMarkALSI||(CURRENT_SESSION?CURRENT_SESSION.alsiInception:0)||0;
+}
+function updateRunningPeak(level){
+  if(!(level>0)) return getRunningPeak();
+  var st=getState();
+  var prev=st.runningPeakTop40||0;
+  if(level>prev){
+    st.runningPeakTop40=level;
+    st.runningPeakDate=todayStr();
+    saveState(st);
+    return level;
+  }
+  return prev||getRunningPeak();
+}
+
+// ── Coverage at a given shock ────────────────────────────────────────
+// Each tranche is valued at ITS OWN time to expiry. A midpoint-TTE
+// shortcut is accurate deep in the tail (options are mostly intrinsic
+// there, error <1% at -30%) but overstates by ~17% at -10% where value is
+// all time premium. Exact costs nothing, so do it exactly.
+function coverageAtShock(shockFrac,scenario,opts){
+  opts=opts||{};
+  var st=getState();
+  var peak=opts.peak||getRunningPeak();
+  var port=st.totalPortfolio||(CURRENT_SESSION?CURRENT_SESSION.totalPortfolio:0)||0;
+  var r=opts.r!=null?opts.r:(FVAL['i-jibar']||0.07);
+  var q=opts.q!=null?opts.q:(FVAL['i-dY']||0.034);
+  var baseIv=opts.iv!=null?opts.iv:(FVAL['i-iv']||0.21);
+  var x=Math.abs(shockFrac);
+  var shockedSpot=peak*(1-x);
+  var iv=crashVolFor(baseIv,x,scenario);
+  var today=opts.asOf?new Date(opts.asOf+'T00:00:00'):new Date();
+  today.setHours(0,0,0,0);
+
+  var lad=opts.ladder||getLadder();
+  var payoff=0, intrinsic=0, contracts=0, perTranche=[];
+  (lad.tranches||[]).forEach(function(t){
+    if(t.status && t.status!=='active') return;
+    var T=Math.max(0,(new Date(t.expiry)-today)/(365*24*60*60*1000));
+    var v=bsPutRepriceR(shockedSpot,t.strikeLevel,r,q,iv,T)*t.contracts;
+    var intr=Math.max(0,t.strikeLevel-shockedSpot)*10*t.contracts;
+    payoff+=v; intrinsic+=intr; contracts+=t.contracts;
+    perTranche.push({expiry:t.expiry,strike:t.strikeLevel,contracts:t.contracts,
+                     tteDays:Math.round(T*365),value:v,intrinsic:intr});
+  });
+
+  var portLoss=port*x;
+  return {
+    shock:x, scenario:scenario||'central', peak:peak, shockedSpot:shockedSpot,
+    baseIv:baseIv, crashIv:iv, volMultiplier:crashVolMultiplier(x,scenario),
+    portfolio:port, portfolioLoss:portLoss,
+    payoff:payoff, intrinsic:intrinsic, timeAndVolPremium:payoff-intrinsic,
+    contracts:contracts,
+    coverageOfLoss: portLoss>0?payoff/portLoss:0,      // fraction of the loss replaced
+    coverageOfPortfolio: port>0?payoff/port:0,          // payoff as % of portfolio
+    perTranche:perTranche
+  };
+}
+
+// ── The grid ─────────────────────────────────────────────────────────
+function coverageGrid(shocks,opts){
+  shocks=shocks||[0.20,0.25,0.30,0.40];
+  var out=[];
+  shocks.forEach(function(sh){
+    var row={shock:sh};
+    ['low','central','high'].forEach(function(sc){
+      row[sc]=coverageAtShock(sh,sc,opts);
+    });
+    out.push(row);
+  });
+  return out;
+}
+
+// ── Console report, with the assumption set attached ─────────────────
+function reportCoverage(opts){
+  var g=coverageGrid(null,opts);
+  var st=getState(), peak=getRunningPeak();
+  var port=st.totalPortfolio||0;
+  var fR=function(v){ return 'R'+Math.round(v/1e6*100)/100+'m'; };
+  console.log('── TAIL COVERAGE ──');
+  console.log('   running peak   '+Math.round(peak).toLocaleString('en-ZA')
+    +(st.runningPeakDate?'  (set '+st.runningPeakDate+')':''));
+  console.log('   portfolio      R'+Math.round(port).toLocaleString('en-ZA'));
+  console.log('   base SAVI      '+((FVAL['i-iv']||0)*100).toFixed(2)+'%');
+  console.log('');
+  console.log('   shock    spot        loss    LOW payoff   CENTRAL payoff      HIGH payoff   central cover');
+  g.forEach(function(row){
+    var c=row.central;
+    console.log('   -'+(row.shock*100).toFixed(0)+'%   '
+      +String(Math.round(c.shockedSpot).toLocaleString('en-ZA')).padStart(8)
+      +String(fR(c.portfolioLoss)).padStart(12)
+      +String(fR(row.low.payoff)).padStart(14)
+      +String(fR(c.payoff)).padStart(17)
+      +String(fR(row.high.payoff)).padStart(17)
+      +String((c.coverageOfLoss*100).toFixed(1)+'%').padStart(16));
+  });
+  var c30=coverageAtShock(0.30,'central',opts);
+  console.log('');
+  console.log('   AT -30% (central): payoff '+fR(c30.payoff)
+    +'  = '+(c30.coverageOfLoss*100).toFixed(1)+'% of the loss'
+    +'  = '+(c30.coverageOfPortfolio*100).toFixed(2)+'% of portfolio');
+  console.log('   of which intrinsic '+fR(c30.intrinsic)
+    +' and time+vol premium '+fR(c30.timeAndVolPremium)
+    +' ('+(c30.payoff>0?(c30.timeAndVolPremium/c30.payoff*100).toFixed(0):0)+'%)');
+  console.log('');
+  console.log('   ASSUMPTIONS — these figures are MODELLED, not observed:');
+  console.log('   · drawdown measured from the running peak, which ratchets and never decays');
+  console.log('   · SAVI spike from calcCrashVol: 1 + '+VOL_SPIKE_A+'x + '+VOL_SPIKE_B+'x²,');
+  console.log('     fitted on 2020 COVID decline-phase data (R²=0.91, 15 points, single episode).');
+  console.log('     Convexity is well supported; the magnitude is a working estimate.');
+  console.log('   · LOW/HIGH band = '+VOL_BAND.low+'x / '+VOL_BAND.high+'x of the central curve\'s excess.');
+  console.log('     CONSTRUCTED, not independently fitted — the 2008/2015-16 cross-checks were');
+  console.log('     described as "more muted" without published coefficients.');
+  console.log('   · flat vol across strikes and tenors (no skew). Deep OTM puts carry negative');
+  console.log('     skew, so real cost is HIGHER and real coverage per rand LOWER than shown.');
+  console.log('   · each tranche valued at its own time to expiry, at today\'s TTE.');
+  console.log('   · no transaction cost, liquidity or market-impact assumption in the exit.');
+  return g;
+}
+
 function renderHedgeView(){
   if(!CURRENT_SESSION) return;
   var st=getState();
