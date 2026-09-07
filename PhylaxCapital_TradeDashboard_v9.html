@@ -445,6 +445,14 @@ textarea:focus{border-color:var(--teal2)}
 .bp-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:500}
 .bp-sub{font-size:8.5px;color:var(--muted);margin-top:2px}
 
+/* ── COVERAGE PLANNER ───────────────────────────────────────────── */
+.pl-l{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.pl-v{font-family:'DM Mono',monospace;font-size:13px;color:var(--white);margin-top:2px}
+.pl-t{width:100%;border-collapse:collapse;font-family:'DM Mono',monospace;font-size:10px;margin-top:4px}
+.pl-t th{font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+  font-weight:400;padding:4px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,.10)}
+.pl-t td{padding:4px 6px;text-align:right;color:var(--white);border-bottom:1px solid rgba(255,255,255,.05)}
+
 /* ── PORTFOLIO HEDGE VIEW ───────────────────────────────────────── */
 .hedge-panel{background:linear-gradient(135deg,rgba(0,196,212,.06),rgba(0,196,212,.02));
   border:1px solid rgba(0,196,212,.28);border-radius:2px;padding:18px;margin-bottom:14px}
@@ -1435,6 +1443,17 @@ textarea:focus{border-color:var(--teal2)}
   </div>
 </div>
 
+<!-- ══ COVERAGE PLANNER ══════════════════════════════════════════════ -->
+<div class="hedge-panel" id="coverage-planner-panel">
+  <div class="sh c-teal" style="margin-bottom:6px">Coverage Planner — Target Ladder &amp; What-If</div>
+  <div style="font-size:8.5px;color:var(--muted);margin-bottom:12px">
+    Target recomputed daily from spot, vol, running peak, cash and rates. Buy-only:
+    inflows deploy against the gap, outflows are paid from cash and the oversize
+    corrects through expiry.
+  </div>
+  <div id="coverage-planner"></div>
+</div>
+
 <!-- ══ PORTFOLIO HEDGE VIEW ══════════════════════════════════════════ -->
 <div class="hedge-panel" id="hedge-panel">
   <div class="sh c-teal" style="margin-bottom:14px">Portfolio Hedge View — Delta-Adjusted</div>
@@ -2226,7 +2245,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v45';
+var BUILD_VERSION='v46';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -5037,7 +5056,7 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   renderLiquidityStress();
   renderUnitPriceBar();
   renderBudgetPanel();
-  renderHedgeView();
+  renderHedgeView(); try{ renderCoveragePlanner(); }catch(e){ console.error('planner:',e); }
   renderHarvestPanel();
   renderMarketLogStrip();
   updatePortfolio();
@@ -7388,6 +7407,203 @@ function reportCoverage(opts){
   console.log('   · each tranche valued at its own time to expiry, at today\'s TTE.');
   console.log('   · no transaction cost, liquidity or market-impact assumption in the exit.');
   return g;
+}
+
+
+// ══════════════════════════════════════════════════════════════════════
+// v46: COVERAGE PLANNER
+//
+// Answers the daily question: what SHOULD the book look like today, what
+// does it actually look like, and what closes the gap?
+//
+// The target is a STEADY STATE, not a construction plan. It is recomputed
+// every day from current spot, vol, running peak, cash and rates, so it
+// moves as the market moves. You track it; you never build to it once.
+//
+// Key findings this encodes, from the optimisation work:
+//
+// 1. COVERAGE MUST BE MEASURED OVER TIME, NOT AT AN INSTANT.
+//    The same premium spent entirely on 14-day puts shows 2,593% coverage
+//    today and ZERO after a fortnight. Any objective based on today's
+//    number degenerates into buying lottery tickets. The planner therefore
+//    reports a decay curve and optimises the WORST case across the horizon.
+//
+// 2. IN STEADY STATE YOU ONLY EVER BUY THE LONG END.
+//    Today's 12-month contract BECOMES your 3-month contract nine months
+//    from now. Buying near-dated directly is paying twice for the same
+//    exposure. The near buckets fill themselves by ageing — which is why
+//    the optimal purchase policy is ~0/0/5/45 per quarter while the
+//    resulting BOOK is a flat ~50/50/50/45 ladder.
+//    The SAVI preset weights describe a book COMPOSITION; they were being
+//    used as a BUYING instruction, which front-loads the near quarter and
+//    produces a book that looks right today and collapses within months.
+//
+// 3. FLOWS. Inflows deploy against the GAP (not pro-rata), so new money
+//    corrects drift for free. Outflows are paid from cash — the option
+//    book is only ~4% of the sleeve — and the resulting oversize corrects
+//    itself through expiry. Never sell.
+// ══════════════════════════════════════════════════════════════════════
+
+var PLANNER_DEPLOY_PCT = 0.95;   // operational margin, not a timing reserve
+var PLANNER_HORIZON_D  = 365;
+var PLANNER_DRIFT_TOL  = 0.05;   // 5% — guidance, not a trigger
+
+function plannerBuckets(){
+  var exps=getSAFEXExpiries(4);
+  var today=new Date(); today.setHours(0,0,0,0);
+  return exps.map(function(e,i){
+    return {i:i, exp:e, expStr:ymdLocal(e),
+            days:Math.max(1,Math.round((e-today)/86400000))};
+  });
+}
+
+function plannerHeld(){
+  var m=heldPerQuarterMap();
+  return plannerBuckets().map(function(b){ return m[b.expStr]||0; });
+}
+
+// Target = the largest FLAT ladder the deployable budget supports.
+// Flat, because the steady-state solve returned ~50/50/50/45 — the small
+// taper at the long end is a rounding artefact of the budget, not a signal.
+function plannerTarget(opts){
+  opts=opts||{};
+  var S=opts.S||FVAL['i-spot'], iv=opts.iv||FVAL['i-iv'];
+  var r=opts.r!=null?opts.r:FVAL['i-jibar'], q=opts.q!=null?opts.q:FVAL['i-dY'];
+  var otm=opts.otm||FVAL['i-otm']||0.10;
+  if(!(S>0&&iv>0)) return null;
+  var K=Math.round(S*(1-otm));
+  var bs=plannerBuckets();
+  var prem=bs.map(function(b){ return bsPutRepriceR(S,K,r,q,iv,b.days/365); });
+  var rung=prem.reduce(function(a,p){return a+p;},0);
+  var bd=calcConvexityBudget();
+  var held=plannerHeld();
+  var heldCost=(getLadder().tranches||[]).reduce(function(a,t){return a+(t.premiumTotal||0);},0);
+  // Deployable = what the rolling annual par test allows, at 95%.
+  var deployable=Math.max(0,(bd.remaining||0)*PLANNER_DEPLOY_PCT);
+  // The target ladder is sized on the WHOLE sustainable book, so add back
+  // what is already committed — otherwise the target shrinks as you buy it.
+  var totalCapacity=deployable+heldCost;
+  var N=rung>0?Math.floor(totalCapacity/rung):0;
+  return {K:K, buckets:bs, prem:prem, rungCost:rung, N:N,
+          target:bs.map(function(){return N;}), held:held,
+          gap:bs.map(function(b,i){ return Math.max(0,N-held[i]); }),
+          deployable:deployable, totalCapacity:totalCapacity, budget:bd};
+}
+
+// Coverage of a hypothetical book, as a decay curve over the horizon.
+function plannerCurve(contracts,K,opts){
+  opts=opts||{};
+  var st=getState();
+  var peak=opts.peak||getRunningPeak();
+  var port=st.totalPortfolio||(CURRENT_SESSION?CURRENT_SESSION.totalPortfolio:0)||0;
+  var shock=opts.shock||0.30;
+  var r=opts.r!=null?opts.r:FVAL['i-jibar'], q=opts.q!=null?opts.q:FVAL['i-dY'];
+  var baseIv=opts.iv||FVAL['i-iv']||0.21;
+  var civ=crashVolFor(baseIv,shock,'central');
+  var Sx=peak*(1-shock), loss=port*shock;
+  var bs=plannerBuckets();
+  var pts=[];
+  for(var d=0; d<=PLANNER_HORIZON_D; d+=30){
+    var tot=0;
+    for(var i=0;i<bs.length;i++){
+      var rem=(bs[i].days-d)/365;
+      if(rem>0) tot+=bsPutRepriceR(Sx,K,r,q,civ,rem)*(contracts[i]||0);
+    }
+    pts.push({day:d, payoff:tot, cov:loss>0?tot/loss*100:0});
+  }
+  return {points:pts, loss:loss, peak:peak,
+          now:pts[0], worst:pts.reduce(function(a,p){return p.cov<a.cov?p:a;},pts[0])};
+}
+
+function renderCoveragePlanner(){
+  var host=c('coverage-planner'); if(!host||!CURRENT_SESSION) return;
+  var t=plannerTarget();
+  if(!t){ host.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to plan coverage</div>'; return; }
+  window._planner=t;
+  var held=t.held.slice();
+  var proposed=(window._plannerProposed&&window._plannerProposed.length===4)
+      ? window._plannerProposed.slice() : t.gap.slice();
+  window._plannerProposed=proposed;
+  var after=held.map(function(h,i){ return h+(proposed[i]||0); });
+  var cNow=plannerCurve(held,t.K), cAfter=plannerCurve(after,t.K), cTgt=plannerCurve(t.target,t.K);
+  var cost=proposed.reduce(function(a,n2,i){ return a+n2*t.prem[i]*(1+execHaircutFor(n2||1)); },0);
+  var fR=function(v){ return 'R'+(Math.round(v/1e6*100)/100)+'m'; };
+  var drift=cTgt.worst.cov>0?(cTgt.worst.cov-cNow.worst.cov)/cTgt.worst.cov:0;
+
+  var rows='';
+  t.buckets.forEach(function(b,i){
+    rows+='<tr>'
+      +'<td style="text-align:left">Q'+(i+1)+' <span style="color:var(--muted)">'+b.expStr+'</span></td>'
+      +'<td>'+b.days+'d</td>'
+      +'<td>R'+Math.round(t.prem[i]).toLocaleString('en-ZA')+'</td>'
+      +'<td>'+held[i]+'</td>'
+      +'<td style="color:var(--teal2)">'+t.target[i]+'</td>'
+      +'<td style="color:'+(t.gap[i]>0?'var(--amber)':'var(--muted)')+'">'+(t.gap[i]>0?'+'+t.gap[i]:'—')+'</td>'
+      +'<td><input type="text" class="pl-in" id="pl-q'+i+'" value="'+(proposed[i]||0)+'" '
+      +'oninput="plannerRecalc()" style="width:56px;text-align:right;font-family:\'DM Mono\',monospace;font-size:10px;'
+      +'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);color:var(--white);padding:3px 5px;border-radius:2px"/></td>'
+      +'<td style="color:var(--muted)">R'+Math.round((proposed[i]||0)*t.prem[i]).toLocaleString('en-ZA')+'</td>'
+      +'</tr>';
+  });
+
+  var curveRow=function(cv,col){
+    return cv.points.map(function(p){
+      return '<td style="color:'+col+'">'+p.cov.toFixed(2)+'%</td>';
+    }).join('');
+  };
+  var hdr=cNow.points.map(function(p){ return '<td>'+p.day+'d</td>'; }).join('');
+
+  host.innerHTML=
+   '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">'
+    +'<div><div class="pl-l">Running peak</div><div class="pl-v">'+Math.round(cNow.peak).toLocaleString('en-ZA')+'</div></div>'
+    +'<div><div class="pl-l">Loss at &minus;30%</div><div class="pl-v">'+fR(cNow.loss)+'</div></div>'
+    +'<div><div class="pl-l">Coverage now</div><div class="pl-v" style="color:var(--teal2)">'+cNow.now.cov.toFixed(2)+'%</div></div>'
+    +'<div><div class="pl-l">Worst case (365d)</div><div class="pl-v" style="color:'+(drift>PLANNER_DRIFT_TOL?'var(--amber)':'var(--teal2)')+'">'+cNow.worst.cov.toFixed(2)+'%</div></div>'
+    +'<div><div class="pl-l">Target worst case</div><div class="pl-v" style="color:var(--purple)">'+cTgt.worst.cov.toFixed(2)+'%</div></div>'
+    +'<div><div class="pl-l">Drift vs target</div><div class="pl-v" style="color:'+(drift>PLANNER_DRIFT_TOL?'var(--amber)':'var(--muted)')+'">'+(drift*100).toFixed(1)+'%'
+      +(drift>PLANNER_DRIFT_TOL?' \u26a0':'')+'</div></div>'
+    +'<div><div class="pl-l">Deployable (95%)</div><div class="pl-v">'+fR(t.deployable)+'</div></div>'
+   +'</div>'
+   +'<table class="pl-t"><thead><tr><th style="text-align:left">bucket</th><th>tte</th><th>premium</th>'
+     +'<th>held</th><th>target</th><th>gap</th><th>buy</th><th>cost</th></tr></thead><tbody>'+rows+'</tbody></table>'
+   +'<div style="margin:9px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+     +'<button class="btn btn-teal btn-sm" onclick="plannerApplyTarget()">\u2713 Fill to target</button>'
+     +'<button class="btn btn-sm" onclick="plannerClear()">Clear</button>'
+     +'<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">proposed cost '
+       +'<span style="color:'+(cost>t.deployable?'var(--red2)':'var(--teal2)')+'">'+fR(cost)+'</span>'
+       +' of '+fR(t.deployable)+(cost>t.deployable?' \u2014 OVER BUDGET':'')+'</span>'
+   +'</div>'
+   +'<table class="pl-t"><thead><tr><th style="text-align:left">crash in</th>'+hdr+'</tr></thead><tbody>'
+     +'<tr><td style="text-align:left">now</td>'+curveRow(cNow,'var(--muted)')+'</tr>'
+     +'<tr><td style="text-align:left">after trade</td>'+curveRow(cAfter,'var(--teal2)')+'</tr>'
+     +'<tr><td style="text-align:left">target</td>'+curveRow(cTgt,'var(--purple)')+'</tr>'
+   +'</tbody></table>'
+   +'<div style="font-size:8.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
+     +'Coverage = modelled payoff at &minus;30% from the running peak, as % of the portfolio loss. '
+     +'Curve assumes NO further purchases &mdash; it is the decay of today\'s book, which is why it '
+     +'falls to zero past the longest expiry. In practice maintenance buying at the long end holds it flat. '
+     +'Vol spike from calcCrashVol (2020-calibrated, R\u00b2=0.91, 15 points, single episode). '
+     +'Flat vol, no skew &mdash; real coverage per rand is LOWER. Modelled, not observed.'
+   +'</div>';
+}
+
+function plannerRecalc(){
+  var v=[];
+  for(var i=0;i<4;i++){
+    var el=c('pl-q'+i);
+    v.push(el?Math.max(0,parseInt((el.value||'0').replace(/[^\d]/g,''))||0):0);
+  }
+  window._plannerProposed=v;
+  renderCoveragePlanner();
+}
+function plannerApplyTarget(){
+  var t=window._planner||plannerTarget();
+  window._plannerProposed=t?t.gap.slice():[0,0,0,0];
+  renderCoveragePlanner();
+}
+function plannerClear(){
+  window._plannerProposed=[0,0,0,0];
+  renderCoveragePlanner();
 }
 
 function renderHedgeView(){
