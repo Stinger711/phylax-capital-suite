@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v43';
+var BUILD_VERSION='v44';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4184,7 +4184,18 @@ async function runHistoricalLoad(opts){
   // having left the book under-hedged on the way in. Tail protection wants
   // maximum coverage in place at all times; daily carry is the replenishment.
   var reservePct=opts.reservePct!=null?opts.reservePct:0.0;
-  var minTrade=opts.minTrade!=null?opts.minTrade:250000;             // no trade smaller than this
+  // v44: the floor is a CONTRACT COUNT, not a rand amount.
+  // A flat rand floor biased the book to the short end: long-dated contracts
+  // cost 3-20x more, so the same R250k bought far fewer of them and they were
+  // the ones repeatedly deferred. Q4 finished at 6.2% against a 10% target —
+  // and long-dated is exactly where the vega exposure to a vol spike lives,
+  // which is what makes a crash pay more than intrinsic. The floor was
+  // working against the strategy's own logic.
+  // It is also better grounded: the model's only trading cost is the haircut,
+  // which is PROPORTIONAL to premium, so a rand floor controls nothing. The
+  // real per-trade cost is SAFEX booking fees, charged PER CONTRACT.
+  var minContracts=opts.minContracts!=null?opts.minContracts:5;
+  var minTrade=opts.minTrade!=null?opts.minTrade:0;                  // optional absolute floor, off by default
   var log=[]; var L=function(m){ log.push(m); if(opts.verbose!==false) console.log(m); };
 
   if(!S||!S.length) throw new Error('No series supplied.');
@@ -4201,7 +4212,7 @@ async function runHistoricalLoad(opts){
   L('   target   '+(covTarget*100).toFixed(0)+'% coverage of the loss at -'+(covShock*100).toFixed(0)+'% from running peak (central vol), capped by carry');
   L('   rule     coverage sets SIZE · SAVI-conditioned weights set WHERE · '
     +(reservePct>0?('reserve '+(reservePct*100).toFixed(0)+'%'):'NO reserve (fully deployed)')
-    +' · min trade R'+minTrade.toLocaleString('en-ZA'));
+    +' · min '+minContracts+' contracts'+(minTrade>0?(' or R'+minTrade.toLocaleString('en-ZA')):''));
   L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
   var bought=0, spent=0, entryCost=0, lastPreset=null, tooSmall=0, carried=[0,0,0,0];
@@ -4329,7 +4340,8 @@ async function runHistoricalLoad(opts){
       var maxCover=payPerCt>0?Math.ceil(covGapR*frac/payPerCt):0;
       var qty=Math.max(0,Math.min(maxBudget,maxCover));   // annual budget + coverage need
       // release any carried shortfall for this quarter once it can clear the floor
-      if(carried[k]>0 && qty*putR+carried[k]>=minTrade){
+      var _floorR=Math.max(minTrade,minContracts*putR);
+      if(carried[k]>0 && qty*putR+carried[k]>=_floorR){
         var extra=Math.floor(carried[k]/putR);
         qty=Math.min(qty+extra,maxCover,Math.floor(deployable/putR));
       }
@@ -4337,11 +4349,12 @@ async function runHistoricalLoad(opts){
       // v38: a shortfall below the minimum is CARRIED, not discarded. Full
       // deployment is the principle; the floor exists only to avoid paying
       // the spread on trivial clips. Accumulate until it is worth executing.
-      if(qty*putR<minTrade){
+      var floorR=Math.max(minTrade,minContracts*putR);   // scales with contract price
+      if(qty*putR<floorR){
         carried[k]=(carried[k]||0)+qty*putR; tooSmall++;
         if(diagnose && diagCount<diagMax){ diagCount++;
           L('   · '+d+' Q'+(k+1)+' DEFER qty='+qty+' @R'+Math.round(putR).toLocaleString('en-ZA')
-            +' = R'+Math.round(qty*putR).toLocaleString('en-ZA')+' < min; carried now R'
+            +' = R'+Math.round(qty*putR).toLocaleString('en-ZA')+' < floor R'+Math.round(floorR).toLocaleString('en-ZA')+'; carried now R'
             +Math.round(carried[k]).toLocaleString('en-ZA')
             +'  [carry '+maxCarry+' budget '+maxBudget+' cover '+maxCover+']'); }
         continue;
@@ -4388,7 +4401,7 @@ async function runHistoricalLoad(opts){
 
   var hist=getNavHistory();
   L('── COMPLETE ──');
-  if(tooSmall) L('   note: '+tooSmall+' candidate(s) deferred below the R'+minTrade.toLocaleString('en-ZA')+' minimum (carried, not discarded)');
+  if(tooSmall) L('   note: '+tooSmall+' candidate(s) deferred below the '+minContracts+'-contract floor (carried, not discarded)');
   L('   trades '+bought+'   premium R'+Math.round(spent).toLocaleString('en-ZA')
     +'   of which entry cost R'+Math.round(entryCost).toLocaleString('en-ZA'));
   var fl=dryRun?{tranches:simTranches}:getLadder();
