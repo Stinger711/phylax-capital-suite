@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v39';
+var BUILD_VERSION='v40';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4276,16 +4276,27 @@ async function runHistoricalLoad(opts){
     var deployable=Math.max(0,remaining-reserve);
     if(covGapR<=0) { /* at target — nothing to do */ }
 
+    // v40: TWO DISTRIBUTION MODES.
+    // REBALANCE — some quarter is >gapMin underweight: direct new money at the
+    //   gaps, in proportion to them.
+    // GROW — shape is already right but coverage is short: buy in TARGET
+    //   proportions so the book grows without distorting the ladder.
+    // Without the second mode the composition gate acts as an absolute veto:
+    // once every gap closes, buying stops even with coverage at 6.5% against a
+    // 10% target and R2m of budget unspent. That was the 51 idle days.
+    var rebalancing=totalGap>gapMin;
+    var wSum=pcts.reduce(function(a,b){return a+b;},0)||100;
     for(var k=0;k<4;k++){
       if(covGapR<=0) break;
       if(deployable<minTrade) break;
-      if(gapPct[k]<=gapMin) continue;                 // distribution: skip quarters at weight
+      if(rebalancing && gapPct[k]<=gapMin) continue;   // rebalance mode: gaps only
       var exp=expiries[k], expStr=ymdLocal(exp);
       var T=Math.max(0.0001,(exp-today)/(365*24*60*60*1000));
       var K=Math.round(Sp*(1-otm));
       var g=bsBlack76(Sp,K,r,q,iv,T);
       var putR=g.putPriceR, theta=g.thetaPerDayR;
-      var frac=totalGap>0?(gapPct[k]/totalGap):0;
+      // rebalance -> weight by the gap; grow -> weight by the target itself
+      var frac=rebalancing?(totalGap>0?gapPct[k]/totalGap:0):(pcts[k]/wSum);
       var maxCarry=theta>0?Math.floor(netDailyYield*frac/theta):999999;
       var maxBudget=putR>0?Math.floor(deployable*frac/putR):0;
       // how many contracts of THIS strike/expiry close the coverage gap?
@@ -4322,7 +4333,8 @@ async function runHistoricalLoad(opts){
         +'  mid R'+Math.round(putR).toLocaleString('en-ZA')+' +'+(hc*100).toFixed(1)+'%'
         +'  = R'+Math.round(cost).toLocaleString('en-ZA')
         +'  [cov '+(covNow*100).toFixed(1)+'%->'+(covTarget*100).toFixed(0)+'%, '
-        +(qty===maxCarry?'carry':qty===maxBudget?'budget':'coverage')+'-bound]');
+        +(qty===maxCarry?'carry':qty===maxBudget?'budget':'coverage')+'-bound, '
+        +(rebalancing?'rebal':'grow')+']');
     }
 
     if(dryRun){
