@@ -744,7 +744,7 @@ textarea:focus{border-color:var(--teal2)}
     <div class="modal-row">
       <div class="mfi">
         <label>OTM Target (%)</label>
-        <input type="text" id="setup-otm" value="10"/>
+        <input type="text" id="setup-otm" value="15"/>
         <div class="hint">10% OTM = put strike 10% below ALSI spot.</div>
       </div>
       <div class="mfi">
@@ -2245,7 +2245,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v48';
+var BUILD_VERSION='v51';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4191,7 +4191,7 @@ async function runHistoricalLoad(opts){
   var dryRun=!!opts.dryRun;
   var jibar=opts.jibar!=null?opts.jibar:0.07;
   var dy=opts.dy!=null?opts.dy:0.034;
-  var otm=opts.otm!=null?opts.otm:0.10;
+  var otm=opts.otm!=null?opts.otm:0.15;   // v51: see intrinsic-share note
   var gapMin=opts.gapMin!=null?opts.gapMin:5;      // distribution: quarters >5pp underweight
   var useEntryCost=opts.entryCost!==false;
   var covTarget=opts.coverageTarget!=null?opts.coverageTarget:0.10;  // 10% of the loss at -30%
@@ -4642,7 +4642,7 @@ function calcBookAggregates(S,r,q,iv){
 function renderExpiryGrid(){
   var grid=c('expiry-grid'); if(!grid) return;
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
-  var otm=FVAL['i-otm']||0.10;
+  var otm=FVAL['i-otm']||0.15;
   if(!S||!r||!iv){ grid.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see expiry pricing</div>'; return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
@@ -5958,7 +5958,7 @@ function renderInlineAlloc(){
   var pctDiv=c('inline-alloc-pct-total');
   if(!sliderDiv||!execDiv) return;
   var S=FVAL['i-spot'],r=FVAL['i-jibar'],q=FVAL['i-dY'],iv=FVAL['i-iv'];
-  var otm=FVAL['i-otm']||0.10;
+  var otm=FVAL['i-otm']||0.15;
   if(!S||!r||!iv){ sliderDiv.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to see allocation</div>'; return; }
   var today=new Date(); today.setHours(0,0,0,0);
   var expiries=getSAFEXExpiries(4);
@@ -7465,14 +7465,28 @@ var PLANNER_DEPLOY_PCT = 0.95;   // operational margin, not a timing reserve
 // horizon scored EVERY possible book at 0% beyond day 283 — making both the
 // worst case and the drift figure meaningless. A 365-day horizon only becomes
 // coherent once the roll is modelled.
+// v50: FOUR rungs, and the horizon is DERIVED, never hardcoded.
+//
+// The ladder never extends past the 4th listed quarterly. But "the 4th rung"
+// is not a fixed tenor — it moves. Today it is ~283 days out; the day after
+// the September expiry passes it becomes ~374 days, because Dec/Mar/Jun/Sep-27
+// shift up one and a new far rung lists. It then decays back toward ~283 as
+// that quarter runs down.
+//
+// So the horizon oscillates roughly 283-374 days across each quarter, and that
+// is correct: it is exactly how far the book can actually reach with no roll
+// assumption. Hardcoding either end would be wrong — 365 would score every
+// book at zero for part of the cycle, and 283 would ignore reach the ladder
+// genuinely has for the other part.
+var PLANNER_RUNGS = 4;
 function plannerHorizonDays(){
   var bs=plannerBuckets();
-  return bs.length?bs[bs.length-1].days:365;
+  return bs.length?bs[bs.length-1].days:0;
 }
 var PLANNER_DRIFT_TOL  = 0.05;   // 5% — guidance, not a trigger
 
 function plannerBuckets(){
-  var exps=getSAFEXExpiries(4);
+  var exps=getSAFEXExpiries(PLANNER_RUNGS);
   var today=new Date(); today.setHours(0,0,0,0);
   return exps.map(function(e,i){
     return {i:i, exp:e, expStr:ymdLocal(e),
@@ -7492,7 +7506,7 @@ function plannerTarget(opts){
   opts=opts||{};
   var S=opts.S||FVAL['i-spot'], iv=opts.iv||FVAL['i-iv'];
   var r=opts.r!=null?opts.r:FVAL['i-jibar'], q=opts.q!=null?opts.q:FVAL['i-dY'];
-  var otm=opts.otm||FVAL['i-otm']||0.10;
+  var otm=opts.otm||FVAL['i-otm']||0.15;
   if(!(S>0&&iv>0)) return null;
   var K=Math.round(S*(1-otm));
   // v48: a rung is only worth buying if it has enough life to contribute to
@@ -7555,12 +7569,21 @@ function renderCoveragePlanner(){
   if(!t){ host.innerHTML='<div style="color:var(--muted);font-size:9px;padding:8px">Enter market inputs to plan coverage</div>'; return; }
   window._planner=t;
   var held=t.held.slice();
-  var proposed=(window._plannerProposed&&window._plannerProposed.length===4)
+  var proposed=(window._plannerProposed&&window._plannerProposed.length===t.buckets.length)
       ? window._plannerProposed.slice() : t.gap.slice();
   window._plannerProposed=proposed;
   var after=held.map(function(h,i){ return h+(proposed[i]||0); });
   var cNow=plannerCurve(held,t.K), cAfter=plannerCurve(after,t.K), cTgt=plannerCurve(t.target,t.K);
   var cost=proposed.reduce(function(a,n2,i){ return a+n2*t.prem[i]*(1+execHaircutFor(n2||1)); },0);
+  // v51: INTRINSIC SHARE.
+  // Optimising strike against a vol-inflated payoff degenerates: the cheapest
+  // way to "achieve" a coverage number is a deep-OTM put that is still OUT of
+  // the money at the anchor shock, whose entire modelled value is time premium
+  // at 57% crash vol. Real protection is the INTRINSIC part — certain given the
+  // shock. Everything else rests on calcCrashVol behaving as it did in 2020.
+  // 15% OTM sits at ~69% intrinsic; past 30% OTM intrinsic is zero.
+  var _cv=coverageAtShock(0.30,'central');
+  var _intr=_cv.payoff>0?_cv.intrinsic/_cv.payoff:0;
   var fR=function(v){ return 'R'+(Math.round(v/1e6*100)/100)+'m'; };
   var drift=cTgt.worst.cov>0?(cTgt.worst.cov-cNow.worst.cov)/cTgt.worst.cov:0;
 
@@ -7600,6 +7623,9 @@ function renderCoveragePlanner(){
     +'<div><div class="pl-l">Drift vs target</div><div class="pl-v" style="color:'+(drift>PLANNER_DRIFT_TOL?'var(--amber)':'var(--muted)')+'">'+(drift*100).toFixed(1)+'%'
       +(drift>PLANNER_DRIFT_TOL?' \u26a0':'')+'</div></div>'
     +'<div><div class="pl-l">Deployable (95%)</div><div class="pl-v">'+fR(t.deployable)+'</div></div>'
+    +'<div><div class="pl-l">Intrinsic share</div><div class="pl-v" style="color:'
+      +(_intr>=0.5?'var(--teal2)':'var(--amber)')+'">'+(_intr*100).toFixed(0)+'%'
+      +(_intr<0.5?' \u26a0':'')+'</div><div style="font-size:7.5px;color:var(--muted)">certain vs model-dependent</div></div>'
    +'</div>'
    +'<table class="pl-t"><thead><tr><th style="text-align:left">bucket</th><th>tte</th><th>premium</th>'
      +'<th>held</th><th>target</th><th>gap</th><th>buy</th><th>cost</th></tr></thead><tbody>'+rows+'</tbody></table>'
@@ -7618,8 +7644,9 @@ function renderCoveragePlanner(){
    +'<div style="font-size:8.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
      +'Coverage = modelled payoff at &minus;30% from the CURRENT market level, as % of the portfolio loss. '
      +'Measured from here, not the peak: a fall already suffered cannot be hedged by an option bought today. '
-     +'Horizon runs to the longest tradeable expiry ('+plannerHorizonDays()+'d) &mdash; a longer one would score every '
-     +'book at zero beyond it. Curve assumes NO further purchases; in practice maintenance buying at the long end holds it flat. '
+     +'Horizon '+plannerHorizonDays()+'d &mdash; the '+PLANNER_RUNGS+'th quarterly rung, which moves: it extends to ~374d '
+     +'as each expiry rolls off and decays back toward ~283d through the quarter. Never derived from a fixed number of days. '
+     +'Curve assumes NO further purchases; in practice maintenance buying at the long end holds it flat. '
      +'Rungs with under '+(window._planner?window._planner.minRungDays:45)+' days left are skipped: too little life to add sustained coverage. '
      +'Vol spike from calcCrashVol (2020-calibrated, R\u00b2=0.91, 15 points, single episode). '
      +'Flat vol, no skew &mdash; real coverage per rand is LOWER. Modelled, not observed.'
@@ -7628,7 +7655,8 @@ function renderCoveragePlanner(){
 
 function plannerRecalc(){
   var v=[];
-  for(var i=0;i<4;i++){
+  var nb=(window._planner&&window._planner.buckets)?window._planner.buckets.length:PLANNER_RUNGS;
+  for(var i=0;i<nb;i++){
     var el=c('pl-q'+i);
     v.push(el?Math.max(0,parseInt((el.value||'0').replace(/[^\d]/g,''))||0):0);
   }
@@ -7637,11 +7665,12 @@ function plannerRecalc(){
 }
 function plannerApplyTarget(){
   var t=window._planner||plannerTarget();
-  window._plannerProposed=t?t.gap.slice():[0,0,0,0];
+  window._plannerProposed=t?t.gap.slice():[];
   renderCoveragePlanner();
 }
 function plannerClear(){
-  window._plannerProposed=[0,0,0,0];
+  var t=window._planner||plannerTarget();
+  window._plannerProposed=t?t.buckets.map(function(){return 0;}):[];
   renderCoveragePlanner();
 }
 
@@ -9042,7 +9071,7 @@ function mcValidate(){
   if(allDone){
     // Compute summary values
     var r=jibar/100, q=dy/100, iv=savi/100;
-    var otm=FVAL['i-otm']||0.10;
+    var otm=FVAL['i-otm']||0.15;
     var K=Math.round(alsi*(1-otm));
     var expiryStr=document.getElementById('i-expiry').value||safexExpiryStr(new Date());
     var today=new Date(); today.setHours(0,0,0,0);
