@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v40';
+var BUILD_VERSION='v41';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4205,6 +4205,7 @@ async function runHistoricalLoad(opts){
   L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
   var bought=0, spent=0, entryCost=0, lastPreset=null, tooSmall=0, carried=[0,0,0,0];
+  var diagnose=!!opts.diagnose, diagMax=opts.diagMax||60, diagCount=0;
   // v33: DRY RUN MUST SIMULATE ITSELF.
   // Skipping commitNewTrade() means the ladder never grows, so every quarter
   // reads 100% underweight on every day and the rule buys its maximum 53 days
@@ -4285,6 +4286,15 @@ async function runHistoricalLoad(opts){
     // once every gap closes, buying stops even with coverage at 6.5% against a
     // 10% target and R2m of budget unspent. That was the 51 idle days.
     var rebalancing=totalGap>gapMin;
+    if(diagnose && diagCount<diagMax && covGapR>0){
+      var _nd=Math.round(netDailyYield), _dy=Math.round(dailyYield);
+      L('   · '+d+'  cov '+(covNow*100).toFixed(2)+'%  gapR R'+Math.round(covGapR/1e6*10)/10+'m'
+        +'  deployable R'+Math.round(remaining/1e6*100)/100+'m'
+        +'  netYield R'+_nd.toLocaleString('en-ZA')+'/'+_dy.toLocaleString('en-ZA')
+        +'  gaps ['+gapPct.map(function(g){return g.toFixed(0);}).join(',')+']'
+        +'  carried ['+carried.map(function(cv){return Math.round(cv/1000)+'k';}).join(',')+']'
+        +'  '+(rebalancing?'REBAL':'GROW'));
+    }
     var wSum=pcts.reduce(function(a,b){return a+b;},0)||100;
     for(var k=0;k<4;k++){
       if(covGapR<=0) break;
@@ -4316,7 +4326,15 @@ async function runHistoricalLoad(opts){
       // v38: a shortfall below the minimum is CARRIED, not discarded. Full
       // deployment is the principle; the floor exists only to avoid paying
       // the spread on trivial clips. Accumulate until it is worth executing.
-      if(qty*putR<minTrade){ carried[k]=(carried[k]||0)+qty*putR; tooSmall++; continue; }
+      if(qty*putR<minTrade){
+        carried[k]=(carried[k]||0)+qty*putR; tooSmall++;
+        if(diagnose && diagCount<diagMax){ diagCount++;
+          L('   · '+d+' Q'+(k+1)+' DEFER qty='+qty+' @R'+Math.round(putR).toLocaleString('en-ZA')
+            +' = R'+Math.round(qty*putR).toLocaleString('en-ZA')+' < min; carried now R'
+            +Math.round(carried[k]).toLocaleString('en-ZA')
+            +'  [carry '+maxCarry+' budget '+maxBudget+' cover '+maxCover+']'); }
+        continue;
+      }
       carried[k]=0;
       var hc=useEntryCost?entryHaircutFor(qty):0;
       var perCt=putR*(1+hc), cost=qty*perCt;
