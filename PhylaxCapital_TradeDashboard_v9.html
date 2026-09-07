@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v44';
+var BUILD_VERSION='v45';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4194,7 +4194,15 @@ async function runHistoricalLoad(opts){
   // It is also better grounded: the model's only trading cost is the haircut,
   // which is PROPORTIONAL to premium, so a rand floor controls nothing. The
   // real per-trade cost is SAFEX booking fees, charged PER CONTRACT.
-  var minContracts=opts.minContracts!=null?opts.minContracts:5;
+  // Swept 3/5/10/15/20 on the 19 Jun-2 Sep rebuild: coverage came out
+  // 8.62 / 10.07 / 9.04 / 9.75 % and trade counts 13 / 11 / 8 / 7.
+  // 10 is the optimum — highest coverage AND fewer trades than 5. The shape
+  // is non-monotonic because too low a floor fragments the coverage gap into
+  // clips that each fail the floor and sit in `carried` unspent, while too
+  // high a floor steps past opportunities entirely.
+  // TUNED TO THIS DATASET — revisit for different capital, vol regime, or a
+  // trending rather than choppy market. Not a constant.
+  var minContracts=opts.minContracts!=null?opts.minContracts:10;
   var minTrade=opts.minTrade!=null?opts.minTrade:0;                  // optional absolute floor, off by default
   var log=[]; var L=function(m){ log.push(m); if(opts.verbose!==false) console.log(m); };
 
