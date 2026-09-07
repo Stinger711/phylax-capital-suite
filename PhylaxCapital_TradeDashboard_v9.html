@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v37';
+var BUILD_VERSION='v39';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4177,7 +4177,13 @@ async function runHistoricalLoad(opts){
   var useEntryCost=opts.entryCost!==false;
   var covTarget=opts.coverageTarget!=null?opts.coverageTarget:0.10;  // 10% of the loss at -30%
   var covShock=opts.coverageShock!=null?opts.coverageShock:0.30;
-  var reservePct=opts.reservePct!=null?opts.reservePct:0.20;         // held back for dislocation
+  // v37: reserve defaults to ZERO. Holding cash back to deploy 'in a
+  // dislocation' is a timing decision, which is outside this fund's
+  // guardrails — and it is anti-convex: in a crash SAVI spikes 2.4-3.5x,
+  // so the reserve buys far LESS protection exactly when it is needed,
+  // having left the book under-hedged on the way in. Tail protection wants
+  // maximum coverage in place at all times; daily carry is the replenishment.
+  var reservePct=opts.reservePct!=null?opts.reservePct:0.0;
   var minTrade=opts.minTrade!=null?opts.minTrade:250000;             // no trade smaller than this
   var log=[]; var L=function(m){ log.push(m); if(opts.verbose!==false) console.log(m); };
 
@@ -4193,10 +4199,12 @@ async function runHistoricalLoad(opts){
   L('   session  '+CURRENT_SESSION.sessionId+'  role='+sessionRoleOf(CURRENT_SESSION));
   L('   capital  R'+Math.round(st0.capital).toLocaleString('en-ZA')+'   sessions '+S.length+'  '+S[0].d+' -> '+S[S.length-1].d);
   L('   target   '+(covTarget*100).toFixed(0)+'% coverage of the loss at -'+(covShock*100).toFixed(0)+'% from running peak (central vol), capped by carry');
-  L('   rule     coverage sets SIZE · SAVI-conditioned weights set WHERE · reserve '+(reservePct*100).toFixed(0)+'% · min trade R'+minTrade.toLocaleString('en-ZA'));
+  L('   rule     coverage sets SIZE · SAVI-conditioned weights set WHERE · '
+    +(reservePct>0?('reserve '+(reservePct*100).toFixed(0)+'%'):'NO reserve (fully deployed)')
+    +' · min trade R'+minTrade.toLocaleString('en-ZA'));
   L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
-  var bought=0, spent=0, entryCost=0, lastPreset=null, tooSmall=0;
+  var bought=0, spent=0, entryCost=0, lastPreset=null, tooSmall=0, carried=[0,0,0,0];
   // v33: DRY RUN MUST SIMULATE ITSELF.
   // Skipping commitNewTrade() means the ladder never grows, so every quarter
   // reads 100% underweight on every day and the rule buys its maximum 53 days
@@ -4288,8 +4296,17 @@ async function runHistoricalLoad(opts){
       var payPerCt=bsPutRepriceR(_cov.shockedSpot,K,r,q,_cov.crashIv,Tc);
       var maxCover=payPerCt>0?Math.ceil(covGapR*frac/payPerCt):0;
       var qty=Math.max(0,Math.min(maxCarry,maxBudget,maxCover));
+      // release any carried shortfall for this quarter once it can clear the floor
+      if(carried[k]>0 && qty*putR+carried[k]>=minTrade){
+        var extra=Math.floor(carried[k]/putR);
+        qty=Math.min(qty+extra,maxCover,Math.floor(deployable/putR));
+      }
       if(qty<=0) continue;
-      if(qty*putR<minTrade){ tooSmall++; continue; }   // below the spread-justifying floor
+      // v38: a shortfall below the minimum is CARRIED, not discarded. Full
+      // deployment is the principle; the floor exists only to avoid paying
+      // the spread on trivial clips. Accumulate until it is worth executing.
+      if(qty*putR<minTrade){ carried[k]=(carried[k]||0)+qty*putR; tooSmall++; continue; }
+      carried[k]=0;
       var hc=useEntryCost?entryHaircutFor(qty):0;
       var perCt=putR*(1+hc), cost=qty*perCt;
       if(cost>remaining) { qty=Math.floor(remaining/perCt); if(qty<=0) continue; cost=qty*perCt; }
@@ -4330,7 +4347,7 @@ async function runHistoricalLoad(opts){
 
   var hist=getNavHistory();
   L('── COMPLETE ──');
-  if(tooSmall) L('   note: '+tooSmall+' candidate trade(s) skipped as below the R'+minTrade.toLocaleString('en-ZA')+' minimum');
+  if(tooSmall) L('   note: '+tooSmall+' candidate(s) deferred below the R'+minTrade.toLocaleString('en-ZA')+' minimum (carried, not discarded)');
   L('   trades '+bought+'   premium R'+Math.round(spent).toLocaleString('en-ZA')
     +'   of which entry cost R'+Math.round(entryCost).toLocaleString('en-ZA'));
   var fl=dryRun?{tranches:simTranches}:getLadder();
@@ -4344,8 +4361,7 @@ async function runHistoricalLoad(opts){
       +'   vs loss R'+Math.round(_fc.portfolioLoss).toLocaleString('en-ZA'));
     L('     coverage  '+(_fc.coverageOfLoss*100).toFixed(2)+'% of loss  (target '+(covTarget*100).toFixed(0)+'%)'
       +'   = '+(_fc.coverageOfPortfolio*100).toFixed(2)+'% of portfolio');
-    L('     reserve   R'+Math.round(simCash*0+((simCash*(1+getZaronia())-feeRateIncl(getFeeState())*simCash-st0.capital)/(1+getZaronia()+feeRateIncl(getFeeState())))*reservePct).toLocaleString('en-ZA')
-      +'  ('+(reservePct*100).toFixed(0)+'% of headroom, held back)');
+    if(reservePct>0) L('     reserve   '+(reservePct*100).toFixed(0)+'% of headroom held back');
     L('   sim cash  R'+Math.round(simCash).toLocaleString('en-ZA')+'  (par R'+Math.round(st0.capital).toLocaleString('en-ZA')+')');
     L('   sim fees  R'+Math.round(simFees).toLocaleString('en-ZA'));
     var byQ={};
