@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v36';
+var BUILD_VERSION='v37';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4196,7 +4196,7 @@ async function runHistoricalLoad(opts){
   L('   rule     coverage sets SIZE · SAVI-conditioned weights set WHERE · reserve '+(reservePct*100).toFixed(0)+'% · min trade R'+minTrade.toLocaleString('en-ZA'));
   L('   entry    '+(useEntryCost?'symmetric bid-band haircut, capitalised':'NONE (mid)'));
 
-  var bought=0, spent=0, entryCost=0, lastPreset=null;
+  var bought=0, spent=0, entryCost=0, lastPreset=null, tooSmall=0;
   // v33: DRY RUN MUST SIMULATE ITSELF.
   // Skipping commitNewTrade() means the ladder never grows, so every quarter
   // reads 100% underweight on every day and the rule buys its maximum 53 days
@@ -4282,11 +4282,14 @@ async function runHistoricalLoad(opts){
       var maxBudget=putR>0?Math.floor(deployable*frac/putR):0;
       // how many contracts of THIS strike/expiry close the coverage gap?
       var Tc=Math.max(0,(exp-today)/(365*24*60*60*1000));
-      var payPerCt=bsPutRepriceR(_cov.shockedSpot,K,r,q,_cov.crashIv,Tc)*10;
+      // bsPutRepriceR ALREADY returns rand per contract (points x R10 applied
+      // internally). Do NOT multiply by 10 again — doing so understated
+      // maxCover tenfold and pushed every trade below minTrade, silently.
+      var payPerCt=bsPutRepriceR(_cov.shockedSpot,K,r,q,_cov.crashIv,Tc);
       var maxCover=payPerCt>0?Math.ceil(covGapR*frac/payPerCt):0;
       var qty=Math.max(0,Math.min(maxCarry,maxBudget,maxCover));
       if(qty<=0) continue;
-      if(qty*putR<minTrade) continue;                 // too small to justify the spread
+      if(qty*putR<minTrade){ tooSmall++; continue; }   // below the spread-justifying floor
       var hc=useEntryCost?entryHaircutFor(qty):0;
       var perCt=putR*(1+hc), cost=qty*perCt;
       if(cost>remaining) { qty=Math.floor(remaining/perCt); if(qty<=0) continue; cost=qty*perCt; }
@@ -4327,6 +4330,7 @@ async function runHistoricalLoad(opts){
 
   var hist=getNavHistory();
   L('── COMPLETE ──');
+  if(tooSmall) L('   note: '+tooSmall+' candidate trade(s) skipped as below the R'+minTrade.toLocaleString('en-ZA')+' minimum');
   L('   trades '+bought+'   premium R'+Math.round(spent).toLocaleString('en-ZA')
     +'   of which entry cost R'+Math.round(entryCost).toLocaleString('en-ZA'));
   var fl=dryRun?{tranches:simTranches}:getLadder();
