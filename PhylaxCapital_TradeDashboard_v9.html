@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v41';
+var BUILD_VERSION='v42';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4307,6 +4307,17 @@ async function runHistoricalLoad(opts){
       var putR=g.putPriceR, theta=g.thetaPerDayR;
       // rebalance -> weight by the gap; grow -> weight by the target itself
       var frac=rebalancing?(totalGap>0?gapPct[k]/totalGap:0):(pcts[k]/wSum);
+      // v42: maxCarry is now DIAGNOSTIC, not binding.
+      // The per-day test (book theta must never exceed ONE day's carry) is far
+      // stricter than the fund's actual solvency condition and it capped the
+      // book at ~7.4% coverage with R2.75m of budget permanently unspent:
+      // netDailyYield sat at R0 for six straight weeks after the opening
+      // trades, because existing theta consumed the entire daily carry.
+      // The correct test is the ROLLING ANNUAL one — total option cost over
+      // any 365 days must be covered by total carry over the same window —
+      // which is exactly what calcConvexityBudget() computes as `remaining`,
+      // recalculated daily. Options are held to expiry, so theta and carry
+      // reconcile over the life of the ladder, not within a single session.
       var maxCarry=theta>0?Math.floor(netDailyYield*frac/theta):999999;
       var maxBudget=putR>0?Math.floor(deployable*frac/putR):0;
       // how many contracts of THIS strike/expiry close the coverage gap?
@@ -4316,7 +4327,7 @@ async function runHistoricalLoad(opts){
       // maxCover tenfold and pushed every trade below minTrade, silently.
       var payPerCt=bsPutRepriceR(_cov.shockedSpot,K,r,q,_cov.crashIv,Tc);
       var maxCover=payPerCt>0?Math.ceil(covGapR*frac/payPerCt):0;
-      var qty=Math.max(0,Math.min(maxCarry,maxBudget,maxCover));
+      var qty=Math.max(0,Math.min(maxBudget,maxCover));   // annual budget + coverage need
       // release any carried shortfall for this quarter once it can clear the floor
       if(carried[k]>0 && qty*putR+carried[k]>=minTrade){
         var extra=Math.floor(carried[k]/putR);
@@ -4351,7 +4362,7 @@ async function runHistoricalLoad(opts){
         +'  mid R'+Math.round(putR).toLocaleString('en-ZA')+' +'+(hc*100).toFixed(1)+'%'
         +'  = R'+Math.round(cost).toLocaleString('en-ZA')
         +'  [cov '+(covNow*100).toFixed(1)+'%->'+(covTarget*100).toFixed(0)+'%, '
-        +(qty===maxCarry?'carry':qty===maxBudget?'budget':'coverage')+'-bound, '
+        +(qty===maxBudget?'budget':'coverage')+'-bound, '
         +(rebalancing?'rebal':'grow')+']');
     }
 
