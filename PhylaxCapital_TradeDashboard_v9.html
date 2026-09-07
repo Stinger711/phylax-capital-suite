@@ -2245,7 +2245,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v46';
+var BUILD_VERSION='v47';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4307,7 +4307,7 @@ async function runHistoricalLoad(opts){
     // WHERE it goes. A reserve is held back so there is capacity to buy
     // protection in a dislocation, when it is most valuable and most costly.
     var _peak=dryRun?simPeak:getRunningPeak();
-    var _cov=coverageAtShock(covShock,'central',{ladder:lad,peak:_peak,asOf:d,
+    var _cov=coverageAtShock(covShock,'central',{ladder:lad,peak:_peak,ref:Sp,asOf:d,
               r:jibar,q:dy,iv:iv});
     var covNow=_cov.coverageOfLoss;
     var covGapR=Math.max(0,(covTarget-covNow)*_cov.portfolioLoss);   // rand of payoff still needed
@@ -4436,7 +4436,7 @@ async function runHistoricalLoad(opts){
   L('   contracts '+_ct+'   tranches '+(fl.tranches||[]).length);
   if(dryRun){
     var _fc=coverageAtShock(covShock,'central',{ladder:{tranches:simTranches},peak:simPeak,
-             r:jibar,q:dy,iv:S[S.length-1].v});
+             ref:S[S.length-1].c, r:jibar,q:dy,iv:S[S.length-1].v});
     L('   COVERAGE at -'+(covShock*100).toFixed(0)+'% from peak '+Math.round(simPeak).toLocaleString('en-ZA')+':');
     L('     payoff    R'+Math.round(_fc.payoff).toLocaleString('en-ZA')
       +'   vs loss R'+Math.round(_fc.portfolioLoss).toLocaleString('en-ZA'));
@@ -7312,13 +7312,22 @@ function updateRunningPeak(level){
 function coverageAtShock(shockFrac,scenario,opts){
   opts=opts||{};
   var st=getState();
+  // v47: the shock is measured from the CURRENT market level, not the peak.
+  // Referencing the peak counts a fall that has ALREADY happened — money the
+  // investor has already lost, which no option bought today can protect. It
+  // also overstates payoff, because strikes sit further ITM against a level
+  // the market has left. The peak is kept as a drawdown INDICATOR only.
+  // This still ratchets with a rising market: as spot rises, both the
+  // portfolio and the shocked level rise, so the requirement rises — without
+  // double-counting drawdown that is already realised.
+  var ref=opts.ref||opts.spot||FVAL['i-spot']||getRunningPeak();
   var peak=opts.peak||getRunningPeak();
   var port=st.totalPortfolio||(CURRENT_SESSION?CURRENT_SESSION.totalPortfolio:0)||0;
   var r=opts.r!=null?opts.r:(FVAL['i-jibar']||0.07);
   var q=opts.q!=null?opts.q:(FVAL['i-dY']||0.034);
   var baseIv=opts.iv!=null?opts.iv:(FVAL['i-iv']||0.21);
   var x=Math.abs(shockFrac);
-  var shockedSpot=peak*(1-x);
+  var shockedSpot=ref*(1-x);
   var iv=crashVolFor(baseIv,x,scenario);
   var today=opts.asOf?new Date(opts.asOf+'T00:00:00'):new Date();
   today.setHours(0,0,0,0);
@@ -7337,7 +7346,8 @@ function coverageAtShock(shockFrac,scenario,opts){
 
   var portLoss=port*x;
   return {
-    shock:x, scenario:scenario||'central', peak:peak, shockedSpot:shockedSpot,
+    shock:x, scenario:scenario||'central', peak:peak, ref:ref, shockedSpot:shockedSpot,
+    drawdownFromPeak: peak>0?(ref/peak-1):0,
     baseIv:baseIv, crashIv:iv, volMultiplier:crashVolMultiplier(x,scenario),
     portfolio:port, portfolioLoss:portLoss,
     payoff:payoff, intrinsic:intrinsic, timeAndVolPremium:payoff-intrinsic,
@@ -7395,7 +7405,8 @@ function reportCoverage(opts){
     +' ('+(c30.payoff>0?(c30.timeAndVolPremium/c30.payoff*100).toFixed(0):0)+'%)');
   console.log('');
   console.log('   ASSUMPTIONS — these figures are MODELLED, not observed:');
-  console.log('   · drawdown measured from the running peak, which ratchets and never decays');
+  console.log('   · shock measured from the CURRENT market level, not the running peak —');
+  console.log('     a fall already realised cannot be hedged by an option bought today');
   console.log('   · SAVI spike from calcCrashVol: 1 + '+VOL_SPIKE_A+'x + '+VOL_SPIKE_B+'x²,');
   console.log('     fitted on 2020 COVID decline-phase data (R²=0.91, 15 points, single episode).');
   console.log('     Convexity is well supported; the magnitude is a working estimate.');
@@ -7494,13 +7505,14 @@ function plannerTarget(opts){
 function plannerCurve(contracts,K,opts){
   opts=opts||{};
   var st=getState();
+  var ref=opts.ref||FVAL['i-spot']||getRunningPeak();   // v47: current level, not peak
   var peak=opts.peak||getRunningPeak();
   var port=st.totalPortfolio||(CURRENT_SESSION?CURRENT_SESSION.totalPortfolio:0)||0;
   var shock=opts.shock||0.30;
   var r=opts.r!=null?opts.r:FVAL['i-jibar'], q=opts.q!=null?opts.q:FVAL['i-dY'];
   var baseIv=opts.iv||FVAL['i-iv']||0.21;
   var civ=crashVolFor(baseIv,shock,'central');
-  var Sx=peak*(1-shock), loss=port*shock;
+  var Sx=ref*(1-shock), loss=port*shock;
   var bs=plannerBuckets();
   var pts=[];
   for(var d=0; d<=PLANNER_HORIZON_D; d+=30){
@@ -7511,7 +7523,8 @@ function plannerCurve(contracts,K,opts){
     }
     pts.push({day:d, payoff:tot, cov:loss>0?tot/loss*100:0});
   }
-  return {points:pts, loss:loss, peak:peak,
+  return {points:pts, loss:loss, peak:peak, ref:ref,
+          drawdown: peak>0?(ref/peak-1):0,
           now:pts[0], worst:pts.reduce(function(a,p){return p.cov<a.cov?p:a;},pts[0])};
 }
 
@@ -7555,8 +7568,10 @@ function renderCoveragePlanner(){
 
   host.innerHTML=
    '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px">'
-    +'<div><div class="pl-l">Running peak</div><div class="pl-v">'+Math.round(cNow.peak).toLocaleString('en-ZA')+'</div></div>'
-    +'<div><div class="pl-l">Loss at &minus;30%</div><div class="pl-v">'+fR(cNow.loss)+'</div></div>'
+    +'<div><div class="pl-l">Market level</div><div class="pl-v">'+Math.round(cNow.ref).toLocaleString('en-ZA')+'</div></div>'
+    +'<div><div class="pl-l">Peak / drawdown</div><div class="pl-v" style="font-size:11px">'+Math.round(cNow.peak).toLocaleString('en-ZA')
+      +' <span style="color:'+(cNow.drawdown<-0.05?'var(--amber)':'var(--muted)')+'">'+(cNow.drawdown*100).toFixed(2)+'%</span></div></div>'
+    +'<div><div class="pl-l">Loss at &minus;30% from here</div><div class="pl-v">'+fR(cNow.loss)+'</div></div>'
     +'<div><div class="pl-l">Coverage now</div><div class="pl-v" style="color:var(--teal2)">'+cNow.now.cov.toFixed(2)+'%</div></div>'
     +'<div><div class="pl-l">Worst case (365d)</div><div class="pl-v" style="color:'+(drift>PLANNER_DRIFT_TOL?'var(--amber)':'var(--teal2)')+'">'+cNow.worst.cov.toFixed(2)+'%</div></div>'
     +'<div><div class="pl-l">Target worst case</div><div class="pl-v" style="color:var(--purple)">'+cTgt.worst.cov.toFixed(2)+'%</div></div>'
@@ -7579,7 +7594,8 @@ function renderCoveragePlanner(){
      +'<tr><td style="text-align:left">target</td>'+curveRow(cTgt,'var(--purple)')+'</tr>'
    +'</tbody></table>'
    +'<div style="font-size:8.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
-     +'Coverage = modelled payoff at &minus;30% from the running peak, as % of the portfolio loss. '
+     +'Coverage = modelled payoff at &minus;30% from the CURRENT market level, as % of the portfolio loss. '
+     +'Measured from here, not the peak: a fall already suffered cannot be hedged by an option bought today. '
      +'Curve assumes NO further purchases &mdash; it is the decay of today\'s book, which is why it '
      +'falls to zero past the longest expiry. In practice maintenance buying at the long end holds it flat. '
      +'Vol spike from calcCrashVol (2020-calibrated, R\u00b2=0.91, 15 points, single episode). '
