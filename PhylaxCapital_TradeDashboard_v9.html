@@ -1962,7 +1962,7 @@ textarea:focus{border-color:var(--teal2)}
       <div class="mc g">
         <div class="mc-l">Max Carry-Neutral</div>
         <div class="mc-v" id="o-maxc">—</div>
-        <div class="mc-s">Carry stays positive</div>
+        <div class="mc-s">Daily theta = daily carry (indicative, not a cap)</div>
       </div>
       <div class="mc p">
         <div class="mc-l">Remaining Budget</div>
@@ -2226,7 +2226,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v42';
+var BUILD_VERSION='v43';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -4814,7 +4814,11 @@ function calc(){
   // so the two panels always answer the same question instead of this
   // one comparing a this-expiry target against the WHOLE book's count.
   var ladderHeldThisExpiry=contractsHeldForExpiry(expiryStr);
-  var maxAdditional=Math.min(budgetContracts,maxAdditionalCarry); // may be negative if carry has deteriorated
+  // v43: the rolling ANNUAL budget binds; the per-day carry test is
+  // diagnostic only (see calcConvexityBudget and renderInlineAlloc).
+  // maxAdditionalCarry is still computed and displayed as "Max Carry-Neutral"
+  // so the operator can see when the daily test WOULD have bound.
+  var maxAdditional=budgetContracts;
   var recommended=Math.max(0,ladderHeldThisExpiry+maxAdditional);
   var maxCarryContracts=maxAdditionalCarry; // keeps existing "Max Carry-Neutral" display wired up
   var tradeRequired=recommended-held;
@@ -6002,16 +6006,27 @@ function renderInlineAlloc(){
     // net yield and budget in proportion to their gap from target.
     var effectiveFrac=totalGap>0?(gap/totalGap):0;
     var yieldSlice=netDailyYield*effectiveFrac;
+    // v43: maxCarry is DIAGNOSTIC ONLY — it no longer caps the recommendation.
+    // The per-day test (book theta must never exceed ONE day's carry) is far
+    // stricter than the fund's solvency condition. In the 19 Jun rebuild it
+    // pinned netDailyYield at R0 for six consecutive weeks after the opening
+    // trades and capped the book at 7.4% coverage with R2.75m of budget
+    // permanently unspent. Releasing it reached 9.4% on the same capital.
+    // The correct test is the ROLLING ANNUAL one: total option cost over any
+    // 365 days covered by total carry over the same window — which is what
+    // calcConvexityBudget() returns as `remaining`, recalculated daily.
+    // Options are held to expiry, so theta and carry reconcile over the life
+    // of the ladder, not within a single session.
     var maxCarry=thetaPerContract>0?Math.floor(yieldSlice/thetaPerContract):999;
     var budgetSlice=remaining*effectiveFrac;
     var maxBudget=putR>0?Math.floor(budgetSlice/putR):0;
     var parSlice=parHeadroom*effectiveFrac;
     var maxPar=putR>0?Math.floor(parSlice/putR):0;
-    var recommended=isOverweight?0:(parBinding?Math.min(maxCarry,maxBudget,maxPar):Math.min(maxCarry,maxBudget));
-    var parWouldBind=(maxPar<maxCarry&&maxPar<maxBudget);
+    var recommended=isOverweight?0:(parBinding?Math.min(maxBudget,maxPar):maxBudget);
+    var parWouldBind=(maxPar<maxBudget);
     var bindingConstraint=isOverweight?'overweight'
-      :(parBinding&&maxPar<=maxCarry&&maxPar<=maxBudget)?'par'
-      :maxCarry<=maxBudget?'carry-neutral':'budget';
+      :(parBinding&&maxPar<=maxBudget)?'par'
+      :'budget';
 
     totalContracts+=recommended; totalCost+=recommended*putR;
     totalDeltaWt+=Math.abs(delta)*recommended;
