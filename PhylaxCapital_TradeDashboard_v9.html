@@ -2245,7 +2245,7 @@ textarea:focus{border-color:var(--teal2)}
 // BUILD_VERSION is the single source of truth and is displayed in the header
 // and the document title. BUMP IT ON EVERY DELIVERED BUILD — reloading into a
 // stale file is otherwise invisible, and has already cost real debugging time.
-var BUILD_VERSION='v47';
+var BUILD_VERSION='v48';
 var BUILD_ID=BUILD_VERSION+'-20260903-2010';
 var BUILD_FEATURES=['ymdLocal','parBudget','rollingAnnualHorizon','vatAllFees',
   'feeRateHistory','budgetReconciliation','optionA-nearExpiry','j200SanityBand',
@@ -5055,6 +5055,10 @@ if(ladderHeld===0){ cs.className='carry-ok'; cs.textContent='ℹ No contracts he
   renderDailyNAV();
   renderLiquidityStress();
   renderUnitPriceBar();
+  // v48: ratchet the running peak on EVERY calc(), not only at EOD close.
+  // Waiting for the close meant a session with no closes yet showed the market
+  // ABOVE its own peak — a positive "drawdown", which is impossible.
+  if(FVAL['i-spot']>0){ updateRunningPeak(FVAL['i-spot']); }
   renderBudgetPanel();
   renderHedgeView(); try{ renderCoveragePlanner(); }catch(e){ console.error('planner:',e); }
   renderHarvestPanel();
@@ -7347,7 +7351,7 @@ function coverageAtShock(shockFrac,scenario,opts){
   var portLoss=port*x;
   return {
     shock:x, scenario:scenario||'central', peak:peak, ref:ref, shockedSpot:shockedSpot,
-    drawdownFromPeak: peak>0?(ref/peak-1):0,
+    drawdownFromPeak: peak>0?Math.min(0,ref/peak-1):0,
     baseIv:baseIv, crashIv:iv, volMultiplier:crashVolMultiplier(x,scenario),
     portfolio:port, portfolioLoss:portLoss,
     payoff:payoff, intrinsic:intrinsic, timeAndVolPremium:payoff-intrinsic,
@@ -7456,7 +7460,15 @@ function reportCoverage(opts){
 // ══════════════════════════════════════════════════════════════════════
 
 var PLANNER_DEPLOY_PCT = 0.95;   // operational margin, not a timing reserve
-var PLANNER_HORIZON_D  = 365;
+// v48: the horizon cannot exceed the longest expiry you can actually buy.
+// With four quarterly rungs the far one is ~283 days out, so a 365-day
+// horizon scored EVERY possible book at 0% beyond day 283 — making both the
+// worst case and the drift figure meaningless. A 365-day horizon only becomes
+// coherent once the roll is modelled.
+function plannerHorizonDays(){
+  var bs=plannerBuckets();
+  return bs.length?bs[bs.length-1].days:365;
+}
 var PLANNER_DRIFT_TOL  = 0.05;   // 5% — guidance, not a trigger
 
 function plannerBuckets(){
@@ -7483,9 +7495,16 @@ function plannerTarget(opts){
   var otm=opts.otm||FVAL['i-otm']||0.10;
   if(!(S>0&&iv>0)) return null;
   var K=Math.round(S*(1-otm));
+  // v48: a rung is only worth buying if it has enough life to contribute to
+  // SUSTAINED coverage. Ten days before a quarterly expiry the nearest listed
+  // contract is not the "3-month rung" — it is about to vanish. Buying it adds
+  // nothing and the flat target was recommending 211 of them at R1 each.
+  // Rungs below the floor are excluded from the target and marked skip.
   var bs=plannerBuckets();
+  var MIN_RUNG_DAYS=45;
   var prem=bs.map(function(b){ return bsPutRepriceR(S,K,r,q,iv,b.days/365); });
-  var rung=prem.reduce(function(a,p){return a+p;},0);
+  var live=bs.map(function(b){ return b.days>=MIN_RUNG_DAYS; });
+  var rung=prem.reduce(function(a,p,i){ return a+(live[i]?p:0); },0);
   var bd=calcConvexityBudget();
   var held=plannerHeld();
   var heldCost=(getLadder().tranches||[]).reduce(function(a,t){return a+(t.premiumTotal||0);},0);
@@ -7495,9 +7514,10 @@ function plannerTarget(opts){
   // what is already committed — otherwise the target shrinks as you buy it.
   var totalCapacity=deployable+heldCost;
   var N=rung>0?Math.floor(totalCapacity/rung):0;
-  return {K:K, buckets:bs, prem:prem, rungCost:rung, N:N,
-          target:bs.map(function(){return N;}), held:held,
-          gap:bs.map(function(b,i){ return Math.max(0,N-held[i]); }),
+  return {K:K, buckets:bs, prem:prem, rungCost:rung, N:N, live:live,
+          minRungDays:MIN_RUNG_DAYS,
+          target:bs.map(function(b,i){ return live[i]?N:0; }), held:held,
+          gap:bs.map(function(b,i){ return live[i]?Math.max(0,N-held[i]):0; }),
           deployable:deployable, totalCapacity:totalCapacity, budget:bd};
 }
 
@@ -7515,7 +7535,8 @@ function plannerCurve(contracts,K,opts){
   var Sx=ref*(1-shock), loss=port*shock;
   var bs=plannerBuckets();
   var pts=[];
-  for(var d=0; d<=PLANNER_HORIZON_D; d+=30){
+  var H=plannerHorizonDays(), stepD=Math.max(15,Math.round(H/12/5)*5);
+  for(var d=0; d<=H; d+=stepD){
     var tot=0;
     for(var i=0;i<bs.length;i++){
       var rem=(bs[i].days-d)/365;
@@ -7524,7 +7545,7 @@ function plannerCurve(contracts,K,opts){
     pts.push({day:d, payoff:tot, cov:loss>0?tot/loss*100:0});
   }
   return {points:pts, loss:loss, peak:peak, ref:ref,
-          drawdown: peak>0?(ref/peak-1):0,
+          drawdown: peak>0?Math.min(0,ref/peak-1):0,
           now:pts[0], worst:pts.reduce(function(a,p){return p.cov<a.cov?p:a;},pts[0])};
 }
 
@@ -7550,8 +7571,9 @@ function renderCoveragePlanner(){
       +'<td>'+b.days+'d</td>'
       +'<td>R'+Math.round(t.prem[i]).toLocaleString('en-ZA')+'</td>'
       +'<td>'+held[i]+'</td>'
-      +'<td style="color:var(--teal2)">'+t.target[i]+'</td>'
-      +'<td style="color:'+(t.gap[i]>0?'var(--amber)':'var(--muted)')+'">'+(t.gap[i]>0?'+'+t.gap[i]:'—')+'</td>'
+      +'<td style="color:'+(t.live[i]?'var(--teal2)':'var(--muted)')+'">'+(t.live[i]?t.target[i]:'skip')+'</td>'
+      +'<td style="color:'+(t.gap[i]>0?'var(--amber)':'var(--muted)')+'">'
+        +(t.live[i]?(t.gap[i]>0?'+'+t.gap[i]:'—'):'&lt;'+t.minRungDays+'d')+'</td>'
       +'<td><input type="text" class="pl-in" id="pl-q'+i+'" value="'+(proposed[i]||0)+'" '
       +'oninput="plannerRecalc()" style="width:56px;text-align:right;font-family:\'DM Mono\',monospace;font-size:10px;'
       +'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);color:var(--white);padding:3px 5px;border-radius:2px"/></td>'
@@ -7596,8 +7618,9 @@ function renderCoveragePlanner(){
    +'<div style="font-size:8.5px;color:var(--muted);margin-top:7px;line-height:1.5">'
      +'Coverage = modelled payoff at &minus;30% from the CURRENT market level, as % of the portfolio loss. '
      +'Measured from here, not the peak: a fall already suffered cannot be hedged by an option bought today. '
-     +'Curve assumes NO further purchases &mdash; it is the decay of today\'s book, which is why it '
-     +'falls to zero past the longest expiry. In practice maintenance buying at the long end holds it flat. '
+     +'Horizon runs to the longest tradeable expiry ('+plannerHorizonDays()+'d) &mdash; a longer one would score every '
+     +'book at zero beyond it. Curve assumes NO further purchases; in practice maintenance buying at the long end holds it flat. '
+     +'Rungs with under '+(window._planner?window._planner.minRungDays:45)+' days left are skipped: too little life to add sustained coverage. '
      +'Vol spike from calcCrashVol (2020-calibrated, R\u00b2=0.91, 15 points, single episode). '
      +'Flat vol, no skew &mdash; real coverage per rand is LOWER. Modelled, not observed.'
    +'</div>';
